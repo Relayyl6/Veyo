@@ -26,31 +26,41 @@ const Onboarding = () => {
       
       <Swiper
         ref={swiperRef}
-        dot={<View className="w-[32px] h-[4px] mx-1 bg-[#E2E8F0] rounded-full" />}
+        dot={<View className="w-[32px] h-[4px] mx-1 mt-4 bg-[#E2E8F0] rounded-full" />}
         loop={false}
         showsPagination
-        activeDot={<View className="w-[32px] h-[4px] mx-1 bg-[#0286FF] rounded-full" />}
+        paginationStyle={{ bottom: -10 }}
+        activeDot={<View className="w-[32px] h-[4px] mx-1 mt-3 bg-[#0286FF] rounded-full" />}
         onIndexChanged={(index) => setActiveIndex(index)}
       >
         {
           onboarding.map((item) => (
-            <>
-              <View key={item.id} className='flex items-center justify-center p-5'>
+            <View key={item.id} className='flex items-center justify-center py-5 w-full'>
+              
+              {/* 1. Added a 'relative' parent container to hold both image and text together */}
+              <View className='relative w-screen h-[400px] flex items-center'>
+                
                 <Image
                   source={item.image}
-                  className='w-full h-[300px] bg-white'
-                  alt='item.name'
-                  resizeMode='contain'
+                  className='w-screen h-full scale-110 bg-white'
+                  alt={item.title}
+                  resizeMode='cover'
                 />
-                <View className='flex flex-row items-center justify-center w-full mt-10'>
-                  <Text className='text-black text-3xl font-bold mx-10 text-center'>
+
+                {/* 2. Absolute positioning container for the text */}
+                {/* 'bottom-0' puts it flush with the bottom. Use something like 'bottom-8' to move it higher inside the image, or '-bottom-10' to have it half-in/half-out */}
+                <View pointerEvents="box-none" className='absolute -bottom-48 w-full items-center justify-center px-5 z-10'>
+                  <Text className='text-black text-3xl font-bold text-center'>
                     {item.title}
                   </Text>
+                  <Text className='text-lg font-JakartaSemiBold text-center text-[#858585] mt-3 mx-5'>
+                    {item.description}
+                  </Text>
                 </View>
+                
               </View>
-
-              <Text className='text-lg font-JakartaSemiBold text-center text-[#858585] mx-10 mt-3'>{item.description}</Text>
-            </>
+              
+            </View>
           ))
         }
       </Swiper>

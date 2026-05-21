@@ -9,6 +9,7 @@ import OAuth from '@/components/OAuth'
 import { useSignUp, useAuth, useClerk  } from '@clerk/expo'
 import type { Href } from 'expo-router'
 import { generateSecurePassword } from '@/lib/utils'
+import Modal from 'react-native-modal';
 
 const SignUp = () => {
   const [form, setForm] = useState({
@@ -251,84 +252,11 @@ const handleKeyPress = (index: number, nativeEvent: any) => {
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
   // Show verification screen only when showVerification is true
-  if (showVerification) {
-  return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.verificationContainer}>
-        <Text style={styles.title}>Enter the 6-digit code</Text>
-        
-        <Text style={styles.subtitle}>
-          We sent a code to <Text style={styles.emailHighlight}>{form.email}</Text>
-        </Text>
-
-        {/* 6-digit code input - as separate boxes */}
-        <View style={styles.codeInputContainer}>
-          {[0, 1, 2, 3, 4, 5].map((index) => (
-            <TextInput
-              key={index}
-              style={[
-                styles.codeBox,
-                code.length > index && styles.codeBoxFilled
-              ]}
-              value={code[index] || ''}
-              onChangeText={(text) => handleCodeChange(index, text)}
-              onKeyPress={({ nativeEvent }) => handleKeyPress(index, nativeEvent)}
-              keyboardType="numeric"
-              maxLength={1}
-              ref={(el) => { inputRefs.current[index] = el }}
-              placeholderTextColor="#CCCCCC"
-            />
-          ))}
-        </View>
-
-        {/* Inline error message */}
-        {codeErr ? (
-            <Text style={styles.errorText}>
-              {codeErr}
-            </Text>
-          ) : null}
-
-        {/* Help text */}
-        <Text style={styles.helpText}>
-          If you don't see the email in your inbox, check your spam folder. 
-          If it's not there, the email address may not be confirmed, 
-          or it may not match an existing account.
-        </Text>
-
-        {/* Action buttons */}
-        <Pressable
-          style={[styles.button, fetchStatus === 'fetching' && styles.buttonDisabled]}
-          onPress={() => handleVerify()}
-          disabled={fetchStatus === 'fetching'}
-        >
-          <Text style={styles.buttonText}>
-            {fetchStatus === 'fetching' ? 'Verifying...' : 'Verify Email'}
-          </Text>
-        </Pressable>
-
-        <Pressable
-          style={styles.resendLink}
-          onPress={handleResendCode}
-          disabled={!canResend || fetchStatus === 'fetching'}
-        >
-          <Text style={[
-            styles.resendLinkText,
-            (!canResend || fetchStatus === 'fetching') && { color: '#CCCCCC' }
-          ]}>
-            {!canResend ? `Resend code in ${timer}s` : 'Resend code'}
-          </Text>
-        </Pressable>
-
-        <Pressable
-          style={styles.startOverLink}
-          onPress={handleStartOver}
-        >
-          <Text style={styles.startOverLinkText}>Start over</Text>
-        </Pressable>
-      </View>
-    </SafeAreaView>
-  )
-}
+  // if (showVerification) {
+  //   return (
+  //     
+  //   )
+  // }
    
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
@@ -406,6 +334,75 @@ const handleKeyPress = (index: number, nativeEvent: any) => {
               <Text className="text-primary-500"> Log In</Text>
             </Link>
           </View>
+
+
+          <Modal isVisible={showVerification}>
+            <View className="bg-white rounded-[20px] p-6 shadow-lg mx-auto">
+           <Text style={styles.title}>Enter the 6-digit code</Text>
+      
+           <Text style={styles.subtitle}>
+             We sent a code to <Text style={styles.emailHighlight}>{form.email}</Text>
+           </Text>
+
+           <View style={styles.codeInputContainer}>
+             {[0, 1, 2, 3, 4, 5].map((index) => (
+               <TextInput
+                 key={index}
+                 style={[
+                   styles.codeBox,
+                   code.length > index && styles.codeBoxFilled
+                 ]}
+                 value={code[index] || ''}
+                 onChangeText={(text) => handleCodeChange(index, text)}
+                 onKeyPress={({ nativeEvent }) => handleKeyPress(index, nativeEvent)}
+                 keyboardType="numeric"
+                 maxLength={1}
+                 ref={(el) => { inputRefs.current[index] = el }}
+                 placeholderTextColor="#CCCCCC"
+               />
+             ))}
+           </View>
+           {/* Inline error message */}
+           {codeErr ? (
+               <Text style={styles.errorText}>
+                 {codeErr}
+               </Text>
+             ) : null}
+           <Text style={styles.helpText} className='flex text-center'>
+             If you don't see the email in your inbox, check your spam folder. 
+             If it's not there, the email address may not be confirmed, 
+             or it may not match an existing account.
+           </Text>
+           <Pressable
+             style={[styles.button, fetchStatus === 'fetching' && styles.buttonDisabled]}
+             onPress={() => handleVerify()}
+             disabled={fetchStatus === 'fetching'}
+             className='mx-auto'
+           >
+             <Text style={styles.buttonText}>
+               {fetchStatus === 'fetching' ? 'Verifying...' : 'Verify Email'}
+             </Text>
+           </Pressable>
+           <Pressable
+             style={styles.resendLink}
+             onPress={handleResendCode}
+             disabled={!canResend || fetchStatus === 'fetching'}
+           >
+             <Text style={[
+               styles.resendLinkText,
+               (!canResend || fetchStatus === 'fetching') && { color: '#CCCCCC' }
+             ]}>
+               {!canResend ? `Resend code in ${timer}s` : 'Resend code'}
+             </Text>
+           </Pressable>
+           <Pressable
+             style={styles.startOverLink}
+             onPress={handleStartOver}
+           >
+             <Text style={styles.startOverLinkText}>Start over</Text>
+           </Pressable>
+         </View>
+          </Modal>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -447,7 +444,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 25,
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 5,
   },
   buttonText: {
     color: 'white',
@@ -487,10 +484,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 20,
+    gap: 2
   },
   codeBox: {
-    width: 52,
-    height: 60,
+    flex: 1, // MAGIC FIX: This tells each box to shrink/grow equally to fit the screen!
+    // aspectRatio: 1, // Keeps the boxes perfectly square
+    // Remove the fixed 'width: 52' and 'height: 60'
     borderWidth: 1.5,
     borderColor: '#E5E5E5',
     borderRadius: 12,
@@ -513,7 +512,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#888888',
     lineHeight: 18,
-    marginBottom: 32,
+    marginBottom: 24,
     marginTop: 8,
   },
   buttonDisabled: {
@@ -521,7 +520,7 @@ const styles = StyleSheet.create({
   },
   resendLink: {
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 8,
   },
   resendLinkText: {
     color: '#007AFF',
@@ -530,7 +529,7 @@ const styles = StyleSheet.create({
   },
   startOverLink: {
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 8,
   },
   startOverLinkText: {
     color: '#888888',

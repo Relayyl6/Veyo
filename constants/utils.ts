@@ -1,6 +1,7 @@
 import arrowDown from "@/assets/icons/arrow-down.png";
 import arrowUp from "@/assets/icons/arrow-up.png";
 import backArrow from "@/assets/icons/back-arrow.png";
+import apple from "@/assets/icons/apple.png"
 import chat from "@/assets/icons/chat.png";
 import checkmark from "@/assets/icons/check.png";
 import close from "@/assets/icons/close.png";
@@ -51,6 +52,7 @@ export const images = {
 export const icons = {
     arrowDown,
     arrowUp,
+    apple,
     backArrow,
     chat,
     checkmark,
@@ -80,7 +82,7 @@ export const onboarding: Onboarding[] = [
     {
         id: 1,
         title: "Request a ride instantly",
-        description: "Enter your destination, review upfront pricing, and connect with a nearby driver in seconds. No guesswork, just moving.",
+        description: "Enter your destination, review upfront pricing, and connect with a nearby driver in seconds.\nNo guesswork, just moving.",
         image: images.onboarding1,
     },
     {

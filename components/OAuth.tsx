@@ -5,6 +5,7 @@ import { icons } from '@/constants/utils'
 
 const OAuth = () => {
   const handleGoogleSignIn = async () => {}
+  const handleAppleSignIn = async () => {}
   return (
     <View>
       <View className="flex flex-row justify-center items-center mt-3 gap-x-3">
@@ -21,7 +22,7 @@ const OAuth = () => {
           IconLeft={() => (
             <Image
               source={icons.google}
-              className='w-5 h-5 mx-2'
+              className='w-5 h-5 mx-1'
               resizeMode='contain'
             />
           )}
@@ -34,15 +35,15 @@ const OAuth = () => {
           title=" Apple" 
           IconLeft={() => (
             <Image
-              source={icons.google}
-              className='w-5 h-5 mx-2'
+              source={icons.apple}
+              className='w-7 h-7 mx-1'
               resizeMode='contain'
             />
           )}
           className='mt-3 shadow-none flex-1'
           bgVariant='outline'
           textVariant='primary'
-          onPress={handleGoogleSignIn}
+          onPress={handleAppleSignIn}
         />
       </View>
     </View>
