@@ -186,17 +186,10 @@ const handleKeyPress = (index: number, nativeEvent: any) => {
     const codeToSubmit = typeof finalCode === 'string' ? finalCode : code;
 
     try {
-      console.log('Starting verification with code:', codeToSubmit)
-      
-      // 1. Verify the code and EXTRACT THE ERROR
+
       const { error: verifyError } = await signUp.verifications.verifyEmailCode({ code: codeToSubmit })
 
-      // 2. If the code was wrong, stop immediately and show the error!
       if (verifyError) {
-        console.error('Code verification failed:', verifyError)
-        
-        // Cast to 'any' to bypass the strict TypeScript base type, 
-        // allowing us to reach into the API response errors array safely.
         const apiErr = verifyError as any;
         const errorMessage = apiErr.errors?.[0]?.longMessage 
                           || apiErr.errors?.[0]?.message 
@@ -209,9 +202,6 @@ const handleKeyPress = (index: number, nativeEvent: any) => {
         return; 
       }
 
-      console.log('Verification successful! Status is now:', signUp.status)
-
-      // 3. ONLY finalize if the status is complete
       if (signUp.status === 'complete') {
         console.log('Attempting to finalize...')
         
@@ -239,45 +229,6 @@ const handleKeyPress = (index: number, nativeEvent: any) => {
       setCodeErr('An unexpected error occurred.');
     }
   }
-
-//   const handleVerify = async () => {
-//     if (fetchStatus === 'fetching') return
-
-//   try {
-//     // Verify the code
-//     await signUp.verifications.verifyEmailCode({ code })
-
-//     // Check if signup is complete
-//     if (signUp.status === 'complete') {
-//       // Set the active session
-//       if (signUp.createdSessionId) {
-//         await setActive({ session: signUp.createdSessionId })
-//         router.replace('/(root)/(tabs)/home' as Href)
-//       } else {
-//         console.error('No session ID found after verification')
-//       }
-//     } else {
-//       console.error('Sign-up not complete. Status:', status)
-//     }
-//   } catch (err: any) {
-//     // Handle the "already verified" case
-//     if (err.errors?.[0]?.code === 'verification_already_verified') {
-//       // Email is already verified, just set the session
-//       try {
-//         if (signUp.createdSessionId) {
-//           await setActive({ session: signUp.createdSessionId })
-//           router.replace('/(root)/(tabs)/home' as Href)
-//         } else {
-//           console.error('No session ID found after verification')
-//         }
-//       } catch (sessionErr) {
-//         console.error('Error setting session:', sessionErr)
-//       }
-//     } else {
-//       console.error('Verification error:', JSON.stringify(err, null, 2))
-//     }
-//   }
-// }
 
   const handleStartOver = () => {
     signUp?.reset()

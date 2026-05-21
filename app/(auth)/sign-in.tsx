@@ -100,7 +100,7 @@ const SignIn = () => {
               className='z-0 w-full h-[250px]'
             />
             <Text className='text-2xl font-JakartaSemiBold text-black absolute bottom-5 left-5'>
-              Sign Into your Account
+              Welcome Back
             </Text>
           </View>
 
