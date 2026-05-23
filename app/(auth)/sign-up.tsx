@@ -1,4 +1,5 @@
-import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View, Pressable, TextInput, Alert } from 'react-native'
+// Add Animated to your existing react-native imports
+import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View, Pressable, TextInput, Alert, Animated } from 'react-native'
 import React, { useEffect, useRef, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { icons, images } from '@/constants/utils'
@@ -10,6 +11,8 @@ import { useSignUp, useAuth, useClerk  } from '@clerk/expo'
 import type { Href } from 'expo-router'
 import { generateSecurePassword } from '@/lib/utils'
 import Modal from 'react-native-modal';
+import { SuccessAnimation } from '@/components/Check'
+import { fetchAPI } from '@/lib/fetch'
 
 const SignUp = () => {
   const [form, setForm] = useState({
@@ -29,6 +32,7 @@ const SignUp = () => {
   const [timer, setTimer] = useState(0);
   const [codeErr, setCodeErr] = useState("");
   const [isVerifying, setIsVerifying] = useState(false)
+  const [isVerified, setIsVerified] = useState(false)
 
   const { signUp, errors, fetchStatus } = useSignUp()
   const { setActive } = useClerk()
@@ -205,19 +209,38 @@ const handleKeyPress = (index: number, nativeEvent: any) => {
 
       if (signUp.status === 'complete') {
         console.log('Attempting to finalize...')
+
+        setIsVerified(true);
+        await fetchAPI('/(api)/user', { 
+          method: "POST",
+          body: JSON.stringify({
+            clerkId: signUp.createdUserId,
+            email: form.email,
+            firstName: signUp.firstName || form.name.split(' ')[0],
+            lastName: signUp.lastName || form.name.split(' ').slice(1).join(' ') || undefined,
+            avatarUrl: `https://ui-avatars.com/api/?name=${signUp.firstName}+${signUp.lastName}&background=2563EB&color=fff`,
+            role: 'customer', // or whatever your default is
+          })
+         })
         
-        const finalizeResult = await signUp.finalize({
-          navigate: ({ decorateUrl }) => {
-             router.push(decorateUrl('/(root)/(tabs)/home') as Href);
+        setTimeout(async () => {
+          try {
+            const finalizeResult = await signUp.finalize({
+              navigate: ({ decorateUrl }) => {
+                 router.push(decorateUrl('/(root)/(tabs)/home') as Href);
+              }
+            });
+            
+            if (finalizeResult?.error) {
+              console.error('Finalize error:', finalizeResult.error);
+              setCodeErr('Failed to finalize session. Please try logging in.');
+              setIsVerified(false); // Send them back to the form if it fails
+            }
+          } catch (e) {
+             console.error('Finalize catch block:', e);
+             setIsVerified(false);
           }
-        });
-        
-        // Handle finalize errors (if any)
-        if (finalizeResult?.error) {
-          console.error('Finalize error:', finalizeResult.error);
-          setCodeErr('Failed to finalize session. Please try logging in.');
-          return;
-        }
+        }, 4000);
 
       } else {
         // We verified the email, but Clerk still needs more info!
@@ -250,13 +273,6 @@ const handleKeyPress = (index: number, nativeEvent: any) => {
   const codeError = errors.fields.code?.message
 
   const inputRefs = useRef<(TextInput | null)[]>([]);
-
-  // Show verification screen only when showVerification is true
-  // if (showVerification) {
-  //   return (
-  //     
-  //   )
-  // }
    
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
@@ -335,73 +351,81 @@ const handleKeyPress = (index: number, nativeEvent: any) => {
             </Link>
           </View>
 
-
           <Modal isVisible={showVerification}>
             <View className="bg-white rounded-[20px] p-6 shadow-lg mx-auto">
-           <Text style={styles.title}>Enter the 6-digit code</Text>
-      
-           <Text style={styles.subtitle}>
-             We sent a code to <Text style={styles.emailHighlight}>{form.email}</Text>
-           </Text>
+              {
+              isVerified ? (
+                <SuccessAnimation />
+              ) : (
+                <>
+                  <Text style={styles.title}>Enter the 6-digit code</Text>
+            
+                  <Text style={styles.subtitle}>
+                    We sent a code to <Text style={styles.emailHighlight}>{form.email}</Text>
+                  </Text>
 
-           <View style={styles.codeInputContainer}>
-             {[0, 1, 2, 3, 4, 5].map((index) => (
-               <TextInput
-                 key={index}
-                 style={[
-                   styles.codeBox,
-                   code.length > index && styles.codeBoxFilled
-                 ]}
-                 value={code[index] || ''}
-                 onChangeText={(text) => handleCodeChange(index, text)}
-                 onKeyPress={({ nativeEvent }) => handleKeyPress(index, nativeEvent)}
-                 keyboardType="numeric"
-                 maxLength={1}
-                 ref={(el) => { inputRefs.current[index] = el }}
-                 placeholderTextColor="#CCCCCC"
-               />
-             ))}
-           </View>
-           {/* Inline error message */}
-           {codeErr ? (
-               <Text style={styles.errorText}>
-                 {codeErr}
-               </Text>
-             ) : null}
-           <Text style={styles.helpText} className='flex text-center'>
-             If you don't see the email in your inbox, check your spam folder. 
-             If it's not there, the email address may not be confirmed, 
-             or it may not match an existing account.
-           </Text>
-           <Pressable
-             style={[styles.button, fetchStatus === 'fetching' && styles.buttonDisabled]}
-             onPress={() => handleVerify()}
-             disabled={fetchStatus === 'fetching'}
-             className='mx-auto'
-           >
-             <Text style={styles.buttonText}>
-               {fetchStatus === 'fetching' ? 'Verifying...' : 'Verify Email'}
-             </Text>
-           </Pressable>
-           <Pressable
-             style={styles.resendLink}
-             onPress={handleResendCode}
-             disabled={!canResend || fetchStatus === 'fetching'}
-           >
-             <Text style={[
-               styles.resendLinkText,
-               (!canResend || fetchStatus === 'fetching') && { color: '#CCCCCC' }
-             ]}>
-               {!canResend ? `Resend code in ${timer}s` : 'Resend code'}
-             </Text>
-           </Pressable>
-           <Pressable
-             style={styles.startOverLink}
-             onPress={handleStartOver}
-           >
-             <Text style={styles.startOverLinkText}>Start over</Text>
-           </Pressable>
-         </View>
+                  <View style={styles.codeInputContainer}>
+                    {[0, 1, 2, 3, 4, 5].map((index) => (
+                      <TextInput
+                        key={index}
+                        style={[
+                          styles.codeBox,
+                          code.length > index && styles.codeBoxFilled
+                        ]}
+                        // 👇 FIX: This grabs '1' for box 0, '2' for box 1, etc.
+                        placeholder={'123456'[index]} 
+                        value={code[index] || ''}
+                        onChangeText={(text) => handleCodeChange(index, text)}
+                        onKeyPress={({ nativeEvent }) => handleKeyPress(index, nativeEvent)}
+                        keyboardType="numeric"
+                        maxLength={1}
+                        ref={(el) => { inputRefs.current[index] = el }}
+                        placeholderTextColor="#CCCCCC"
+                      />
+                    ))}
+                  </View>
+                  {/* Inline error message */}
+                  {codeErr ? (
+                      <Text style={styles.errorText}>
+                        {codeErr}
+                      </Text>
+                    ) : null}
+                  <Text style={styles.helpText} className='flex text-center'>
+                    If you don't see the email in your inbox, check your spam folder. 
+                    If it's not there, the email address may not be confirmed, 
+                    or it may not match an existing account.
+                  </Text>
+                  <Pressable
+                    style={[styles.button, fetchStatus === 'fetching' && styles.buttonDisabled]}
+                    onPress={() => handleVerify()}
+                    disabled={fetchStatus === 'fetching'}
+                    className='mx-auto'
+                  >
+                    <Text style={styles.buttonText}>
+                      {fetchStatus === 'fetching' ? 'Verifying...' : 'Verify Email'}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={styles.resendLink}
+                    onPress={handleResendCode}
+                    disabled={!canResend || fetchStatus === 'fetching'}
+                  >
+                    <Text style={[
+                      styles.resendLinkText,
+                      (!canResend || fetchStatus === 'fetching') && { color: '#CCCCCC' }
+                    ]}>
+                      {!canResend ? `Resend code in ${timer}s` : 'Resend code'}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={styles.startOverLink}
+                    onPress={handleStartOver}
+                  >
+                    <Text style={styles.startOverLinkText}>Start over</Text>
+                  </Pressable>
+                </>
+              )}
+            </View>
           </Modal>
         </View>
       </ScrollView>
@@ -489,7 +513,6 @@ const styles = StyleSheet.create({
   codeBox: {
     flex: 1, // MAGIC FIX: This tells each box to shrink/grow equally to fit the screen!
     // aspectRatio: 1, // Keeps the boxes perfectly square
-    // Remove the fixed 'width: 52' and 'height: 60'
     borderWidth: 1.5,
     borderColor: '#E5E5E5',
     borderRadius: 12,

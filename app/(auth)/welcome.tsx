@@ -47,13 +47,11 @@ const Onboarding = () => {
                   resizeMode='cover'
                 />
 
-                {/* 2. Absolute positioning container for the text */}
-                {/* 'bottom-0' puts it flush with the bottom. Use something like 'bottom-8' to move it higher inside the image, or '-bottom-10' to have it half-in/half-out */}
                 <View pointerEvents="box-none" className='absolute -bottom-48 w-full items-center justify-center px-5 z-10'>
                   <Text className='text-black text-3xl font-bold text-center'>
                     {item.title}
                   </Text>
-                  <Text className='text-lg font-JakartaSemiBold text-center text-[#858585] mt-3 mx-5'>
+                  <Text className='text-sm font-JakartaSemiBold text-center text-[#858585] mt-3 mx-5'>
                     {item.description}
                   </Text>
                 </View>

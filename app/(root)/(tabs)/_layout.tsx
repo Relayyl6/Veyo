@@ -1,26 +1,62 @@
 import { Tabs } from 'expo-router';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { StyleSheet } from 'react-native';
+import { Image, StyleSheet, useColorScheme, View } from 'react-native';
+import { icons } from '@/constants/utils';
+import TabBarIcon from '@/components/TabBarIcon';
 
 export default function TabsLayout() {
-  const TabBarIcon = (props: {
-    name: React.ComponentProps<typeof FontAwesome>['name'];
-    color: string;
-  }) => {
-    return <FontAwesome size={28} style={styles.tabBarIcon} {...props} />;
-  };
+  const colorScheme = useColorScheme();
 
   return (
     <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: '#0286FF',
-        tabBarInactiveTintColor: '#999999',
+      screenOptions={({ route }) => ({
+        tabBarActiveTintColor: 'white',
+        tabBarInactiveTintColor: 'white',
+        tabBarShowLabel: false,
+
+        tabBarBackground: () => {
+          // Dynamically choose the image based on the theme
+          const bgImage = colorScheme === 'dark' 
+            ? require('@/assets/images/tabbar-dark.png') 
+            : require('@/assets/images/tabbar-light.png');
+
+          return (
+            <Image 
+              source={bgImage} 
+              style={StyleSheet.absoluteFill} // Makes the image fill the entire tab bar area
+              resizeMode="cover" // Ensures the waves stretch nicely across the whole pill
+            />
+          );
+        },
+        
+        // 2. Add your tabBarIcon configuration here
+        tabBarIcon: ({ focused, color }) => {
+          return (
+            <TabBarIcon 
+              title={route.name} 
+              focused={focused} 
+              color={color} 
+            />
+          );
+        },
+
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
-          borderTopColor: '#E6F3FF',
-          borderTopWidth: 1,
+          // backgroundColor: '#FFFFFF',
+          // borderTopColor: '#E6F3FF',
+          // borderTopWidth: 1,
+          backgroundColor: 'transparent', // <-- MUST be transparent to see the image behind it
+          borderTopWidth: 0, // <-- Removed the border so it doesn't create an ugly line over your image
+          elevation: 0,
+          borderRadius: 50,
+          overflow: 'hidden',
+          paddingBottom: 37,
+          marginHorizontal: 20,
+          marginBottom: 20,
           height: 70,
-          paddingBottom: 10,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexDirection: 'row',
+          position: 'absolute'
         },
         headerStyle: {
           backgroundColor: '#F5F8FF',
@@ -33,24 +69,52 @@ export default function TabsLayout() {
           fontSize: 18,
         },
         headerShadowVisible: false,
-      }}
+      })}
     >
       <Tabs.Screen
         name="home"
         options={{
           title: 'Home',
           headerShown: false,
-          tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
-          tabBarLabel: 'Home',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon 
+              name={icons.home} 
+              title="Home" 
+              color={color} 
+              focused={focused} 
+            />
+          ),
         }}
       />
       <Tabs.Screen
-        name="rides"
+        name="explore"
         options={{
           title: 'Explore',
           headerShown: false,
-          tabBarIcon: ({ color }) => <TabBarIcon name="car" color={color} />,
-          tabBarLabel: 'Explore',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon
+              name={icons.explore}
+              title="Explore" 
+              color={color}
+              focused={focused}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="trips"
+        options={{
+          title: 'Trips',
+          headerShown: false,
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon
+              name={icons.trips}
+              title="Trips" 
+              color={color}
+              focused={focused}
+            />
+          ),
+          
         }}
       />
       <Tabs.Screen
@@ -58,8 +122,14 @@ export default function TabsLayout() {
         options={{
           title: 'Wallet',
           headerShown: false,
-          tabBarIcon: ({ color }) => <TabBarIcon name="credit-card" color={color} />,
-          tabBarLabel: 'Wallet',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon
+              name={icons.wallet}
+              title="Wallet" 
+              color={color}
+              focused={focused}
+            />
+          ),
         }}
       />
       <Tabs.Screen
@@ -67,8 +137,15 @@ export default function TabsLayout() {
         options={{
           title: 'Profile',
           headerShown: false,
-          tabBarIcon: ({ color }) => <TabBarIcon name="user" color={color} />,
-          tabBarLabel: 'Profile',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon
+              name={icons.person}
+              title="Profile" 
+              color={color}
+              focused={focused}
+            />
+          ),
+          
         }}
       />
     </Tabs>

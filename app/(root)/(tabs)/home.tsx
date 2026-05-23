@@ -5,35 +5,50 @@
 
 // Behavior: Tapping the chat icon slides up a dedicated chat interface over the map. Once the ride is completed or canceled, this chat instance disappears entirely.
 
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import React from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
-import { useRouter } from 'expo-router'
-import { useAuth } from '@clerk/expo'
+import { images } from '@/constants/utils'
+import Header from '@/components/Header'
+import AdCarousel from '@/components/AdCarousel'
+import SearchBar from '@/components/SearchBar'
+import ServiceGrid from '@/components/Options'
+import { rides } from '@/constants/data'
+import RideCard from '@/components/RideCard'
+import RideCardDeck from '@/components/RideCardDeck'
+import VeyoInsightsScreen from '@/components/Insights'
 
 const Index = () => {
-  const { signOut } = useAuth()
-  const router = useRouter()
 
-  const handleSignOut = async () => {
-    try {
-      // 1. Tell Clerk to kill the active session
-      await signOut()
-      
-      // 2. Route the user back to your AuthLayout/Welcome screen
-      router.replace('/(auth)/welcome')
-    } catch (err) {
-      console.error('Error signing out:', err)
-    }
-  }
   return (
-    <SafeAreaView className='flex-1 justify-center items-center bg-red-900'>
-      <Text>index</Text>
-      <Pressable onPress={handleSignOut}>
-        <Text>Sign out</Text>
-      </Pressable>
-      <StatusBar style='inverted'/>
+    <SafeAreaView className='bg-general-500 flex-1'>
+
+      <Header name="Leonard" image={images.logohor} onNotificationPress={() => console.log("something")} />
+
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+
+        <AdCarousel />
+
+        <SearchBar title="GO" />
+
+        <ServiceGrid />
+
+        <RideCardDeck rides={rides.rides} />
+
+        <View className="mt-2 flex flex-col mx-5">
+          <View className='flex flex-row justify-between items-center'>
+            <Text className='font-JakartaBold text-sm'>Veyo Intelligence</Text>
+            <Pressable onPress={() => console.log("something")}>
+              <Text className='text-blue-600 text-[9px] text-end'>View Insights</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        <View className='mb-20'>
+          <VeyoInsightsScreen />
+        </View>
+      </ScrollView>
     </SafeAreaView>
   )
 }

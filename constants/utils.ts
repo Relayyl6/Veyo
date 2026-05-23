@@ -5,8 +5,10 @@ import apple from "@/assets/icons/apple.png"
 import chat from "@/assets/icons/chat.png";
 import checkmark from "@/assets/icons/check.png";
 import close from "@/assets/icons/close.png";
+import trips from "@/assets/icons/trips.png"
 import dollar from "@/assets/icons/dollar.png";
 import email from "@/assets/icons/email.png";
+import explore from "@/assets/icons/explore.png"
 import eyecross from "@/assets/icons/eyecross.png";
 import google from "@/assets/icons/google.png";
 import home from "@/assets/icons/home.png";
@@ -34,6 +36,7 @@ import onboarding1 from "@/assets/images/onboarding1.png";
 import onboarding2 from "@/assets/images/onboarding2.png";
 import onboarding3 from "@/assets/images/onboarding3.png";
 import signUpCar from "@/assets/images/signup-car.png";
+import wallet from "@/assets/icons/wallet.png"
 import { ImageSourcePropType } from "react-native";
 
 export const images = {
@@ -56,8 +59,11 @@ export const icons = {
     backArrow,
     chat,
     checkmark,
+    wallet,
+    explore,
     close,
     dollar,
+    trips,
     email,
     eyecross,
     google,
@@ -103,9 +109,25 @@ export const data = {
     onboarding,
 };
 
-interface Onboarding {
+declare interface Onboarding {
     id: number,
     title: string,
     description: string,
     image: ImageSourcePropType
 }
+
+export const rideStatusColors = {
+  searching: "bg-yellow-50 text-yellow-600",
+  accepted: "bg-blue-50 text-blue-600",
+  arrived: "bg-purple-50 text-purple-600",
+  in_transit: "bg-orange-50 text-orange-600",
+  completed: "bg-green-50 text-green-600",
+  canceled: "bg-red-50 text-red-600",
+} as const;
+
+export const paymentStatusColors = {
+  pending: "bg-yellow-50 text-yellow-600",
+  paid: "bg-green-50 text-green-600",
+  failed: "bg-red-50 text-red-600",
+  refunded: "bg-purple-50 text-purple-600",
+} as const;

@@ -9,7 +9,6 @@ export default function AuthLayout() {
   }
 
   if (isSignedIn) {
-    // FIX: Send them directly to your protected tabs, matching the SignIn/SignUp logic
     return <Redirect href={'/(root)/(tabs)/home'} />
   }
 

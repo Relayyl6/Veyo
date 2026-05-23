@@ -10,7 +10,7 @@
     ],
     "web": {
       "bundler": "metro",
-      "output": "static",
+      "output": "server",
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
@@ -20,6 +20,16 @@
       "expo-secure-store",
       "expo-web-browser"
     ],
+    "extra": {
+      "EXPO_PUBLIC_CLERK_GOOGLE_WEB_CLIENT_ID": "346447696029-379lq4mb5cpjgfmvt8q44ms6qrnsdb07.apps.googleusercontent.com",
+      "EXPO_PUBLIC_CLERK_GOOGLE_IOS_CLIENT_ID": "346447696029-r7ijn9t20h6h0nh3slme4d2k9jsf14jk.apps.googleusercontent.com",
+      "EXPO_PUBLIC_CLERK_GOOGLE_ANDROID_CLIENT_ID": "346447696029-ld81g1384oggio6p4f26gpot18ibgrbj.apps.googleusercontent.com",
+      "EXPO_PUBLIC_CLERK_GOOGLE_IOS_URL_SCHEME": "com.googleusercontent.apps.346447696029-r7ijn9t20h6h0nh3slme4d2k9jsf14jk",
+      "router": {},
+      "eas": {
+        "projectId": "47404736-c1af-4fb0-9349-f6465dcd0699"
+      }
+    },
     "experiments": {
       "typedRoutes": true,
       "tsconfigPaths": true
@@ -36,7 +46,8 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.veyo.app"
     },
     "android": {
       "package": "com.veyo.app",
