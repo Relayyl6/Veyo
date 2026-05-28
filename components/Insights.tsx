@@ -8,7 +8,8 @@ import {
   Animated, 
   Dimensions,
   StyleSheet,
-  LayoutAnimation
+  LayoutAnimation,
+  FlatList
 } from 'react-native';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 
@@ -68,56 +69,72 @@ const aiPredictionsData = [
 ];
 
 const AIPredictionList = () => {
+  const [listData, setListData] = useState(aiPredictionsData);
+
+  // 2. Function that triggers when the user nears the end of the scroll
+  const handleLoadMore = () => {
+    // Append the original array to the current state, creating an endless loop
+    setListData((prevData) => [...prevData, ...aiPredictionsData]);
+  };
+
+  // 3. Extract your UI into a render function
+  const renderCard = ({ item }) => (
+    <View className="w-[300px] h-56 rounded-3xl overflow-hidden mr-4 relative bg-neutral-800">
+      {/* Background Image */}
+      <Image 
+        source={{ uri: item.image }} 
+        className="absolute w-full h-full"
+        resizeMode="cover"
+      />
+      {/* Dark Gradient Overlay */}
+      <View className="absolute bottom-0 w-full h-1/3 bg-black/60 flex justify-end p-4">
+        
+        {/* Tag */}
+        <View className="bg-orange-600 self-start px-2 py-0.5 rounded-md mb-2">
+          <Text className="text-white text-[10px] font-bold tracking-wider">{item.tag}</Text>
+        </View>
+
+        <View className="flex-row items-end justify-between">
+          <View>
+            {/* Title */}
+            <Text className="text-white text-xl font-bold mb-1">{item.title}</Text>
+            {/* Subtitle */}
+            <Text className="text-gray-300 text-xs">{item.subtitle}</Text>
+          </View>
+
+          {/* Cart Button */}
+          <TouchableOpacity className="bg-white/20 p-3 rounded-2xl w-12 h-12 items-center justify-center border border-white/10">
+            <Ionicons name="cart" size={20} color="white" />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+
   return (
     <View className="mb-4">
-      <ScrollView 
+      <FlatList 
+        data={listData}
+        renderItem={renderCard}
+        // 4. IMPORTANT: Combine ID and Index for the key, because duplicating the array duplicates the IDs!
+        keyExtractor={(item, index) => `${item.id}-${index}`}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingVertical: 4 }}
         snapToInterval={316} // 300px card width + 16px right margin
         decelerationRate="fast"
         snapToAlignment="start"
-        disableIntervalMomentum={true} // Prevents swiping past multiple cards at once
-      >
-        {aiPredictionsData.map((item) => (
-          <View key={item.id} className="w-[300px] h-56 rounded-3xl overflow-hidden mr-4 relative bg-neutral-800">
-            {/* Background Image */}
-            <Image 
-              source={{ uri: item.image }} 
-              className="absolute w-full h-full"
-              resizeMode="cover"
-            />
-            {/* Dark Gradient Overlay */}
-            <View className="absolute bottom-0 w-full h-1/3 bg-black/60 flex justify-end p-4">
-              
-              {/* Tag */}
-              <View className="bg-orange-600 self-start px-2 py-0.5 rounded-md mb-2">
-                <Text className="text-white text-[10px] font-bold tracking-wider">{item.tag}</Text>
-              </View>
-
-              <View className="flex-row items-end justify-between">
-                <View>
-                  {/* Title */}
-                  <Text className="text-white text-xl font-bold mb-1">{item.title}</Text>
-                  {/* Subtitle */}
-                  <Text className="text-gray-300 text-xs">{item.subtitle}</Text>
-                </View>
-
-                {/* Cart Button */}
-                <TouchableOpacity className="bg-white/20 p-3 rounded-2xl w-12 h-12 items-center justify-center border border-white/10">
-                  <Ionicons name="cart" size={20} color="white" />
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        ))}
-      </ScrollView>
+        disableIntervalMomentum={true}
+        // 5. Infinite Scroll Props
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5} // Triggers `handleLoadMore` when halfway through the last set of items
+      />
     </View>
   );
 };
 
 const TrafficAlertCard = () => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
 
   const toggleCollapse = () => {
     // Automatically smoothly animates the layout change
@@ -130,7 +147,7 @@ const TrafficAlertCard = () => {
     return (
       <TouchableOpacity 
         onPress={toggleCollapse}
-        className="absolute bottom-5 right-5 z-50 bg-white rounded-full px-4 py-2.5 flex-row items-center shadow-lg shadow-neutral-300 border border-neutral-100"
+        className="absolute bottom-16 right-5 z-50 bg-white rounded-full px-5 py-3 flex-row items-center shadow-lg shadow-neutral-300 border border-neutral-100"
       >
         <FontAwesome5 name="traffic-light" size={20} color="#dc2626" />
         {/* <Text className="text-xs font-bold text-neutral-800 ml-2"></Text> */}
@@ -151,7 +168,7 @@ const TrafficAlertCard = () => {
         <Ionicons name="chevron-down" size={14} color="#666" />
       </TouchableOpacity>
 
-      <View >
+      <View className="gap-2">
         {/* Icon Container */}
         <View className="flex-row items-start pr-6">
             <View className="bg-red-50 w-12 h-12 rounded-2xl items-center justify-center mr-4">

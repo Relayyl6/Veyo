@@ -7,7 +7,9 @@ interface SearchBarProps {
     placeholder?: string;
     value?: string;
     onChangeText?: (text: string) => void;
+    onClearPress?: () => void; 
     onActionPress?: () => void;
+    onSubmitEditing?: () => void;
 }
 
 const SearchBar = ({ 
@@ -15,8 +17,18 @@ const SearchBar = ({
     placeholder = "Where to?", 
     value,
     onChangeText, 
-    onActionPress 
+    onClearPress,
+    onActionPress,
+    onSubmitEditing
 }: SearchBarProps) => {
+    const handleClear = () => {
+        if (onChangeText) {
+            onChangeText(''); // Instantly clears the text in the parent state
+        }
+        if (onClearPress) {
+            onClearPress(); // Triggers any extra actions you want when cleared
+        }
+    };
     return (
         <View className='flex flex-row items-center px-2 py-1.5 bg-white mx-4 mt-2 rounded-full shadow-sm border border-neutral-100'>
             
@@ -33,17 +45,17 @@ const SearchBar = ({
                 onChangeText={onChangeText}
                 returnKeyType="search"
                 clearButtonMode="while-editing" /* iOS only: adds a little X to clear text */
+                onSubmitEditing={onSubmitEditing}
             />
 
             {/* Right Action Button */}
-            {title && (
+            {value?.length as number > 0 && (
                 <TouchableOpacity 
-                    className='h-12 px-3 rounded-full bg-primary-100 flex items-center justify-center ml-2'
-                    onPress={onActionPress}
+                    className='w-10 h-10 rounded-full bg-neutral-200 flex items-center justify-center ml-2'
+                    onPress={handleClear}
+                    activeOpacity={0.7}
                 >
-                    <Text className="font-JakartaBold text-sm text-primary-500">
-                        {title}
-                    </Text>
+                    <FontAwesome name="times" color="#858585" size={18} />
                 </TouchableOpacity>
             )}
             
@@ -52,3 +64,6 @@ const SearchBar = ({
 }
 
 export default SearchBar;
+
+
+

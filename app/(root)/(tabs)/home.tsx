@@ -1,36 +1,55 @@
-// main  scren for active rides, booking rides ,chat
-// Once a user books a ride and a driver is assigned, your Home screen (the map) should display a Bottom Sheet or an overlay card with the trip details.
-
-// Placement: Right next to the driver’s name, photo, and license plate, place two prominent circular icon buttons: a phone icon (Call) and a message bubble icon (Chat).
-
-// Behavior: Tapping the chat icon slides up a dedicated chat interface over the map. Once the ride is completed or canceled, this chat instance disappears entirely.
-
-import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import React from 'react'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { StatusBar } from 'expo-status-bar'
+// 1. Swap SafeAreaView for useSafeAreaInsets
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
 import { images } from '@/constants/utils'
 import Header from '@/components/Header'
 import AdCarousel from '@/components/AdCarousel'
-import SearchBar from '@/components/SearchBar'
 import ServiceGrid from '@/components/Options'
 import { rides } from '@/constants/data'
-import RideCard from '@/components/RideCard'
 import RideCardDeck from '@/components/RideCardDeck'
 import VeyoInsightsScreen from '@/components/Insights'
+import { FontAwesome5 } from '@expo/vector-icons'
+import { useUser } from '@clerk/expo'
 
 const Index = () => {
+  const { user } = useUser()
+  // This hooks gives you the exact height of the device's notch/status bar
+  const insets = useSafeAreaInsets() 
 
   return (
-    <SafeAreaView className='bg-general-500 flex-1'>
+    // 3. Changed from SafeAreaView to a standard View so the blur reaches the absolute top
+    <View className='bg-general-500 flex-1 relative'>
 
-      <Header name="Leonard" image={images.logohor} onNotificationPress={() => console.log("something")} />
+      {/* --- THE BLURRED HEADER --- */}
+      <View 
+        style={{
+          position: 'absolute', 
+          top: 0, 
+          left: 0, 
+          right: 0, 
+          zIndex: 10,
+          paddingTop: insets.top,
+          paddingBottom: 10,
+          backgroundColor: 'transparent' // <-- Or use 'rgba(255,255,255, 0.8)' if you want a slight tint so text is readable
+        }}
+      >
+        <Header 
+          name={user?.firstName as string | undefined} 
+          image={images.logohor} 
+          onNotificationPress={() => console.log("something")} 
+        />
+      </View>
 
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
-
+      {/* --- THE SCROLLABLE CONTENT --- */}
+      <ScrollView
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        // 4. Dynamic paddingTop ensures the content starts exactly underneath the custom header
+        contentContainerStyle={{ paddingBottom: 20, paddingTop: insets.top + 70 }}
+      >
         <AdCarousel />
-
-        <SearchBar title="GO" />
 
         <ServiceGrid />
 
@@ -49,10 +68,17 @@ const Index = () => {
           <VeyoInsightsScreen />
         </View>
       </ScrollView>
-    </SafeAreaView>
+
+      {/* --- FLOATING ACTION BUTTON --- */}
+      <Pressable 
+        onPress={() => console.log("something")}
+        className="absolute bottom-28 right-5 z-50 bg-blue-600 rounded-full px-5 py-4 flex-row items-center shadow-lg shadow-neutral-300 border border-neutral-100"
+      >
+        <FontAwesome5 name="plus" size={20} color="#ffffff" />
+      </Pressable>
+      
+    </View>
   )
 }
 
 export default Index
-
-const styles = StyleSheet.create({})

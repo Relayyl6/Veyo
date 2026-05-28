@@ -73,7 +73,7 @@ export default function RideCardDeck({ rides }: { rides: any[] }) {
         {/* If they swiped past the last card, let them go back */}
         {currentIndex > 0 && (
           <TouchableOpacity
-            onPress={handlePrev} // 3. FIXED: Removed the () => wrapping to make it fire properly
+            onPress={handlePrev}
             activeOpacity={0.9}
             style={{
               position: 'absolute',
@@ -97,7 +97,7 @@ export default function RideCardDeck({ rides }: { rides: any[] }) {
   }
 
   return (
-    <View className="mx-4 mt-5 mb-8 relative">
+    <View className="mx-4 mt-10 mb-12 relative">
       {currentIndex > 0 && (
         <TouchableOpacity
           onPress={handlePrev}

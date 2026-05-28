@@ -37,6 +37,7 @@ import onboarding2 from "@/assets/images/onboarding2.png";
 import onboarding3 from "@/assets/images/onboarding3.png";
 import signUpCar from "@/assets/images/signup-car.png";
 import wallet from "@/assets/icons/wallet.png"
+import drinks from "@/assets/images/drinks.png"
 import { ImageSourcePropType } from "react-native";
 
 export const images = {
@@ -48,6 +49,7 @@ export const images = {
     check,
     noResult,
     message,
+    drinks,
     logo,
     logohor
 };

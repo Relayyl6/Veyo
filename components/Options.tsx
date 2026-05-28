@@ -1,65 +1,556 @@
-import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+// import React from 'react';
+// import { View, Text, TouchableOpacity, Image } from 'react-native';
+// import { Ionicons } from '@expo/vector-icons';
 
-// The data object extracted from the image
-const serviceOptions = [
+// // The data object extracted from the image
+// const serviceOptions = [
+//   {
+//     id: '1',
+//     title: 'Ride now',
+//     subtitle: 'Instant pickups',
+//     iconName: 'car', 
+//     iconBgColor: 'bg-[#4338CA]', // Indigo
+//   },
+//   {
+//     id: '2',
+//     title: 'Order food',
+//     subtitle: 'Top local eats',
+//     iconName: 'fast-food', 
+//     iconBgColor: 'bg-[#B45309]', // Burnt Orange
+//   },
+//   {
+//     id: '3',
+//     title: 'Schedule',
+//     subtitle: 'Plan ahead',
+//     iconName: 'calendar', 
+//     iconBgColor: 'bg-[#065F46]', // Dark Emerald
+//   },
+//   {
+//     id: '4',
+//     title: 'Send',
+//     subtitle: 'Same day delivery',
+//     iconName: 'cube', 
+//     iconBgColor: 'bg-[#1E293B]', // Slate Navy
+//   }
+// ];
+
+// // 1. Extract everything into a clean array of objects
+// const serviceData = [
+//   {
+//     id: 'new-trip',
+//     type: 'square',
+//     title: 'New Trip',
+//     iconName: 'location',
+//     iconColor: '#EA4335',
+//   },
+//   {
+//     id: 'scooter',
+//     type: 'rectangle',
+//     title: 'Scooter',
+//     subtitle: 'One Order, \nTakes Minutes',
+//     // Fixed with a verified working FreePNGImg URL
+//     imageUrl: 'https://freepngimg.com/thumb/vehicle/69037-scooter-two-wheeler-kick-vehicle-free-download-png-hd.png',
+//     bgClass: 'bg-[#FCD34D]',
+//     containerClass: 'p-5 overflow-hidden relative shadow-sm shadow-neutral-200',
+//     textWrapperClass: 'z-10',
+//     imageClass: 'absolute -bottom-3 -right-2 w-28 h-28 object-contain',
+//     imageOrder: 'after', // Renders text first, then image
+//   },
+//   {
+//     id: 'send-schedule',
+//     type: 'rectangle',
+//     title: 'Send & Schedule',
+//     subtitle: 'Plan your deliveries',
+//     // Verified working FreePNGImg URL representing a package/parcel
+//     imageUrl: 'https://freepngimg.com/thumb/gift/8-gift-box-png-image.png',
+//     bgClass: 'bg-[#86EFAC]', // Maintained the background color from your original shipment object
+//     containerClass: 'p-5 overflow-hidden relative shadow-sm shadow-neutral-200 justify-center items-end pr-6',
+//     textWrapperClass: 'z-10 w-full items-end', // Added w-full
+//     textAlignClass: 'text-right',
+//     imageClass: 'absolute -bottom-2 -left-6 w-32 h-32 object-contain',
+//     imageOrder: 'before', // Renders image first, then text
+//   },
+//   {
+//     id: 'office',
+//     type: 'square',
+//     title: 'Office',
+//     iconName: 'briefcase',
+//     iconColor: '#064E3B',
+//   }
+// ];
+
+// const ServiceGrid = () => {
+
+//   // 2. Create a reusable render function for the cards
+//   const renderCard = (item: any) => {
+//     // Layout for the small squares
+//     if (item.type === 'square') {
+//       return (
+//         <TouchableOpacity 
+//           key={item.id}
+//           activeOpacity={0.9} 
+//           className="w-[32%] bg-white rounded-[28px] p-4 flex items-center justify-center shadow-sm shadow-neutral-200"
+//         >
+//           <Ionicons name={item.iconName as any} size={32} color={item.iconColor} />
+//           <Text className="mt-2 text-[15px] font-JakartaBold text-black text-center leading-tight">
+//             {item.title}
+//           </Text>
+//         </TouchableOpacity>
+//       );
+//     }
+
+//     // Layout for the large rectangles
+//     return (
+//       <TouchableOpacity 
+//         key={item.id}
+//         activeOpacity={0.9} 
+//         className={`w-[64%] ${item.bgClass} rounded-[28px] ${item.containerClass}`}
+//       >
+//         {/* Render Image before Text (Shipment) */}
+//         {item.imageOrder === 'before' && (
+//           <Image 
+//             source={{ uri: item.imageUrl }} 
+//             className={item.imageClass}
+//             resizeMode="contain"
+//           />
+//         )}
+        
+//         <View className={item.textWrapperClass}>
+//           <Text className={`text-xl font-JakartaBold text-black ${item.textAlignClass || 'text-left'}`}>
+//             {item.title}
+//           </Text>
+//           <Text className={`text-xs font-Jakarta text-black opacity-60 mt-0.5 ${item.textAlignClass || 'text-left'}`}>
+//             {item.subtitle}
+//           </Text>
+//         </View>
+        
+//         {/* Render Image after Text (Scooter) */}
+//         {item.imageOrder === 'after' && (
+//           <Image 
+//             source={{ uri: item.imageUrl }} 
+//             className={item.imageClass}
+//             resizeMode="contain"
+//           />
+//         )}
+//       </TouchableOpacity>
+//     );
+//   };
+
+//   return (
+//     <View className="px-4 mt-2">
+//       {/* --- ROW 1 --- */}
+//       <View className="flex-row justify-between mb-4 h-36">
+//         {renderCard(serviceData[0])}
+//         {renderCard(serviceData[1])}
+//       </View>
+
+//       {/* --- ROW 2 --- */}
+//       <View className="flex-row justify-between h-36">
+//         {renderCard(serviceData[2])}
+//         {renderCard(serviceData[3])}
+//       </View>
+//     </View>
+//   );
+// };
+
+// export default ServiceGrid;
+
+
+
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  View, TouchableOpacity, Image, Platform, UIManager,
+  Animated, Easing, Dimensions,
+  Text,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { NativeTypewriter } from './Check';
+import { images } from '@/constants/utils';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const GRID_PADDING = 32; // px-4 on each side
+const GAP = 8;
+const TOTAL = SCREEN_WIDTH - GRID_PADDING;
+
+// Width ratios: 32% square ≈ 0.32, 64% rectangle ≈ 0.64
+const SQ_W  = (TOTAL * 0.32);
+const REC_W = (TOTAL * 0.64);
+
+// ─── DATA ────────────────────────────────────────────────────────────────────
+
+const layoutStates = [
   {
-    id: '1',
-    title: 'Ride now',
-    subtitle: 'Instant pickups',
-    iconName: 'car', 
-    iconBgColor: 'bg-[#4338CA]', // Indigo
+    id: 'functional',
+    grid: [
+      {
+        id: 'item-1', type: 'square',
+        title: 'New Trip', iconName: 'location', iconColor: '#EA4335',
+      },
+      {
+        id: 'item-2', type: 'rectangle',
+        title: 'Scooter', subtitle: 'One Order,\nTakes Minutes',
+        imageUrl: 'https://freepngimg.com/thumb/vehicle/69037-scooter-two-wheeler-kick-vehicle-free-download-png-hd.png',
+        bgClass: 'bg-[#FCD34D]',
+        textWrapperClass: 'z-10',
+        imageClass: { position: 'absolute', bottom: -8, right: -4, width: 110, height: 110 },
+        imageOrder: 'after',
+      },
+      {
+        id: 'item-3', type: 'rectangle',
+        title: 'Send & Schedule', subtitle: 'Plan\nyour deliveries',
+        imageUrl: 'https://freepngimg.com/thumb/gift/8-gift-box-png-image.png',
+        bgClass: 'bg-[#86EFAC]',
+        textWrapperClass: 'z-10 items-end w-full',
+        textAlignClass: 'text-right',
+        imageClass: { position: 'absolute', bottom: -6, left: -16, width: 120, height: 120 },
+        imageOrder: 'before',
+      },
+      {
+        id: 'item-4', type: 'square',
+        title: 'Office', iconName: 'briefcase', iconColor: '#064E3B',
+      },
+    ],
   },
   {
-    id: '2',
-    title: 'Order food',
-    subtitle: 'Top local eats',
-    iconName: 'fast-food', 
-    iconBgColor: 'bg-[#B45309]', // Burnt Orange
+    id: 'leisure',
+    grid: [
+      {
+        id: 'item-1', type: 'rectangle',
+        title: 'Roadtrips', subtitle: 'Rent SUVs\n& explore',
+        imageUrl: 'https://freepngimg.com/thumb/vehicle/93770-renegade-tire-jeep-automotive-2018-exterior.png',
+        bgClass: 'bg-[#BFDBFE]',
+        textWrapperClass: 'z-10',
+        imageClass: { position: 'absolute', bottom: -20, right: -16, width: 150, height: 150, borderRadius: 75 },
+        imageOrder: 'after',
+      },
+      {
+        id: 'item-2', type: 'square',
+        title: 'Dine In', iconName: 'restaurant', iconColor: '#D97706',
+      },
+      {
+        id: 'item-3', type: 'square',
+        title: 'Grocery', iconName: 'basket', iconColor: '#047857',
+      },
+      {
+        id: 'item-4', type: 'rectangle',
+        title: 'Nightlife', subtitle: 'Discover events\naround you',
+        imageUrl: null,
+        localImage: images.drinks,
+        bgClass: 'bg-[#E9D5FF]',
+        textWrapperClass: 'z-10 items-end w-full',
+        textAlignClass: 'text-right',
+        imageClass: { position: 'absolute', bottom: -12, left: -12, width: 140, height: 140 },
+        imageOrder: 'before',
+      },
+    ],
   },
-  {
-    id: '3',
-    title: 'Schedule',
-    subtitle: 'Plan ahead',
-    iconName: 'calendar', 
-    iconBgColor: 'bg-[#065F46]', // Dark Emerald
-  },
-  {
-    id: '4',
-    title: 'Send',
-    subtitle: 'Same day delivery',
-    iconName: 'cube', 
-    iconBgColor: 'bg-[#1E293B]', // Slate Navy
-  }
 ];
 
-const ServiceGrid = () => {
+// ─── PHASE ───────────────────────────────────────────────────────────────────
+// idle → typing_out (delete text) → blurring (images blur) →
+// morphing (cards stretch/shrink) → unblurring → typing_in → idle
+
+type Phase = 'idle' | 'typing_out' | 'morphing' | 'typing_in';
+
+const MORPH_INTERVAL_MS = 11000;
+
+// Per-item deletion speed so they finish at slightly different times (natural feel)
+const DELETE_SPEEDS = [55, 45, 50, 48];
+
+// ─── SINGLE CARD COMPONENT ───────────────────────────────────────────────────
+
+interface CardProps {
+  item: any;
+  targetWidth: number;
+  phase: Phase;
+  stateKey: string;
+  morphDelay: number; // stagger delay for this card's morph
+}
+
+const AnimatedCard = ({ item, targetWidth, phase, stateKey, morphDelay }: CardProps) => {
+  const animWidth  = useRef(new Animated.Value(targetWidth)).current;
+  const imageBlur  = useRef(new Animated.Value(1)).current; // 1 = visible, 0 = blurred/gone
+  const prevWidth  = useRef(targetWidth);
+
+  // Track previous width so we can animate FROM it
+  useEffect(() => {
+    const isExpanding = targetWidth > prevWidth.current;
+
+    // Staggered spring: row-0 cards slightly before row-1 or vice versa
+    Animated.spring(animWidth, {
+      toValue: targetWidth,
+      delay: morphDelay,
+      useNativeDriver: false, // width can't use native driver
+      tension: 60,
+      friction: 7,
+    }).start();
+
+    prevWidth.current = targetWidth;
+  }, [targetWidth]);
+
+  // Image fade: blur out during typing_out, unblur during typing_in
+  useEffect(() => {
+    if (phase === 'typing_out') {
+      Animated.timing(imageBlur, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+        easing: Easing.out(Easing.ease),
+      }).start();
+    } else if (phase === 'typing_in') {
+      Animated.timing(imageBlur, {
+        toValue: 1,
+        duration: 500,
+        delay: 200,
+        useNativeDriver: true,
+        easing: Easing.in(Easing.ease),
+      }).start();
+    }
+  }, [phase]);
+
+  const isSquare = item.type === 'square';
+  const showText = phase === 'idle' || phase === 'typing_in';
+  const showTypewriter = phase === 'typing_in' || phase === 'idle';
+
   return (
-    <View className="flex flex-row flex-wrap justify-between px-4 mt-3 mx-2">
-      {serviceOptions.map((item) => (
-        <TouchableOpacity 
-          key={item.id} 
-          // w-[48%] allows them to sit side-by-side with a nice gap in the middle
-          className="w-[48%] bg-general-300 shadow-sm shadow-neutral-300 rounded-[24px] p-4 mb-4"
-          activeOpacity={0.7}
-        >
-          {/* Icon Box */}
-          <View className={`w-12 h-12 rounded-2xl ${item.iconBgColor} flex items-center justify-center`}>
-            <Ionicons name={item.iconName as any} size={28} color="white" />
-          </View>
-          
-          {/* Text Content (Pushed down to match the spacing in the image) */}
-          <View className="mt-5 gap-0.5">
-            <Text className="text-[17px] font-JakartaBold text-black leading-tight">
-              {item.title}
-            </Text>
-            <Text className="text-[11px] font-JakartaExtraLight text-gray-500">
-              {item.subtitle}
-            </Text>
-          </View>
-        </TouchableOpacity>
-      ))}
+    <Animated.View
+      style={{
+        width: animWidth,
+        height: '100%',
+        borderRadius: 28,
+        overflow: 'hidden',
+        backgroundColor: isSquare ? '#ffffff' : undefined,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+        elevation: 3,
+      }}
+    >
+      <TouchableOpacity
+        activeOpacity={0.9}
+        style={{ flex: 1 }}
+        className={!isSquare ? `${item.bgClass} flex-1 p-5 overflow-hidden relative` : 'flex-1 items-center justify-center p-4'}
+      >
+        {/* ── SQUARE ── */}
+        {isSquare && (
+          <>
+            <Ionicons name={item.iconName as any} size={32} color={item.iconColor} />
+            {showTypewriter ? (
+              <NativeTypewriter
+                key={`${stateKey}-${item.id}-title`}
+                texts={[item.title]}
+                typingSpeed={45}
+                loop={false}
+                cursor={false}
+                className="mt-2 text-[14px] font-JakartaBold text-black text-center leading-tight"
+              />
+            ) : phase === 'typing_out' ? (
+              <DeletingText
+                key={`del-${stateKey}-${item.id}-title`}
+                text={item.title}
+                speed={45}
+                className="mt-2 text-[14px] font-JakartaBold text-black text-center leading-tight"
+              />
+            ) : null}
+          </>
+        )}
+
+        {/* ── RECTANGLE ── */}
+        {!isSquare && (
+          <>
+            {item.imageOrder === 'before' && (
+              <Animated.Image
+                source={item.localImage ? item.localImage : { uri: item.imageUrl }}
+                style={[item.imageClass, { opacity: imageBlur }]}
+                resizeMode="contain"
+              />
+            )}
+
+            <View className={item.textWrapperClass}>
+              {showTypewriter ? (
+                <>
+                  <NativeTypewriter
+                    key={`${stateKey}-${item.id}-title`}
+                    texts={[item.title]}
+                    typingSpeed={50}
+                    loop={false}
+                    cursor={false}
+                    className={`text-xl font-JakartaBold text-black ${item.textAlignClass || 'text-left'}`}
+                  />
+                  <NativeTypewriter
+                    key={`${stateKey}-${item.id}-sub`}
+                    texts={[item.subtitle]}
+                    typingSpeed={32}
+                    startDelay={350}
+                    loop={false}
+                    cursor={false}
+                    className={`text-xs font-Jakarta text-black opacity-60 mt-0.5 ${item.textAlignClass || 'text-left'}`}
+                  />
+                </>
+              ) : phase === 'typing_out' ? (
+                <>
+                  <DeletingText
+                    key={`del-${stateKey}-${item.id}-title`}
+                    text={item.title}
+                    speed={50}
+                    className={`text-xl font-JakartaBold text-black ${item.textAlignClass || 'text-left'}`}
+                  />
+                  <DeletingText
+                    key={`del-${stateKey}-${item.id}-sub`}
+                    text={item.subtitle}
+                    speed={32}
+                    className={`text-xs font-Jakarta text-black opacity-60 mt-0.5 ${item.textAlignClass || 'text-left'}`}
+                  />
+                </>
+              ) : null}
+            </View>
+
+            {item.imageOrder === 'after' && (
+              <Animated.Image
+                source={item.localImage ? item.localImage : { uri: item.imageUrl }}
+                style={[item.imageClass, { opacity: imageBlur }]}
+                resizeMode="contain"
+              />
+            )}
+          </>
+        )}
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
+
+// ─── DELETION TYPEWRITER ─────────────────────────────────────────────────────
+// Renders current text then immediately starts deleting it
+
+// Replace the entire DeletingText component with this:
+const DeletingText = ({
+  text,
+  speed,
+  className,
+}: {
+  text: string;
+  speed: number;
+  className: string;
+}) => {
+  const [displayed, setDisplayed] = useState(text);
+
+  useEffect(() => {
+    if (displayed.length === 0) return;
+    const t = setTimeout(() => {
+      setDisplayed(prev => prev.slice(0, -1));
+    }, speed);
+    return () => clearTimeout(t);
+  }, [displayed]);
+
+  return <Text className={className}>{displayed}</Text>;
+};
+
+// ─── MAIN GRID ───────────────────────────────────────────────────────────────
+
+const ServiceGrid = () => {
+  const [stateIndex, setStateIndex]   = useState(0);
+  const [nextIndex, setNextIndex]     = useState(1);
+  const [phase, setPhase]             = useState<Phase>('idle');
+  const [deletingItems, setDeletingItems] = useState<any[]>([]);
+  const phaseRef = useRef<Phase>('idle');
+
+  const setPhaseSync = (p: Phase) => { phaseRef.current = p; setPhase(p); };
+
+  const currentGrid = layoutStates[stateIndex].grid;
+  const nextGrid    = layoutStates[nextIndex].grid;
+  const stateKey    = layoutStates[stateIndex].id;
+
+  // Which width does each item in the NEXT state have?
+  const getTargetWidth = (grid: any[], idx: number) =>
+    grid[idx].type === 'square' ? SQ_W : REC_W;
+
+  const startTransition = useCallback(() => {
+    if (phaseRef.current !== 'idle') return;
+
+    const ni = (stateIndex + 1) % layoutStates.length;
+    setNextIndex(ni);
+
+    // Snapshot current texts for the deleting phase
+    setDeletingItems(currentGrid.map(item => ({ ...item })));
+    setPhaseSync('typing_out');
+
+    // After deletion completes (~longest text * delete speed), trigger morph
+    // Longest title is ~20 chars × 55ms ≈ 1100ms; add buffer
+    const DELETE_MS = 1300;
+    const MORPH_MS  = 900;
+
+    setTimeout(() => {
+      setPhaseSync('morphing');
+      setStateIndex(ni);
+
+      setTimeout(() => {
+        setPhaseSync('typing_in');
+
+        // Return to idle after typing completes
+        setTimeout(() => setPhaseSync('idle'), 2500);
+      }, MORPH_MS);
+    }, DELETE_MS);
+  }, [stateIndex, currentGrid]);
+
+  // Auto-loop
+  useEffect(() => {
+    const interval = setInterval(startTransition, MORPH_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [startTransition]);
+
+  // Which grid data to render (use next during morphing so shapes are correct)
+  const displayGrid = (phase === 'morphing' || phase === 'typing_in' || phase === 'idle' && stateIndex !== 0)
+    ? currentGrid
+    : currentGrid;
+
+  // Target widths per card based on what the CURRENT stateIndex says
+  const targetWidths = currentGrid.map(item =>
+    item.type === 'square' ? SQ_W : REC_W
+  );
+
+  // Morph stagger delays (ms): row cards fire slightly apart for the stretch feel
+  const morphDelays = [0, 80, 80, 0]; // row 1 top-left first, row 2 bottom-right last
+
+  return (
+    <View className="px-4 mt-2 mb-4">
+      {/* ROW 1 */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', height: 144, marginBottom: 16 }}>
+        {[0, 1].map(i => {
+          const item = currentGrid[i];
+          return (
+            <AnimatedCard
+              key={item.id}
+              item={phase === 'typing_out' && deletingItems[i] ? { ...item, _deleting: true } : item}
+              targetWidth={targetWidths[i]}
+              phase={phase}
+              stateKey={stateKey}
+              morphDelay={morphDelays[i]}
+            />
+          );
+        })}
+      </View>
+
+      {/* ROW 2 */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', height: 144 }}>
+        {[2, 3].map(i => {
+          const item = currentGrid[i];
+          return (
+            <AnimatedCard
+              key={item.id}
+              item={item}
+              targetWidth={targetWidths[i]}
+              phase={phase}
+              stateKey={stateKey}
+              morphDelay={morphDelays[i]}
+            />
+          );
+        })}
+      </View>
     </View>
   );
 };

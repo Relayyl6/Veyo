@@ -18,7 +18,8 @@
       "@react-native-community/datetimepicker",
       "@clerk/expo",
       "expo-secure-store",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-maps"
     ],
     "extra": {
       "EXPO_PUBLIC_CLERK_GOOGLE_WEB_CLIENT_ID": "346447696029-379lq4mb5cpjgfmvt8q44ms6qrnsdb07.apps.googleusercontent.com",
