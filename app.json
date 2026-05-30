@@ -19,13 +19,21 @@
       "@clerk/expo",
       "expo-secure-store",
       "expo-web-browser",
-      "expo-maps"
+      "@react-native-async-storage/async-storage",
+      [
+        "expo-maps",
+        {
+          "requestLocationPermission": true,
+          "locationPermission": "Allow $(PRODUCT_NAME) to use your location"
+        }
+      ]
     ],
     "extra": {
       "EXPO_PUBLIC_CLERK_GOOGLE_WEB_CLIENT_ID": "346447696029-379lq4mb5cpjgfmvt8q44ms6qrnsdb07.apps.googleusercontent.com",
       "EXPO_PUBLIC_CLERK_GOOGLE_IOS_CLIENT_ID": "346447696029-r7ijn9t20h6h0nh3slme4d2k9jsf14jk.apps.googleusercontent.com",
       "EXPO_PUBLIC_CLERK_GOOGLE_ANDROID_CLIENT_ID": "346447696029-ld81g1384oggio6p4f26gpot18ibgrbj.apps.googleusercontent.com",
       "EXPO_PUBLIC_CLERK_GOOGLE_IOS_URL_SCHEME": "com.googleusercontent.apps.346447696029-r7ijn9t20h6h0nh3slme4d2k9jsf14jk",
+      "EXPO_PUBLIC_GOOGLE_API_KEY": "AIzaSyDBC9dOgAb2cN9c_DZgAj9mSX2ZlaS7DOM",
       "router": {},
       "eas": {
         "projectId": "47404736-c1af-4fb0-9349-f6465dcd0699"
@@ -55,6 +63,11 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#1C75FF"
+      },
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyDBC9dOgAb2cN9c_DZgAj9mSX2ZlaS7DOM"
+        }
       }
     }
   }
