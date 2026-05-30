@@ -55,7 +55,10 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.veyo.app"
+      "bundleIdentifier": "com.veyo.app",
+      "config": {
+        "googleMapsApiKey": "AIzaSyDBC9dOgAb2cN9c_DZgAj9mSX2ZlaS7DOM"
+      }
     },
     "android": {
       "package": "com.veyo.app",

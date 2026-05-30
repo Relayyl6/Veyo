@@ -164,7 +164,6 @@ import {
   Text,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { NativeTypewriter } from './Check';
 import { images } from '@/constants/utils';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -274,6 +273,7 @@ interface CardProps {
 const AnimatedCard = ({ item, targetWidth, phase, stateKey, morphDelay }: CardProps) => {
   const animWidth  = useRef(new Animated.Value(targetWidth)).current;
   const imageBlur  = useRef(new Animated.Value(1)).current; // 1 = visible, 0 = blurred/gone
+  const textFade   = useRef(new Animated.Value(phase === 'idle' ? 1 : 0)).current;
   const prevWidth  = useRef(targetWidth);
 
   // Track previous width so we can animate FROM it
@@ -312,9 +312,25 @@ const AnimatedCard = ({ item, targetWidth, phase, stateKey, morphDelay }: CardPr
     }
   }, [phase]);
 
+  // Text fade: fade out when leaving, fade in when entering
+  useEffect(() => {
+    if (phase === 'typing_out') {
+      Animated.timing(textFade, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else if (phase === 'idle' || phase === 'typing_in') {
+      Animated.timing(textFade, {
+        toValue: 1,
+        duration: 500,
+        delay: phase === 'typing_in' ? 300 : 0,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [phase]);
+
   const isSquare = item.type === 'square';
-  const showText = phase === 'idle' || phase === 'typing_in';
-  const showTypewriter = phase === 'typing_in' || phase === 'idle';
 
   return (
     <Animated.View
@@ -340,23 +356,12 @@ const AnimatedCard = ({ item, targetWidth, phase, stateKey, morphDelay }: CardPr
         {isSquare && (
           <>
             <Ionicons name={item.iconName as any} size={32} color={item.iconColor} />
-            {showTypewriter ? (
-              <NativeTypewriter
-                key={`${stateKey}-${item.id}-title`}
-                texts={[item.title]}
-                typingSpeed={45}
-                loop={false}
-                cursor={false}
-                className="mt-2 text-[14px] font-JakartaBold text-black text-center leading-tight"
-              />
-            ) : phase === 'typing_out' ? (
-              <DeletingText
-                key={`del-${stateKey}-${item.id}-title`}
-                text={item.title}
-                speed={45}
-                className="mt-2 text-[14px] font-JakartaBold text-black text-center leading-tight"
-              />
-            ) : null}
+            <Animated.Text
+              style={{ opacity: textFade }}
+              className="mt-2 text-[14px] font-JakartaBold text-black text-center leading-tight"
+            >
+              {item.title}
+            </Animated.Text>
           </>
         )}
 
@@ -371,44 +376,18 @@ const AnimatedCard = ({ item, targetWidth, phase, stateKey, morphDelay }: CardPr
               />
             )}
 
-            <View className={item.textWrapperClass}>
-              {showTypewriter ? (
-                <>
-                  <NativeTypewriter
-                    key={`${stateKey}-${item.id}-title`}
-                    texts={[item.title]}
-                    typingSpeed={50}
-                    loop={false}
-                    cursor={false}
-                    className={`text-xl font-JakartaBold text-black ${item.textAlignClass || 'text-left'}`}
-                  />
-                  <NativeTypewriter
-                    key={`${stateKey}-${item.id}-sub`}
-                    texts={[item.subtitle]}
-                    typingSpeed={32}
-                    startDelay={350}
-                    loop={false}
-                    cursor={false}
-                    className={`text-xs font-Jakarta text-black opacity-60 mt-0.5 ${item.textAlignClass || 'text-left'}`}
-                  />
-                </>
-              ) : phase === 'typing_out' ? (
-                <>
-                  <DeletingText
-                    key={`del-${stateKey}-${item.id}-title`}
-                    text={item.title}
-                    speed={50}
-                    className={`text-xl font-JakartaBold text-black ${item.textAlignClass || 'text-left'}`}
-                  />
-                  <DeletingText
-                    key={`del-${stateKey}-${item.id}-sub`}
-                    text={item.subtitle}
-                    speed={32}
-                    className={`text-xs font-Jakarta text-black opacity-60 mt-0.5 ${item.textAlignClass || 'text-left'}`}
-                  />
-                </>
-              ) : null}
-            </View>
+            <Animated.View style={{ opacity: textFade }} className={item.textWrapperClass}>
+              <Text
+                className={`text-xl font-JakartaBold text-black ${item.textAlignClass || 'text-left'}`}
+              >
+                {item.title}
+              </Text>
+              <Text
+                className={`text-xs font-Jakarta text-black opacity-60 mt-0.5 ${item.textAlignClass || 'text-left'}`}
+              >
+                {item.subtitle}
+              </Text>
+            </Animated.View>
 
             {item.imageOrder === 'after' && (
               <Animated.Image
@@ -422,32 +401,6 @@ const AnimatedCard = ({ item, targetWidth, phase, stateKey, morphDelay }: CardPr
       </TouchableOpacity>
     </Animated.View>
   );
-};
-
-// ─── DELETION TYPEWRITER ─────────────────────────────────────────────────────
-// Renders current text then immediately starts deleting it
-
-// Replace the entire DeletingText component with this:
-const DeletingText = ({
-  text,
-  speed,
-  className,
-}: {
-  text: string;
-  speed: number;
-  className: string;
-}) => {
-  const [displayed, setDisplayed] = useState(text);
-
-  useEffect(() => {
-    if (displayed.length === 0) return;
-    const t = setTimeout(() => {
-      setDisplayed(prev => prev.slice(0, -1));
-    }, speed);
-    return () => clearTimeout(t);
-  }, [displayed]);
-
-  return <Text className={className}>{displayed}</Text>;
 };
 
 // ─── MAIN GRID ───────────────────────────────────────────────────────────────
@@ -479,9 +432,8 @@ const ServiceGrid = () => {
     setDeletingItems(currentGrid.map(item => ({ ...item })));
     setPhaseSync('typing_out');
 
-    // After deletion completes (~longest text * delete speed), trigger morph
-    // Longest title is ~20 chars × 55ms ≈ 1100ms; add buffer
-    const DELETE_MS = 1300;
+    // After fade out completes (~300ms), trigger morph
+    const FADE_OUT_MS = 300;
     const MORPH_MS  = 900;
 
     setTimeout(() => {
@@ -491,10 +443,10 @@ const ServiceGrid = () => {
       setTimeout(() => {
         setPhaseSync('typing_in');
 
-        // Return to idle after typing completes
-        setTimeout(() => setPhaseSync('idle'), 2500);
+        // Return to idle after fade in completes
+        setTimeout(() => setPhaseSync('idle'), 800);
       }, MORPH_MS);
-    }, DELETE_MS);
+    }, FADE_OUT_MS);
   }, [stateIndex, currentGrid]);
 
   // Auto-loop

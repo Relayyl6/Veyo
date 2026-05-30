@@ -7,6 +7,7 @@ import { useFonts } from 'expo-font';
 import AnimatedSplashScreen from '@/components/AnimatedSplashScreen';
 import { ClerkProvider } from '@clerk/expo'
 import { tokenCache } from '@clerk/expo/token-cache';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -56,16 +57,18 @@ export default function RootLayout() {
   return (
     <>
       <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-        <StatusBar style='inverted' />
-          <Stack screenOptions={{ animation: 'ios_from_right' }}>
-            
-            <Stack.Screen name="index" options={{ headerShown: false }} />
+        <KeyboardProvider preload preserveEdgeToEdge={true} statusBarTranslucent={true} navigationBarTranslucent={true}>
+          <StatusBar style='inverted' />
+            <Stack screenOptions={{ animation: 'ios_from_right' }}>
+              
+              <Stack.Screen name="index" options={{ headerShown: false }} />
 
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            <Stack.Screen name="(root)" options={{ headerShown: false }} />
-            <Stack.Screen name="(utils)" options={{ headerShown: false }} />
-            
-          </Stack>
+              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+              <Stack.Screen name="(root)" options={{ headerShown: false }} />
+              <Stack.Screen name="(utils)" options={{ headerShown: false }} />
+              
+            </Stack>
+        </KeyboardProvider>
       </ClerkProvider>
     </>
   );

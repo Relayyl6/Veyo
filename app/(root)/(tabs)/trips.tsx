@@ -10,14 +10,36 @@
 
 // Placement: When a user taps into a specific past ride in the History tab, provide a "Help with this trip" or "Contact Support/Driver" button
 
-import { StyleSheet, Text, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import React from 'react'
+import Map from '@/components/Map'
+import { Ionicons } from '@expo/vector-icons'
+import Header from '@/components/Header'
+import { useUser } from '@clerk/expo'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
 const Rides = () => {
+  const { user } = useUser()
   return (
-    <View>
-      <Text>Rides</Text>
-    </View>
+    <SafeAreaView className='flex-1'>
+      <Header
+        name="Leonard"
+        first={user?.firstName as string}
+      />
+
+      <ScrollView className='mx-4'>
+        <View className="flex-row items-center justify-between mt-2 px-2 mb-5">
+          <Text className="text-black text-[17px] font-JakartaMedium">Weekend Hangouts</Text>
+          <View className="flex-row items-center gap-1">
+            <Text className="text-[#3122D2] text-[10px] font-JakartaBold">View Map</Text>
+          </View>
+        </View>
+
+        <View className='flex flex-row items-center h-[300px] bg-red-200'>
+          <Map />
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   )
 }
 

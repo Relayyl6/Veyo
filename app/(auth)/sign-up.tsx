@@ -158,32 +158,32 @@ const SignUp = () => {
   }
 
   const handleCodeChange = (index: number, text: string) => {
-  // Clear error when user starts typing
-  if (codeErr) setCodeErr("")
+    // Clear error when user starts typing
+    if (codeErr) setCodeErr("")
   
-  const newCodeArray = code.split('');
-  newCodeArray[index] = text.slice(-1);
-  const updatedCode = newCodeArray.join('');
-  setCode(updatedCode);
-  
-  // Auto-focus next box
-  if (text && index < 5) {
-    inputRefs.current[index + 1]?.focus();
-  }
-  
-  // Auto-verify when all 6 digits are entered
-  if (updatedCode.length === 6) {
-    setTimeout(() => {
-      handleVerify(updatedCode);
-    }, 100);
-  }
-};
+    const newCodeArray = code.split('');
+    newCodeArray[index] = text.slice(-1);
+    const updatedCode = newCodeArray.join('');
+    setCode(updatedCode);
+    
+    // Auto-focus next box
+    if (text && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+    
+    // Auto-verify when all 6 digits are entered
+    if (updatedCode.length === 6) {
+      setTimeout(() => {
+        handleVerify(updatedCode);
+      }, 100);
+    }
+  };
 
-const handleKeyPress = (index: number, nativeEvent: any) => {
-  if (nativeEvent.key === 'Backspace' && !code[index] && index > 0) {
-    inputRefs.current[index - 1]?.focus();
-  }
-};
+  const handleKeyPress = (index: number, nativeEvent: any) => {
+    if (nativeEvent.key === 'Backspace' && !code[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
 
   const handleVerify = async (finalCode?: string) => {
     if (fetchStatus === 'fetching') return
@@ -275,7 +275,7 @@ const handleKeyPress = (index: number, nativeEvent: any) => {
   const inputRefs = useRef<(TextInput | null)[]>([]);
    
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+    <KeyboardAvoidingView bottomOffset={20} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
       <ScrollView className='flex-1 bg-white'>
         <View className='flex-1 bg-white'>
           <View className='relative w-full h-[250px]'>
@@ -372,7 +372,6 @@ const handleKeyPress = (index: number, nativeEvent: any) => {
                           styles.codeBox,
                           code.length > index && styles.codeBoxFilled
                         ]}
-                        // 👇 FIX: This grabs '1' for box 0, '2' for box 1, etc.
                         placeholder={'123456'[index]} 
                         value={code[index] || ''}
                         onChangeText={(text) => handleCodeChange(index, text)}
