@@ -23,7 +23,7 @@ const Index = () => {
     <View className='bg-general-500 flex-1 relative'>
 
       {/* --- THE BLURRED HEADER --- */}
-      <View 
+      <View
         style={{
           position: 'absolute', 
           top: 0, 
@@ -37,6 +37,7 @@ const Index = () => {
       >
         <Header 
           name={user?.firstName as string | undefined} 
+          first={user?.firstName as string | undefined} 
           image={images.logohor} 
           onNotificationPress={() => console.log("something")} 
         />

@@ -2,6 +2,12 @@
   "expo": {
     "name": "Veyo",
     "slug": "veyo",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/47404736-c1af-4fb0-9349-f6465dcd0699"
+    },
     "version": "1.0.0",
     "scheme": "veyo",
     "platforms": [
@@ -70,7 +76,14 @@
         "googleMaps": {
           "apiKey": "AIzaSyDBC9dOgAb2cN9c_DZgAj9mSX2ZlaS7DOM"
         }
-      }
-    }
+      },
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
+    },
+    "owner": "yemuel"
   }
 }

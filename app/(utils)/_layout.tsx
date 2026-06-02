@@ -6,6 +6,7 @@ const UtilLayout = () => {
   return (
     <Stack>
         <Stack.Screen name="search" options={{ headerShown: false }} />
+        <Stack.Screen name="map" options={{ headerShown: false }} />
     </Stack>
   )
 }

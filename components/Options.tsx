@@ -1,162 +1,3 @@
-// import React from 'react';
-// import { View, Text, TouchableOpacity, Image } from 'react-native';
-// import { Ionicons } from '@expo/vector-icons';
-
-// // The data object extracted from the image
-// const serviceOptions = [
-//   {
-//     id: '1',
-//     title: 'Ride now',
-//     subtitle: 'Instant pickups',
-//     iconName: 'car', 
-//     iconBgColor: 'bg-[#4338CA]', // Indigo
-//   },
-//   {
-//     id: '2',
-//     title: 'Order food',
-//     subtitle: 'Top local eats',
-//     iconName: 'fast-food', 
-//     iconBgColor: 'bg-[#B45309]', // Burnt Orange
-//   },
-//   {
-//     id: '3',
-//     title: 'Schedule',
-//     subtitle: 'Plan ahead',
-//     iconName: 'calendar', 
-//     iconBgColor: 'bg-[#065F46]', // Dark Emerald
-//   },
-//   {
-//     id: '4',
-//     title: 'Send',
-//     subtitle: 'Same day delivery',
-//     iconName: 'cube', 
-//     iconBgColor: 'bg-[#1E293B]', // Slate Navy
-//   }
-// ];
-
-// // 1. Extract everything into a clean array of objects
-// const serviceData = [
-//   {
-//     id: 'new-trip',
-//     type: 'square',
-//     title: 'New Trip',
-//     iconName: 'location',
-//     iconColor: '#EA4335',
-//   },
-//   {
-//     id: 'scooter',
-//     type: 'rectangle',
-//     title: 'Scooter',
-//     subtitle: 'One Order, \nTakes Minutes',
-//     // Fixed with a verified working FreePNGImg URL
-//     imageUrl: 'https://freepngimg.com/thumb/vehicle/69037-scooter-two-wheeler-kick-vehicle-free-download-png-hd.png',
-//     bgClass: 'bg-[#FCD34D]',
-//     containerClass: 'p-5 overflow-hidden relative shadow-sm shadow-neutral-200',
-//     textWrapperClass: 'z-10',
-//     imageClass: 'absolute -bottom-3 -right-2 w-28 h-28 object-contain',
-//     imageOrder: 'after', // Renders text first, then image
-//   },
-//   {
-//     id: 'send-schedule',
-//     type: 'rectangle',
-//     title: 'Send & Schedule',
-//     subtitle: 'Plan your deliveries',
-//     // Verified working FreePNGImg URL representing a package/parcel
-//     imageUrl: 'https://freepngimg.com/thumb/gift/8-gift-box-png-image.png',
-//     bgClass: 'bg-[#86EFAC]', // Maintained the background color from your original shipment object
-//     containerClass: 'p-5 overflow-hidden relative shadow-sm shadow-neutral-200 justify-center items-end pr-6',
-//     textWrapperClass: 'z-10 w-full items-end', // Added w-full
-//     textAlignClass: 'text-right',
-//     imageClass: 'absolute -bottom-2 -left-6 w-32 h-32 object-contain',
-//     imageOrder: 'before', // Renders image first, then text
-//   },
-//   {
-//     id: 'office',
-//     type: 'square',
-//     title: 'Office',
-//     iconName: 'briefcase',
-//     iconColor: '#064E3B',
-//   }
-// ];
-
-// const ServiceGrid = () => {
-
-//   // 2. Create a reusable render function for the cards
-//   const renderCard = (item: any) => {
-//     // Layout for the small squares
-//     if (item.type === 'square') {
-//       return (
-//         <TouchableOpacity 
-//           key={item.id}
-//           activeOpacity={0.9} 
-//           className="w-[32%] bg-white rounded-[28px] p-4 flex items-center justify-center shadow-sm shadow-neutral-200"
-//         >
-//           <Ionicons name={item.iconName as any} size={32} color={item.iconColor} />
-//           <Text className="mt-2 text-[15px] font-JakartaBold text-black text-center leading-tight">
-//             {item.title}
-//           </Text>
-//         </TouchableOpacity>
-//       );
-//     }
-
-//     // Layout for the large rectangles
-//     return (
-//       <TouchableOpacity 
-//         key={item.id}
-//         activeOpacity={0.9} 
-//         className={`w-[64%] ${item.bgClass} rounded-[28px] ${item.containerClass}`}
-//       >
-//         {/* Render Image before Text (Shipment) */}
-//         {item.imageOrder === 'before' && (
-//           <Image 
-//             source={{ uri: item.imageUrl }} 
-//             className={item.imageClass}
-//             resizeMode="contain"
-//           />
-//         )}
-        
-//         <View className={item.textWrapperClass}>
-//           <Text className={`text-xl font-JakartaBold text-black ${item.textAlignClass || 'text-left'}`}>
-//             {item.title}
-//           </Text>
-//           <Text className={`text-xs font-Jakarta text-black opacity-60 mt-0.5 ${item.textAlignClass || 'text-left'}`}>
-//             {item.subtitle}
-//           </Text>
-//         </View>
-        
-//         {/* Render Image after Text (Scooter) */}
-//         {item.imageOrder === 'after' && (
-//           <Image 
-//             source={{ uri: item.imageUrl }} 
-//             className={item.imageClass}
-//             resizeMode="contain"
-//           />
-//         )}
-//       </TouchableOpacity>
-//     );
-//   };
-
-//   return (
-//     <View className="px-4 mt-2">
-//       {/* --- ROW 1 --- */}
-//       <View className="flex-row justify-between mb-4 h-36">
-//         {renderCard(serviceData[0])}
-//         {renderCard(serviceData[1])}
-//       </View>
-
-//       {/* --- ROW 2 --- */}
-//       <View className="flex-row justify-between h-36">
-//         {renderCard(serviceData[2])}
-//         {renderCard(serviceData[3])}
-//       </View>
-//     </View>
-//   );
-// };
-
-// export default ServiceGrid;
-
-
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, TouchableOpacity, Image, Platform, UIManager,
@@ -165,6 +6,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { images } from '@/constants/utils';
+import { PressableScale } from 'pressto';
+import { PressableHybrid } from './CustomPressable';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -347,10 +190,13 @@ const AnimatedCard = ({ item, targetWidth, phase, stateKey, morphDelay }: CardPr
         elevation: 3,
       }}
     >
-      <TouchableOpacity
-        activeOpacity={0.9}
-        style={{ flex: 1 }}
-        className={!isSquare ? `${item.bgClass} flex-1 p-5 overflow-hidden relative` : 'flex-1 items-center justify-center p-4'}
+      <PressableHybrid
+        className={
+          !isSquare 
+            ? `${item.bgClass} flex-1 p-5 overflow-hidden relative` 
+            : 'flex-1 items-center justify-center p-4'
+        }
+        onPress={() => console.log("Pressed!")}
       >
         {/* ── SQUARE ── */}
         {isSquare && (
@@ -398,7 +244,7 @@ const AnimatedCard = ({ item, targetWidth, phase, stateKey, morphDelay }: CardPr
             )}
           </>
         )}
-      </TouchableOpacity>
+      </PressableHybrid>
     </Animated.View>
   );
 };

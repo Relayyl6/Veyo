@@ -2,12 +2,14 @@ import { Tabs } from 'expo-router';
 import { Image, StyleSheet, useColorScheme, View } from 'react-native';
 import { icons } from '@/constants/utils';
 import TabBarIcon from '@/components/TabBarIcon';
+import { AnimatedTabBar } from '@/components/AnimatedTabBar';
 
 export default function TabsLayout() {
   const colorScheme = useColorScheme();
 
   return (
     <Tabs
+      tabBar={(props) => <AnimatedTabBar {...props} />}
       screenOptions={({ route }) => ({
         tabBarActiveTintColor: 'white',
         tabBarInactiveTintColor: 'white',

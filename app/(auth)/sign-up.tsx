@@ -1,6 +1,7 @@
 // Add Animated to your existing react-native imports
 import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View, Pressable, TextInput, Alert, Animated } from 'react-native'
 import React, { useEffect, useRef, useState } from 'react'
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { icons, images } from '@/constants/utils'
 import InputField from '@/components/InputField'
@@ -275,160 +276,163 @@ const SignUp = () => {
   const inputRefs = useRef<(TextInput | null)[]>([]);
    
   return (
-    <KeyboardAvoidingView bottomOffset={20} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-      <ScrollView className='flex-1 bg-white'>
-        <View className='flex-1 bg-white'>
-          <View className='relative w-full h-[250px]'>
-            <Image
-              source={images.signUpCar}
-              className='z-0 w-full h-[250px]'
-            />
-            <Text className='text-2xl font-JakartaSemiBold text-black absolute bottom-5 left-5'>
-              Create Your Account
-            </Text>
-          </View>
-
-          <View className='p-5'>
-            <InputField
-              label="Name"
-              placeholder="John Doe"
-              icon={icons.person}
-              value={form.name}
-              onChangeText={(value: string) => {
-                setForm({ ...form, name: value })
-                // Clear error when user starts typing
-                if (fieldErrors.name) {
-                  setFieldErrors({ ...fieldErrors, name: '' })
-                }
-              }}
-              error={fieldErrors.name}
-            />
-
-            <InputField
-              label="Email"
-              placeholder="johndoe@example.com"
-              icon={icons.email}
-              value={form.email}
-              onChangeText={(value: string) => {
-                setForm({ ...form, email: value })
-                if (fieldErrors.email) {
-                  setFieldErrors({ ...fieldErrors, email: '' })
-                }
-              }}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              error={emailError}
-            />
-
-            <InputField
-              label="Password"
-              placeholder="Min. 8 characters"
-              icon={icons.lock}
-              value={form.password}
-              secure={secure}
-              setSecure={setSecure}
-              onChangeText={(value: string) => {
-                setForm({ ...form, password: value })
-                if (fieldErrors.password) {
-                  setFieldErrors({ ...fieldErrors, password: '' })
-                }
-              }}
-              error={passwordError}
-              handle={handleGeneratePassword}
-            />
-
-            <CustomButton
-              title={fetchStatus === 'fetching' ? "Loading..." : "Sign Up"}
-              onPress={onSignUpPress}
-              className='mt-6'
-            />
-
-            <OAuth />
-
-            <Link href="/sign-in" className='flex flex-row text-center text-lg text-general-200 mt-10 justify-center'>
-              <Text>Already have an account?</Text>
-              <Text className="text-primary-500"> Log In</Text>
-            </Link>
-          </View>
-
-          <Modal isVisible={showVerification}>
-            <View className="bg-white rounded-[20px] p-6 shadow-lg mx-auto">
-              {
-              isVerified ? (
-                <SuccessAnimation />
-              ) : (
-                <>
-                  <Text style={styles.title}>Enter the 6-digit code</Text>
-            
-                  <Text style={styles.subtitle}>
-                    We sent a code to <Text style={styles.emailHighlight}>{form.email}</Text>
-                  </Text>
-
-                  <View style={styles.codeInputContainer}>
-                    {[0, 1, 2, 3, 4, 5].map((index) => (
-                      <TextInput
-                        key={index}
-                        style={[
-                          styles.codeBox,
-                          code.length > index && styles.codeBoxFilled
-                        ]}
-                        placeholder={'123456'[index]} 
-                        value={code[index] || ''}
-                        onChangeText={(text) => handleCodeChange(index, text)}
-                        onKeyPress={({ nativeEvent }) => handleKeyPress(index, nativeEvent)}
-                        keyboardType="numeric"
-                        maxLength={1}
-                        ref={(el) => { inputRefs.current[index] = el }}
-                        placeholderTextColor="#CCCCCC"
-                      />
-                    ))}
-                  </View>
-                  {/* Inline error message */}
-                  {codeErr ? (
-                      <Text style={styles.errorText}>
-                        {codeErr}
-                      </Text>
-                    ) : null}
-                  <Text style={styles.helpText} className='flex text-center'>
-                    If you don't see the email in your inbox, check your spam folder. 
-                    If it's not there, the email address may not be confirmed, 
-                    or it may not match an existing account.
-                  </Text>
-                  <Pressable
-                    style={[styles.button, fetchStatus === 'fetching' && styles.buttonDisabled]}
-                    onPress={() => handleVerify()}
-                    disabled={fetchStatus === 'fetching'}
-                    className='mx-auto'
-                  >
-                    <Text style={styles.buttonText}>
-                      {fetchStatus === 'fetching' ? 'Verifying...' : 'Verify Email'}
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    style={styles.resendLink}
-                    onPress={handleResendCode}
-                    disabled={!canResend || fetchStatus === 'fetching'}
-                  >
-                    <Text style={[
-                      styles.resendLinkText,
-                      (!canResend || fetchStatus === 'fetching') && { color: '#CCCCCC' }
-                    ]}>
-                      {!canResend ? `Resend code in ${timer}s` : 'Resend code'}
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    style={styles.startOverLink}
-                    onPress={handleStartOver}
-                  >
-                    <Text style={styles.startOverLinkText}>Start over</Text>
-                  </Pressable>
-                </>
-              )}
-            </View>
-          </Modal>
+    <KeyboardAwareScrollView 
+      bottomOffset={20} 
+      className='flex-1 bg-white'
+      contentContainerStyle={{ flexGrow: 1 }}
+      showsVerticalScrollIndicator={false}
+    >
+      <View className='flex-1 bg-white'>
+        <View className='relative w-full h-[250px]'>
+          <Image
+            source={images.signUpCar}
+            className='z-0 w-full h-[250px]'
+          />
+          <Text className='text-2xl font-JakartaSemiBold text-black absolute bottom-5 left-5'>
+            Create Your Account
+          </Text>
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+        <View className='p-5'>
+          <InputField
+            label="Name"
+            placeholder="John Doe"
+            icon={icons.person}
+            value={form.name}
+            onChangeText={(value: string) => {
+              setForm({ ...form, name: value })
+              // Clear error when user starts typing
+              if (fieldErrors.name) {
+                setFieldErrors({ ...fieldErrors, name: '' })
+              }
+            }}
+            error={fieldErrors.name}
+          />
+
+          <InputField
+            label="Email"
+            placeholder="johndoe@example.com"
+            icon={icons.email}
+            value={form.email}
+            onChangeText={(value: string) => {
+              setForm({ ...form, email: value })
+              if (fieldErrors.email) {
+                setFieldErrors({ ...fieldErrors, email: '' })
+              }
+            }}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            error={emailError}
+          />
+
+          <InputField
+            label="Password"
+            placeholder="Min. 8 characters"
+            icon={icons.lock}
+            value={form.password}
+            secure={secure}
+            setSecure={setSecure}
+            onChangeText={(value: string) => {
+              setForm({ ...form, password: value })
+              if (fieldErrors.password) {
+                setFieldErrors({ ...fieldErrors, password: '' })
+              }
+            }}
+            error={passwordError}
+            handle={handleGeneratePassword}
+          />
+
+          <CustomButton
+            title={fetchStatus === 'fetching' ? "Loading..." : "Sign Up"}
+            onPress={onSignUpPress}
+            className='mt-6'
+          />
+
+          <OAuth />
+
+          <Link href="/sign-in" className='flex flex-row text-center text-lg text-general-200 mt-10 justify-center'>
+            <Text>Already have an account?</Text>
+            <Text className="text-primary-500"> Log In</Text>
+          </Link>
+        </View>
+
+        <Modal isVisible={showVerification}>
+          <View className="bg-white rounded-[20px] p-6 shadow-lg mx-auto">
+            {
+            isVerified ? (
+              <SuccessAnimation />
+            ) : (
+              <>
+                <Text style={styles.title}>Enter the 6-digit code</Text>
+          
+                <Text style={styles.subtitle}>
+                  We sent a code to <Text style={styles.emailHighlight}>{form.email}</Text>
+                </Text>
+
+                <View style={styles.codeInputContainer}>
+                  {[0, 1, 2, 3, 4, 5].map((index) => (
+                    <TextInput
+                      key={index}
+                      style={[
+                        styles.codeBox,
+                        code.length > index && styles.codeBoxFilled
+                      ]}
+                      placeholder={'123456'[index]} 
+                      value={code[index] || ''}
+                      onChangeText={(text) => handleCodeChange(index, text)}
+                      onKeyPress={({ nativeEvent }) => handleKeyPress(index, nativeEvent)}
+                      keyboardType="numeric"
+                      maxLength={1}
+                      ref={(el) => { inputRefs.current[index] = el }}
+                      placeholderTextColor="#CCCCCC"
+                    />
+                  ))}
+                </View>
+                {/* Inline error message */}
+                {codeErr ? (
+                    <Text style={styles.errorText}>
+                      {codeErr}
+                    </Text>
+                  ) : null}
+                <Text style={styles.helpText} className='flex text-center'>
+                  If you don't see the email in your inbox, check your spam folder. 
+                  If it's not there, the email address may not be confirmed, 
+                  or it may not match an existing account.
+                </Text>
+                <Pressable
+                  style={[styles.button, fetchStatus === 'fetching' && styles.buttonDisabled]}
+                  onPress={() => handleVerify()}
+                  disabled={fetchStatus === 'fetching'}
+                  className='mx-auto'
+                >
+                  <Text style={styles.buttonText}>
+                    {fetchStatus === 'fetching' ? 'Verifying...' : 'Verify Email'}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={styles.resendLink}
+                  onPress={handleResendCode}
+                  disabled={!canResend || fetchStatus === 'fetching'}
+                >
+                  <Text style={[
+                    styles.resendLinkText,
+                    (!canResend || fetchStatus === 'fetching') && { color: '#CCCCCC' }
+                  ]}>
+                    {!canResend ? `Resend code in ${timer}s` : 'Resend code'}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={styles.startOverLink}
+                  onPress={handleStartOver}
+                >
+                  <Text style={styles.startOverLinkText}>Start over</Text>
+                </Pressable>
+              </>
+            )}
+          </View>
+        </Modal>
+      </View>
+    </KeyboardAwareScrollView>
   )
 }
 

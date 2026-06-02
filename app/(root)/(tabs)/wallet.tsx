@@ -18,13 +18,15 @@
 // const styles = StyleSheet.create({})
 
 import { AppleMaps, GoogleMaps } from 'expo-maps';
-import { Button, Platform, StyleSheet, Text, View } from 'react-native';
+import { Alert, Button, Platform, StyleSheet, Text, View } from 'react-native';
 import polyline from '@mapbox/polyline';
 import { locationList } from "@/constants/LocationList"
 import { useRef, useState } from 'react';
 import { useBottomTabOverflow } from '@/components/BlurTabBarBackground.ios'
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useImage } from "expo-image";
+import { AppleMapsMapType } from 'expo-maps/build/apple/AppleMaps.types';
+import { GoogleMapsMapType } from 'expo-maps/build/google/GoogleMaps.types';
 
 const GOOGLE_MAPS_APIKEY = process.env.EXPO_PUBLIC_GOOGLE_API_KEY!;
 
@@ -110,6 +112,38 @@ export default function App() {
               icon: image ? image : undefined,
             },
           ]}
+          polylines={[
+            {
+              color: "blue",
+              width: 5,
+              coordinates: polylineCoordinates,
+            },
+          ]}
+          properties={{
+            isTrafficEnabled: false,
+            mapType: AppleMapsMapType.STANDARD,
+            selectionEnabled: true,
+          }}
+          // onPolylineClick={(event) => {
+          //   console.log(event);
+          //   Alert.alert("Polyline clicked", JSON.stringify(event));
+          // }}
+
+          onMapClick={(e) => {
+            console.log(
+              JSON.stringify({ type: "onMapClick", data: e }, null, 2)
+            );
+          }}
+          onMarkerClick={(e) => {
+            console.log(
+              JSON.stringify({ type: "onMarkerClick", data: e }, null, 2)
+            );
+          }}
+          onCameraMove={(e) => {
+            console.log(
+              JSON.stringify({ type: "onCameraMove", data: e }, null, 2)
+            );
+          }}
         />
         <SafeAreaView
           className='flex-1'
@@ -128,6 +162,55 @@ export default function App() {
           style={StyleSheet.absoluteFill}
           cameraPosition={cameraPosition}
           markers={markersGoogle}
+          polylines={[
+            {
+              color: "blue",
+              width: 5,
+              coordinates: polylineCoordinates,
+            },
+          ]}
+          properties={{
+            isBuildingEnabled: true,
+            isIndoorEnabled: true,
+            mapType: GoogleMapsMapType.HYBRID,
+            selectionEnabled: true,
+            isMyLocationEnabled: false, // requires location permission
+            isTrafficEnabled: true,
+            // minZoomPreference: 1,
+            // maxZoomPreference: 20,
+          }}
+          onPolylineClick={(event) => {
+            console.log(event);
+            Alert.alert("Polyline clicked", JSON.stringify(event));
+          }}
+          onMapLoaded={() => {
+            console.log(JSON.stringify({ type: "onMapLoaded" }, null, 2));
+          }}
+          onMapClick={(e) => {
+            console.log(
+              JSON.stringify({ type: "onMapClick", data: e }, null, 2)
+            );
+          }}
+          onMapLongClick={(e) => {
+            console.log(
+              JSON.stringify({ type: "onMapLongClick", data: e }, null, 2)
+            );
+          }}
+          onPOIClick={(e) => {
+            console.log(
+              JSON.stringify({ type: "onPOIClick", data: e }, null, 2)
+            );
+          }}
+          onMarkerClick={(e) => {
+            console.log(
+              JSON.stringify({ type: "onMarkerClick", data: e }, null, 2)
+            );
+          }}
+          onCameraMove={(e) => {
+            console.log(
+              JSON.stringify({ type: "onCameraMove", data: e }, null, 2)
+            );
+          }}
         />
         <SafeAreaView
           className='flex-1'

@@ -8,6 +8,8 @@ import AnimatedSplashScreen from '@/components/AnimatedSplashScreen';
 import { ClerkProvider } from '@clerk/expo'
 import { tokenCache } from '@clerk/expo/token-cache';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
+import { PressablesConfig } from 'pressto';
+import * as Haptics from 'expo-haptics';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -57,6 +59,22 @@ export default function RootLayout() {
   return (
     <>
       <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
+        <PressablesConfig 
+  animationType="spring"
+  animationConfig={{ 
+    damping: 30, 
+    stiffness: 200,
+    mass: 1
+    // Removed restDisplacementThreshold
+  }}
+  config={{ 
+    minScale: 0.95,      
+    activeOpacity: 0.6   
+  }}
+  globalHandlers={{
+    onPress: () => Haptics.selectionAsync(), 
+  }}
+>
         <KeyboardProvider preload preserveEdgeToEdge={true} statusBarTranslucent={true} navigationBarTranslucent={true}>
           <StatusBar style='inverted' />
             <Stack screenOptions={{ animation: 'ios_from_right' }}>
@@ -69,6 +87,7 @@ export default function RootLayout() {
               
             </Stack>
         </KeyboardProvider>
+        </PressablesConfig>
       </ClerkProvider>
     </>
   );

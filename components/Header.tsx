@@ -9,7 +9,7 @@ interface HeaderProps {
     name?: string;
     title?: string;
     first?: string;
-    image: ImageSourcePropType;
+    image?: ImageSourcePropType;
     onNotificationPress?: () => void;
 }
 
