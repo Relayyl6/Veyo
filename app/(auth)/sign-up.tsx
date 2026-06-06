@@ -1,7 +1,7 @@
 // Add Animated to your existing react-native imports
 import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View, Pressable, TextInput, Alert, Animated } from 'react-native'
 import React, { useEffect, useRef, useState } from 'react'
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+// import {  } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { icons, images } from '@/constants/utils'
 import InputField from '@/components/InputField'
@@ -276,12 +276,17 @@ const SignUp = () => {
   const inputRefs = useRef<(TextInput | null)[]>([]);
    
   return (
-    <KeyboardAwareScrollView 
-      bottomOffset={20} 
-      className='flex-1 bg-white'
-      contentContainerStyle={{ flexGrow: 1 }}
-      showsVerticalScrollIndicator={false}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1, backgroundColor: 'white' }}
+      // keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 50}
     >
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
       <View className='flex-1 bg-white'>
         <View className='relative w-full h-[250px]'>
           <Image
@@ -432,7 +437,8 @@ const SignUp = () => {
           </View>
         </Modal>
       </View>
-    </KeyboardAwareScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   )
 }
 

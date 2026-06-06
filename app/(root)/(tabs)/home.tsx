@@ -1,8 +1,8 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
+import * as Location from 'expo-location';
 // 1. Swap SafeAreaView for useSafeAreaInsets
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-
 import { images } from '@/constants/utils'
 import Header from '@/components/Header'
 import AdCarousel from '@/components/AdCarousel'
@@ -12,11 +12,28 @@ import RideCardDeck from '@/components/RideCardDeck'
 import VeyoInsightsScreen from '@/components/Insights'
 import { FontAwesome5 } from '@expo/vector-icons'
 import { useUser } from '@clerk/expo'
+import { useLocationStore } from '@/store/store'
 
 const Index = () => {
   const { user } = useUser()
-  // This hooks gives you the exact height of the device's notch/status bar
+  // // This hooks gives you the exact height of the device's notch/status bar
   const insets = useSafeAreaInsets() 
+
+  // const [hasPermissions, setHasPermissions] = useState(false)
+
+  // useEffect(() => {
+  //   const requestLocation = async () => {
+  //     let { status } = await Location.requestForegroundPermissionsAsync();
+
+  //     if (status === "denied") {
+        
+  //     }
+  //   };
+
+  //   requestLocation()
+  // }, []) 
+
+  // const { setUserLocation, setDestinationLocation } = useLocationStore()
 
   return (
     // 3. Changed from SafeAreaView to a standard View so the blur reaches the absolute top

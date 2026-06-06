@@ -12,6 +12,7 @@
 
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import React from 'react'
+import { styled } from 'nativewind';
 import Map from '@/components/Map'
 import { Ionicons } from '@expo/vector-icons'
 import Header from '@/components/Header'
@@ -38,7 +39,7 @@ const Rides = () => {
           <Text className="text-black text-[17px] font-JakartaMedium">Current Location</Text>
           <PressableHybrid
             className="flex-row items-center gap-1.5 px-2 py-1 rounded-md"
-            onPress={() => router.push("/(utils)/map")}
+            onPress={() => router.push("/(utils)/map")} 
           >
             <Text className="text-[#3122D2] text-[10px] font-JakartaBold">
               View Map
@@ -63,7 +64,7 @@ const Rides = () => {
           </PressableHybrid>
         </View>
 
-        <View className='flex flex-row items-center h-[300px] bg-red-200'>
+        <View className='flex flex-row items-center h-[300px]'>
           <Map />
         </View>
       </ScrollView>

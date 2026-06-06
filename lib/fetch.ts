@@ -18,7 +18,6 @@ export const fetchAPI = async (url: string, options?: RequestInit) => {
 // --- useFetch ---
 export const useFetch = <T>(url: string, options?: RequestInit) => {
     const [data, setData] = useState<T | null>(null);
-    // Standard practice: start loading as true so your UI doesn't flash empty data
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 

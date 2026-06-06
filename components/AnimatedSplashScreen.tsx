@@ -13,7 +13,6 @@ import Svg, {
   Rect,
   Line,
   G,
-  Text as SvgText,
 } from 'react-native-svg';
 import * as SplashScreen from 'expo-splash-screen';
 
@@ -23,351 +22,315 @@ const { width: SW, height: SH } = Dimensions.get('window');
 const CX = SW / 2;
 
 // ─────────────────────────────────────────────
-//  VEYO LOGO MARK
+//  EXACT GEOMETRIC LOGO V-MARK
 // ─────────────────────────────────────────────
 function VeyoLogoMark() {
   return (
-    <Svg width={90} height={70} viewBox="0 0 100 80">
-      <Rect x="0" y="24" width="35" height="11" rx="5.5" fill="white" />
-      <Rect x="8" y="42" width="27" height="11" rx="5.5" fill="white" />
-      <Rect x="16" y="60" width="19" height="11" rx="5.5" fill="white" />
-      <Path d="M 40 24 L 66 80 L 85 24 L 68 24 L 59 55 L 53 24 Z" fill="white" />
+    <Svg width={96} height={70} viewBox="0 0 96 70" fill="none">
+      {/* 3 Speed lines extending from the left */}
+      <Path d="M12 4h26v10H12a5 5 0 010-10z" fill="white" />
+      <Path d="M0 24h38v10H0a5 5 0 010-10z" fill="white" />
+      <Path d="M12 44h26v10H12a5 5 0 010-10z" fill="white" />
+      
+      {/* Precision italicized V component intersecting lines */}
+      <Path 
+        d="M36 4h18.5l14 44.5L82.5 4H96L75.5 66H62L36 4z" 
+        fill="white" 
+        strokeLinejoin="miter"
+      />
     </Svg>
   );
 }
 
 // ─────────────────────────────────────────────
-//  ICONS
+//  VECTORS FOR FLOATING ICONS
 // ─────────────────────────────────────────────
 function IconBowl() {
   return (
-    <Svg width={45} height={45} viewBox="0 0 40 40">
-      <Path d="M 5 22 C 5 34, 35 34, 35 22 Z" stroke="white" strokeWidth="1.2" fill="none" />
-      <Line x1="4" y1="22" x2="36" y2="22" stroke="white" strokeWidth="1.2" />
-      <Path d="M 8 22 C 10 16, 14 16, 16 22 M 14 22 C 16 14, 22 14, 24 22 M 22 22 C 24 16, 30 16, 32 22" stroke="white" strokeWidth="1.2" fill="none" />
-      <Line x1="24" y1="20" x2="34" y2="2" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-      <Line x1="28" y1="21" x2="38" y2="5" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-      <Path d="M 0 12 L 2 14 L 0 16 L -2 14 Z" fill="white" opacity="0.6" />
-      <Path d="M 38 30 L 40 32 L 38 34 L 36 32 Z" fill="white" opacity="0.6" />
+    <Svg width={54} height={54} viewBox="0 0 54 54" fill="none">
+      <Path d="M6 26c0 15 42 15 42 0H6z" stroke="white" strokeWidth="1.5" />
+      <Line x1="4" y1="26" x2="50" y2="26" stroke="white" strokeWidth="1.5" />
+      {/* Food contents representation */}
+      <Path d="M12 26c2-6 8-8 12 0M22 26c3-9 11-9 14 0M32 26c2-6 6-6 8 0" stroke="white" strokeWidth="1.5" />
+      {/* Chopsticks crossing out */}
+      <Line x1="34" y1="22" x2="48" y2="2" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
+      <Line x1="40" y1="24" x2="54" y2="4" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
     </Svg>
   );
 }
 
 function IconCoffee() {
   return (
-    <Svg width={45} height={50} viewBox="0 0 40 50">
-      <Path d="M 10 15 L 14 42 C 14 45, 26 45, 26 42 L 30 15 Z" stroke="white" strokeWidth="1.2" fill="none" />
-      <Rect x="8" y="10" width="24" height="5" rx="2" stroke="white" strokeWidth="1.2" fill="none" />
-      <Line x1="12" y1="15" x2="28" y2="15" stroke="white" strokeWidth="1.2" />
-      <Path d="M 16 7 Q 14 3 18 0 M 24 7 Q 22 3 26 0" stroke="white" strokeWidth="1.2" fill="none" opacity="0.7" strokeLinecap="round" />
+    <Svg width={46} height={56} viewBox="0 0 46 56" fill="none">
+      <Path d="M9 16l5 34c.5 3 24 3 24.5 0l5-34" stroke="white" strokeWidth="1.5" strokeLinejoin="round" />
+      <Rect x="6" y="10" width="34" height="6" rx="2" stroke="white" strokeWidth="1.5" />
+      {/* Vapors */}
+      <Path d="M16 6q-3-5 1-6M23 6q-3-5 1-6M30 6q-3-5 1-6" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
     </Svg>
   );
 }
 
-function IconCard() {
+function IconCardWithWaves() {
   return (
-    <Svg width={60} height={60} viewBox="0 0 50 50">
-      <Rect x="5" y="10" width="40" height="25" rx="3" stroke="white" strokeWidth="1.2" fill="none" />
-      <Line x1="5" y1="16" x2="45" y2="16" stroke="white" strokeWidth="1.2" />
-      <Rect x="10" y="21" width="8" height="5" rx="1" stroke="white" strokeWidth="1.2" fill="none" />
-      <Line x1="22" y1="23" x2="32" y2="23" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
-      <Line x1="22" y1="27" x2="28" y2="27" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
-      <G opacity="0.8">
-        <Circle cx="25" cy="45" r="12" stroke="white" strokeWidth="1" fill="none" />
-        <Path d="M 20 45 A 5 5 0 0 1 23 41" stroke="white" strokeWidth="1.2" fill="none" strokeLinecap="round" />
-        <Path d="M 18 48 A 8 8 0 0 1 26 39" stroke="white" strokeWidth="1.2" fill="none" strokeLinecap="round" />
-        <Path d="M 16 51 A 11 11 0 0 1 29 37" stroke="white" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+    <Svg width={90} height={60} viewBox="0 0 90 60" fill="none">
+      {/* Credit Card bounding element */}
+      <Rect x="2" y="2" width="62" height="42" rx="6" stroke="white" strokeWidth="1.8" />
+      <Line x1="2" y1="12" x2="64" y2="12" stroke="white" strokeWidth="1.8" />
+      <Rect x="8" y="22" width="12" height="8" rx="1.5" stroke="white" strokeWidth="1.2" />
+      <Line x1="26" y1="24" x2="42" y2="24" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+      <Line x1="26" y1="30" x2="34" y2="30" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+      
+      {/* Contactless waves aligned perfectly to the right side */}
+      <G transform="translate(68, 8)">
+        <Path d="M2 6a12 12 0 010 16" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
+        <Path d="M7 2a20 20 0 010 24" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
       </G>
     </Svg>
   );
 }
 
-function IconBag() {
+function IconBagWithCloche() {
   return (
-    <Svg width={45} height={45} viewBox="0 0 40 40">
-      <Path d="M 6 36 L 10 10 L 32 18 L 28 38 Z" stroke="white" strokeWidth="1.2" fill="none" strokeLinejoin="round" />
-      <Path d="M 10 10 L 14 4 L 35 12 L 32 18" stroke="white" strokeWidth="1.2" fill="none" strokeLinejoin="round" />
-      <Path d="M 14 4 L 8 4" stroke="white" strokeWidth="1.2" fill="none" opacity="0.5" />
-      <G transform="rotate(18, 18, 25)">
-        <Path d="M 12 28 C 12 20, 26 20, 26 28 Z" stroke="white" strokeWidth="1" fill="none" />
-        <Line x1="10" y1="28" x2="28" y2="28" stroke="white" strokeWidth="1" />
-        <Circle cx="19" cy="19" r="1.5" stroke="white" strokeWidth="1" fill="none" />
+    <Svg width={64} height={64} viewBox="0 0 64 64" fill="none">
+      {/* Paper Bag base layout structure */}
+      <Path d="M10 52L15 16h34l5 36H10z" stroke="white" strokeWidth="1.5" strokeLinejoin="round" />
+      <Path d="M15 16l4-8h26l4 8" stroke="white" strokeWidth="1.5" strokeLinejoin="round" />
+      {/* Handle Clip */}
+      <Circle cx="32" cy="5" r="2.5" stroke="white" strokeWidth="1.5" />
+      
+      {/* Centered Food Cloche Symbol design element */}
+      <G transform="translate(19, 24)">
+        <Path d="M4 16c0-10 18-10 18 0H4z" stroke="white" strokeWidth="1.2" />
+        <Line x1="2" y1="17.5" x2="24" y2="17.5" stroke="white" strokeWidth="1.5" />
+        <Circle cx="13" cy="5.5" r="1.5" fill="white" />
       </G>
     </Svg>
   );
 }
 
-function IconWallet() {
+function IconWalletNaira() {
   return (
-    <Svg width={55} height={55} viewBox="0 0 50 50">
-      <Rect x="5" y="15" width="30" height="20" rx="2" stroke="white" strokeWidth="1.2" fill="none" />
-      <Path d="M 5 20 C 15 20, 25 15, 35 20" stroke="white" strokeWidth="1" fill="none" opacity="0.6" />
-      <Path d="M 28 15 L 28 8 C 28 6, 12 6, 12 8 L 12 15" stroke="white" strokeWidth="1.2" fill="none" />
-      <G transform="translate(30, 28)">
-        <Circle cx="10" cy="10" r="10" stroke="white" strokeWidth="1.2" fill="none" />
-        <Circle cx="10" cy="10" r="14" stroke="white" strokeWidth="0.5" fill="none" opacity="0.4" />
-        <SvgText x="10" y="15" fontSize="14" fill="white" fontWeight="bold" textAnchor="middle">₦</SvgText>
+    <Svg width={74} height={64} viewBox="0 0 74 64" fill="none">
+      {/* Base horizontal wallet container */}
+      <Rect x="2" y="14" width="46" height="34" rx="6" stroke="white" strokeWidth="1.6" />
+      <Path d="M34 14v10H14V14" stroke="white" strokeWidth="1.5" strokeLinejoin="round" />
+      
+      {/* Nested Naira Emblem construct right beside it */}
+      <G transform="translate(44, 24)">
+        <Circle cx="14" cy="14" r="13" stroke="white" strokeWidth="1.5" />
+        {/* Crisp vector lines mapping Naira Sign */}
+        <Path d="M9 20V8l10 12V8" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Line x1="7" y1="12" x2="21" y2="12" stroke="white" strokeWidth="1.5" />
+        <Line x1="7" y1="15.5" x2="21" y2="15.5" stroke="white" strokeWidth="1.5" />
       </G>
     </Svg>
   );
 }
 
 // ─────────────────────────────────────────────
-//  BACKGROUND & SKYLINE
+//  COMPREHENSIVE MAIN COMPONENT
 // ─────────────────────────────────────────────
-function BackgroundElements() {
-  return (
-    <Svg width={SW} height={SH} viewBox={`0 0 ${SW} ${SH}`} style={StyleSheet.absoluteFillObject} pointerEvents="none">
-      <G stroke="white" strokeWidth="0.8" fill="none" strokeDasharray="4,6" opacity="0.4">
-        <Path d={`M${CX - 20} ${SH * 0.3} Q${CX - 80} ${SH * 0.25} ${CX - 120} ${SH * 0.15}`} />
-        <Path d={`M${CX - 30} ${SH * 0.35} Q${CX - 120} ${SH * 0.38} ${CX - 140} ${SH * 0.45}`} />
-        <Path d={`M${CX + 20} ${SH * 0.3} Q${CX + 80} ${SH * 0.22} ${CX + 120} ${SH * 0.18}`} />
-        <Path d={`M${CX + 30} ${SH * 0.35} Q${CX + 100} ${SH * 0.4} ${CX + 120} ${SH * 0.48}`} />
-      </G>
-      <G fill="white" opacity="0.6">
-        <Path d="M 60 120 L 62 125 L 67 127 L 62 129 L 60 134 L 58 129 L 53 127 L 58 125 Z" />
-        <Path d="M 330 160 L 331 163 L 334 164 L 331 165 L 330 168 L 329 165 L 326 164 L 329 163 Z" />
-        <Path d="M 350 350 L 352 355 L 357 357 L 352 359 L 350 364 L 348 359 L 343 357 L 348 355 Z" />
-        <Path d="M 50 450 L 51 454 L 55 455 L 51 456 L 50 460 L 49 456 L 45 455 L 49 454 Z" />
-        <Path d="M 320 500 L 321 503 L 324 504 L 321 505 L 320 508 L 319 505 L 316 504 L 319 503 Z" />
-      </G>
-    </Svg>
-  );
-}
-
-function CitySkyline() {
-  return (
-    <Svg width={SW} height={180} viewBox={`0 0 ${SW} 180`}>
-      <Line x1={0} y1={150} x2={SW} y2={150} stroke="white" strokeWidth="1" opacity="0.4" />
-      <Line x1={SW * 0.3} y1={158} x2={SW * 0.7} y2={158} stroke="white" strokeWidth="0.8" opacity="0.3" />
-      
-      <G stroke="white" strokeWidth="0.8" fill="none" opacity="0.2">
-        <Rect x={SW * 0.1} y={100} width={40} height={50} />
-        <Rect x={SW * 0.3} y={115} width={30} height={35} />
-        <Rect x={SW * 0.75} y={90} width={40} height={60} />
-      </G>
-      <G stroke="white" strokeWidth="1" fill="none" opacity="0.4">
-        <Rect x={SW * 0.25} y={40} width={30} height={110} />
-        <Rect x={SW * 0.28} y={50} width={24} height={12} rx="2" />
-        <Line x1={SW * 0.25} y1={70} x2={SW * 0.34} y2={70} />
-        <Line x1={SW * 0.25} y1={100} x2={SW * 0.34} y2={100} />
-        
-        <Line x1={SW * 0.3} y1={40} x2={SW * 0.3} y2={25} />
-        <Rect x={SW * 0.65} y={60} width={25} height={90} />
-      </G>
-      
-      <Line x1={SW * 0.15} y1={150} x2={SW * 0.15} y2={130} stroke="white" strokeWidth="1.5" opacity="0.5" />
-      <Circle cx={SW * 0.15} cy={120} r={12} stroke="white" strokeWidth="1" fill="none" opacity="0.5" />
-      
-      <Line x1={SW * 0.85} y1={150} x2={SW * 0.85} y2={100} stroke="white" strokeWidth="1.5" opacity="0.5" />
-      <Path d={`M${SW * 0.85} 100 Q${SW * 0.85} 90 ${SW * 0.9} 90`} stroke="white" strokeWidth="1" fill="none" opacity="0.5" />
-      <Circle cx={SW * 0.9} cy={90} r={2} fill="white" opacity="0.5" />
-
-      <Path d={`M${SW * 0.55} 125 C${SW * 0.55} 110, ${SW * 0.51} 105, ${SW * 0.51} 105 C${SW * 0.51} 105, ${SW * 0.47} 110, ${SW * 0.47} 125 Z`} stroke="#4ADE80" strokeWidth="1.5" fill="none" />
-      <Circle cx={SW * 0.51} cy={105} r={8} fill="#4ADE80" />
-      <Circle cx={SW * 0.51} cy={105} r={3} fill="white" />
-    </Svg>
-  );
-}
-
-function Car() {
-  return (
-    <Svg width={110} height={40} viewBox="0 0 110 40">
-      <Path d="M 12 30 L 16 18 Q 22 10 35 10 L 65 10 Q 75 10 82 18 L 92 30 L 92 36 Q 92 38 88 38 L 12 38 Z" stroke="white" strokeWidth="1" fill="none" strokeLinejoin="round" />
-      <Path d="M 35 10 L 25 18 L 48 18 L 48 10 Z" stroke="white" strokeWidth="0.8" fill="none" opacity="0.6" />
-      <Path d="M 50 10 L 50 18 L 78 18 L 65 10 Z" stroke="white" strokeWidth="0.8" fill="none" opacity="0.6" />
-      <Line x1="12" y1="30" x2="92" y2="30" stroke="white" strokeWidth="0.5" opacity="0.4" />
-      <Circle cx="30" cy="38" r="7" stroke="white" strokeWidth="1" fill="#1C75FF" />
-      <Circle cx="30" cy="38" r="2" fill="white" opacity="0.8" />
-      <Circle cx="75" cy="38" r="7" stroke="white" strokeWidth="1" fill="#1C75FF" />
-      <Circle cx="75" cy="38" r="2" fill="white" opacity="0.8" />
-    </Svg>
-  );
-}
-
-// ═════════════════════════════════════════════
-//  MAIN SPLASH COMPONENT
-// ═════════════════════════════════════════════
 export default function AnimatedSplashScreen({ onComplete }: { onComplete: () => void }) {
   const baseOpacity = useRef(new Animated.Value(0)).current;
   const detailOpacity = useRef(new Animated.Value(0)).current;
   
-  // Icon Floats
-  const bowlY = useRef(new Animated.Value(-20)).current;
-  const bagY = useRef(new Animated.Value(-20)).current;
+  // Positional animations matching layout floats
+  const bowlY = useRef(new Animated.Value(-15)).current;
+  const bagY = useRef(new Animated.Value(-15)).current;
   const coffeeX = useRef(new Animated.Value(-20)).current;
   const walletX = useRef(new Animated.Value(20)).current;
   const cardX = useRef(new Animated.Value(-20)).current;
-  
-  // Car Animation (Starts offscreen left)
-  const carTranslateX = useRef(new Animated.Value(-SW)).current;
-
-  // Exit Animation
-  const globalScale = useRef(new Animated.Value(1)).current;
-  const globalOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    async function boot() {
+    async function init() {
       await SplashScreen.hideAsync();
-      runSequence();
+      
+      // Sequence timing chains mapping natural UI entry speeds
+      Animated.timing(baseOpacity, { toValue: 1, duration: 550, useNativeDriver: true }).start(() => {
+        Animated.parallel([
+          Animated.timing(detailOpacity, { toValue: 1, duration: 700, useNativeDriver: true }),
+          Animated.spring(bowlY, { toValue: 0, tension: 40, friction: 5, useNativeDriver: true }),
+          Animated.spring(bagY, { toValue: 0, tension: 40, friction: 5, useNativeDriver: true }),
+          Animated.spring(coffeeX, { toValue: 0, tension: 35, friction: 6, useNativeDriver: true }),
+          Animated.spring(walletX, { toValue: 0, tension: 35, friction: 6, useNativeDriver: true }),
+          Animated.spring(cardX, { toValue: 0, tension: 35, friction: 6, useNativeDriver: true }),
+        ]).start(() => {
+          setTimeout(() => {
+            onComplete();
+          }, 2500);
+        });
+      });
     }
-    boot();
+    init();
   }, []);
 
-  function runSequence() {
-    const spring = Easing.out(Easing.back(1.2));
-
-    // 1. Fade in the Base
-    Animated.timing(baseOpacity, { 
-      toValue: 1, 
-      duration: 600, 
-      useNativeDriver: true 
-    }).start(() => {
-      
-      // 2. Animate details, icons, and car driving in
-      Animated.parallel([
-        Animated.timing(detailOpacity, { toValue: 1, duration: 800, useNativeDriver: true }),
-        Animated.timing(bowlY, { toValue: 0, duration: 800, easing: spring, useNativeDriver: true }),
-        Animated.timing(bagY, { toValue: 0, duration: 800, easing: spring, useNativeDriver: true }),
-        Animated.timing(coffeeX, { toValue: 0, duration: 800, easing: spring, useNativeDriver: true }),
-        Animated.timing(walletX, { toValue: 0, duration: 800, easing: spring, useNativeDriver: true }),
-        Animated.timing(cardX, { toValue: 0, duration: 800, easing: spring, useNativeDriver: true }),
-        
-        // Car drives in to center position (0 relative to wrapper)
-        Animated.timing(carTranslateX, { toValue: 0, duration: 1200, easing: Easing.out(Easing.cubic), useNativeDriver: true })
-      ]).start(() => {
-        
-        // 3. Hold, then exit
-        setTimeout(() => {
-          Animated.parallel([
-            // Car drives off right
-            Animated.timing(carTranslateX, { toValue: SW, duration: 900, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
-            
-            // Screen zooms and fades
-            Animated.timing(globalOpacity, { toValue: 0, duration: 500, delay: 300, useNativeDriver: true }),
-            Animated.timing(globalScale, { toValue: 1.15, duration: 600, delay: 200, easing: Easing.in(Easing.cubic), useNativeDriver: true })
-          ]).start(() => {
-            onComplete();
-          });
-        }, 2000);
-        
-      });
-    });
-  }
-
   return (
-    <Animated.View style={[styles.container, { opacity: globalOpacity, transform: [{ scale: globalScale }] }]}>
-      
+    <View style={styles.container}>
+      {/* Background Micro Stars / Sparkles Layer */}
       <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: detailOpacity }]} pointerEvents="none">
-        <BackgroundElements />
+        <Svg width={SW} height={SH} style={StyleSheet.absoluteFillObject}>
+          {/* Subtle connecting dotted orbits */}
+          <Path d={`M ${SW * 0.25} ${SH * 0.32} Q ${SW * 0.15} ${SH * 0.4} ${SW * 0.22} ${SH * 0.52}`} stroke="rgba(255,255,255,0.25)" strokeDasharray="3 4" fill="none" />
+          <Path d={`M ${SW * 0.72} ${SH * 0.4} Q ${SW * 0.85} ${SH * 0.45} ${SW * 0.78} ${SH * 0.55}`} stroke="rgba(255,255,255,0.25)" strokeDasharray="3 4" fill="none" />
+          
+          {/* Star Node coordinates mapping exact artwork clusters */}
+          <Path d="M25 285l2 4l4 2l-4 2l-2 4l-2-4l-4-2l4-2z" fill="white" opacity="0.6"/>
+          <Path d="M40 500l1.5 3l3 1.5l-3 1.5l-1.5 3l-1.5-3l-3-1.5l3-1.5z" fill="white" opacity="0.4"/>
+          <Path d="M330 320l2 4l4 2l-4 2l-2 4l-2-4l-4-2l4-2z" fill="white" opacity="0.6"/>
+          <Path d="M345 520l1.5 3l3 1.5l-3 1.5l-1.5 3l-1.5-3l-3-1.5l3-1.5z" fill="white" opacity="0.4"/>
+        </Svg>
       </Animated.View>
 
+      {/* Floating Application Context Icons */}
       <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: detailOpacity }]} pointerEvents="none">
-        <Animated.View style={[styles.iconFloat, { top: SH * 0.15, left: SW * 0.1, transform: [{ translateY: bowlY }] }]}>
+        <Animated.View style={[styles.absoluteIcon, { top: SH * 0.28, left: SW * 0.08, transform: [{ translateY: bowlY }] }]}>
           <IconBowl />
         </Animated.View>
-        <Animated.View style={[styles.iconFloat, { top: SH * 0.35, left: SW * 0.1, transform: [{ translateX: coffeeX }] }]}>
+        <Animated.View style={[styles.absoluteIcon, { top: SH * 0.40, left: SW * 0.10, transform: [{ translateX: coffeeX }] }]}>
           <IconCoffee />
         </Animated.View>
-        <Animated.View style={[styles.iconFloat, { top: SH * 0.55, left: SW * 0.05, transform: [{ translateX: cardX }] }]}>
-          <IconCard />
+        <Animated.View style={[styles.absoluteIcon, { top: SH * 0.54, left: SW * 0.05, transform: [{ translateX: cardX }] }]}>
+          <IconCardWithWaves />
         </Animated.View>
-        <Animated.View style={[styles.iconFloat, { top: SH * 0.18, right: SW * 0.08, transform: [{ translateY: bagY }] }]}>
-          <IconBag />
+        <Animated.View style={[styles.absoluteIcon, { top: SH * 0.33, right: SW * 0.06, transform: [{ translateY: bagY }] }]}>
+          <IconBagWithCloche />
         </Animated.View>
-        <Animated.View style={[styles.iconFloat, { top: SH * 0.52, right: SW * 0.08, transform: [{ translateX: walletX }] }]}>
-          <IconWallet />
+        <Animated.View style={[styles.absoluteIcon, { top: SH * 0.55, right: SW * 0.06, transform: [{ translateX: walletX }] }]}>
+          <IconWalletNaira />
         </Animated.View>
       </Animated.View>
 
-      <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: baseOpacity }]}>
-        <View style={styles.logoContainer}>
-          <VeyoLogoMark />
-          <Text style={styles.logoText}>Veyo</Text>
-          <Text style={styles.tagline}>Your ride, on your time.</Text>
-        </View>
-
-        <View style={styles.skylineContainer}>
-          <CitySkyline />
-          <Animated.View style={[styles.carWrapper, { transform: [{ translateX: carTranslateX }] }]}>
-            <Car />
-          </Animated.View>
-        </View>
+      {/* Center Branded Identity Wrapper */}
+      <Animated.View style={[styles.centerIdentityContainer, { opacity: baseOpacity }]}>
+        <VeyoLogoMark />
+        <Text style={styles.brandTitleText}>Veyo</Text>
+        <Text style={styles.taglineSubtext}>Your ride, on your time.</Text>
       </Animated.View>
 
-      <Animated.View style={[styles.geminiBadge, { opacity: detailOpacity }]}>
-        <Text style={styles.geminiWith}>with</Text>
-        <Svg width={20} height={20} viewBox="0 0 20 20" style={{ marginHorizontal: 5 }}>
-          <Path d="M10 1 Q11.8 6 16 7 Q19 8 18 10 Q19 12 16 13 Q11.8 14 10 19 Q8.2 14 4 13 Q1 12 2 10 Q1 8 4 7 Q8.2 6 10 1 Z" fill="none" stroke="white" strokeWidth="0.8" />
-          <Path d="M10 1 Q11.8 6 16 7 Q13 6 10 1 Z" fill="#4285F4" />
-          <Path d="M16 7 Q19 8 18 10 Q16 8 16 7 Z" fill="#EA4335" />
-          <Path d="M10 19 Q8.2 14 4 13 Q7 14 10 19 Z" fill="#34A853" />
-          <Path d="M4 13 Q1 12 2 10 Q4 12 4 13 Z" fill="#FBBC05" />
+      {/* Vector Environment Skyline Base & Vehicle */}
+      <View style={styles.sceneryFooterContainer} pointerEvents="none">
+        <Svg width={SW} height={200} viewBox={`0 0 ${SW} 200`} fill="none">
+          {/* Subtle Skyline Outlines */}
+          <Rect x={SW * 0.12} y={110} width={28} height={50} stroke="rgba(255,255,255,0.2)" strokeWidth="1.2" />
+          <Rect x={SW * 0.38} y={60} width={42} height={100} stroke="rgba(255,255,255,0.25)" strokeWidth="1.2" />
+          {/* Detail windows within high-rise structural skeleton */}
+          {[1,2,3,4,5].map((idx) => (
+            <Rect key={idx} x={SW * 0.43} y={70 + (idx * 14)} width={12} height={6} stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+          ))}
+          <Rect x={SW * 0.52} y={100} width={34} height={60} stroke="rgba(255,255,255,0.18)" strokeWidth="1.2" />
+          <Rect x={SW * 0.70} y={120} width={30} height={40} stroke="rgba(255,255,255,0.2)" strokeWidth="1.2" />
+          <Rect x={SW * 0.82} y={95} width={26} height={65} stroke="rgba(255,255,255,0.15)" strokeWidth="1.2" />
+
+          {/* Perfect Horizon baseline platform separator */}
+          <Line x1="0" y1="160" x2={SW} y2="160" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
+          
+          {/* Minimalist streetlamp indicator */}
+          <Line x1={SW * 0.68} y1={160} x2={SW * 0.68} y2={125} stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
+          <Path d={`M${SW * 0.68} 125 Q${SW * 0.68} 120 ${SW * 0.72} 121`} stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" fill="none" />
+
+          {/* Abstract background platform trees */}
+          <Circle cx={SW * 0.22} cy={140} r={14} stroke="rgba(255,255,255,0.3)" strokeWidth="1.2" />
+          <Line x1={SW * 0.22} y1={140} x2={SW * 0.22} y2={160} stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
+
+          {/* Exact Sedan silhouette matching line weights */}
+          <G transform={`translate(${CX - 50}, 128)`}>
+            <Path 
+              d="M3 24c6-4 10-14 20-14h36c12 0 16 10 24 14h12v7H0v-7h3z" 
+              stroke="white" 
+              strokeWidth="1.5" 
+              fill="none" 
+            />
+            {/* Windows structural framing divider */}
+            <Path d="M22 11l-4 13h22V11H22z" stroke="rgba(255,255,255,0.6)" strokeWidth="1" />
+            <Path d="M43 11v13h24l-8-13H43z" stroke="rgba(255,255,255,0.6)" strokeWidth="1" />
+            {/* Wheels */}
+            <Circle cx="16" cy="31" r="7" stroke="white" strokeWidth="1.5" fill="#1A68FF" />
+            <Circle cx="16" cy="31" r="2.5" fill="white" />
+            <Circle cx="72" cy="31" r="7" stroke="white" strokeWidth="1.5" fill="#1A68FF" />
+            <Circle cx="72" cy="31" r="2.5" fill="white" />
+          </G>
+
+          {/* Accent Map Pin floating vertically above car */}
+          <G transform={`translate(${CX + 5}, 102)`}>
+            <Path d="M6 18C1 12 0 10 0 6a6 6 0 0112 0c0 4-1 6-6 12z" fill="#4ADE80" />
+            <Circle cx="6" cy="6" r="2.2" fill="#1A68FF" />
+          </G>
         </Svg>
-        <Text style={styles.geminiText}>Gemini</Text>
-      </Animated.View>
+      </View>
 
-    </Animated.View>
+      {/* Top Header System Integration Branding Badge */}
+      <Animated.View style={[styles.geminiIntegrationBadge, { opacity: detailOpacity }]}>
+        <Text style={styles.withPrefixText}>with</Text>
+        {/* Multicolored Google Gemini Quad-Pointed Star Token */}
+        <Svg width={18} height={18} viewBox="0 0 24 24" style={styles.starSpacingMargin}>
+          <Path 
+            d="M12 0c.5 5.2 4.8 9.5 10 10-5.2.5-9.5 4.8-10 10-.5-5.2-4.8-9.5-10-10 5.2-.5 9.5-4.8 10-10z" 
+            fill="white" 
+          />
+        </Svg>
+        <Text style={styles.geminiLabelText}>Gemini</Text>
+      </Animated.View>
+    </View>
   );
 }
 
 // ─────────────────────────────────────────────
-//  STYLES
+//  STYLES CONFIGURATION
 // ─────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1C75FF',
+    backgroundColor: '#1A68FF', // Flat, deep corporate digital blue match
   },
-  logoContainer: {
+  centerIdentityContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingBottom: 40,
+    paddingBottom: SH * 0.1,
   },
-  logoText: {
+  brandTitleText: {
     color: 'white',
-    fontSize: 60,
+    fontSize: 64,
     fontWeight: '900',
     fontStyle: 'italic',
-    letterSpacing: -1.5,
-    marginTop: -5,
+    letterSpacing: -2,
+    marginTop: 2,
   },
-  tagline: {
-    color: 'rgba(255,255,255,0.95)',
+  taglineSubtext: {
+    color: 'white',
     fontSize: 16,
-    marginTop: 8,
-    letterSpacing: 0.2,
+    fontWeight: '500',
+    marginTop: 12,
+    opacity: 0.95,
   },
-  skylineContainer: {
+  absoluteIcon: {
+    position: 'absolute',
+  },
+  sceneryFooterContainer: {
     position: 'absolute',
     bottom: 0,
     width: '100%',
-    height: 180,
+    height: 200,
   },
-  carWrapper: {
+  geminiIntegrationBadge: {
     position: 'absolute',
-    bottom: 25,
-    left: '32%', 
-  },
-  iconFloat: {
-    position: 'absolute',
-  },
-  geminiBadge: {
-    position: 'absolute',
-    top: 60,
-    right: 25,
+    top: 54,
+    right: 24,
     flexDirection: 'row',
     alignItems: 'center',
   },
-  geminiText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: '600',
-    letterSpacing: 0.2,
+  withPrefixText: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 15,
+    fontWeight: '400',
   },
-  geminiWith: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: 14,
+  starSpacingMargin: {
+    marginHorizontal: 6,
+  },
+  geminiLabelText: {
+    color: 'white',
+    fontSize: 19,
+    fontWeight: '700',
+    letterSpacing: -0.3,
   },
 });

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 // Notice we don't import Image from react-native anymore
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 
@@ -37,15 +37,14 @@ export const TabBarIcon = ({ name, title, focused }: TabBarIconProps) => {
 
   return (
     <Animated.View 
-      style={[animatedContainerStyle]}
-      className="flex flex-col justify-center items-center rounded-full w-14 h-14 mt-2"
+      style={[styles.containerParent, animatedContainerStyle]}
     >
       
       {/* Changed to Animated.Image and swapped Tailwind size classes for our animated style */}
       <Animated.Image
         source={name}
         alt={title || "icon"}
-        tintColor={focused ? "white" : "#6B7280"} 
+        // tintColor={focused ? "white" : "#6B7280"} 
         resizeMode="contain"
         style={animatedIconStyle}
       />
@@ -53,7 +52,7 @@ export const TabBarIcon = ({ name, title, focused }: TabBarIconProps) => {
       {!focused && (
         <Text 
           className="font-Jakarta-Bold text-[10px] mt-1"
-          style={{ color: focused ? '#FFFFFF' : '#000000' }} 
+          style={{ color: focused ? '#000000' : '#FFFFFF' }} 
         >
           {title}
         </Text>
@@ -62,5 +61,18 @@ export const TabBarIcon = ({ name, title, focused }: TabBarIconProps) => {
     </Animated.View>
   );
 };
+
+const styles = StyleSheet.create({
+  containerParent: {
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 9999, // Perfect circular rounded-full frame execution
+    width: 56,  // Exact matching mapping for w-14
+    height: 56, // Exact matching mapping for h-14
+    marginTop: 8, // Exact matching mapping for mt-2
+  }
+});
 
 export default TabBarIcon;

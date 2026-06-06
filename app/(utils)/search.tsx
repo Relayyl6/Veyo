@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, KeyboardAvoidingView, ActivityIndicator, Image, Platform } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PageHeader from '@/components/PageHeader';
@@ -8,7 +8,6 @@ import Drop, { SearchPill, TrendingItem } from '@/components/drop';
 import MealCard from '@/components/MealCard';
 import CategoryCard from '@/components/CategoryCard';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 export default function SearchScreen() {
     const router = useRouter()
@@ -208,11 +207,11 @@ export default function SearchScreen() {
         <SafeAreaView className="flex-1 bg-white">
             <Stack.Screen options={{ headerShown: false }} />
 
-            <KeyboardAwareScrollView 
-                className='flex-1 bg-white'
-                bottomOffset={20} // Adds a little breathing room above the keyboard
-                showsVerticalScrollIndicator={false}
-            >
+            <KeyboardAvoidingView
+                  behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                  style={{ flex: 1, backgroundColor: 'white' }}
+                  keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+                >
                 <PageHeader 
                     title="Search" 
                     rightIconName="filter"
@@ -293,7 +292,7 @@ export default function SearchScreen() {
                         </View>
                     </>
                 )}
-            </KeyboardAwareScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }

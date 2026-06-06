@@ -57,11 +57,7 @@ export const AnimatedTabBar = ({
       ]}
     >
       {/* Animated background */}
-      <AnimatedTabBarBackground 
-        currentRoute={state.routes[state.index].name}
-        previousRoute={previousRoute}
-        direction={direction}
-      />
+      <AnimatedTabBarBackground />
       
       {/* Tab buttons */}
       <View style={styles.tabBarContent}>
@@ -117,8 +113,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 37,
+    paddingHorizontal: 0,
+    paddingBottom: 7,
   },
   tabButton: {
     flex: 1,
