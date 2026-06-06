@@ -1,48 +1,43 @@
 const { withAndroidManifest } = require('@expo/config-plugins');
 
-const withOptionalARCore = (config) => {
+module.exports = function withOptionalARCore(config) {
   return withAndroidManifest(config, async (config) => {
     let androidManifest = config.modResults;
-    let mainApplication = androidManifest.manifest.application[0];
+    
+    // 1. Force inject the XML tools namespace required for structural removals
+    if (!androidManifest.manifest.$['xmlns:tools']) {
+      androidManifest.manifest.$['xmlns:tools'] = 'http://schemas.android.com/tools';
+    }
 
-    // Initialize meta-data array safely if missing
+    // 2. Locate or create the <application> block
+    let mainApplication = androidManifest.manifest.application[0];
     if (!mainApplication['meta-data']) {
       mainApplication['meta-data'] = [];
     }
 
-    // Strip out third-party hard-coded dependencies to prevent duplicates
+    // Completely wipe out standard com.google.ar.core meta-data tags if present
     mainApplication['meta-data'] = mainApplication['meta-data'].filter(
       (meta) => meta.$['android:name'] !== 'com.google.ar.core'
     );
 
-    // Inject the fallback flag setting ARCore to optional status
-    mainApplication['meta-data'].push({
-      $: {
-        'android:name': 'com.google.ar.core',
-        'android:value': 'optional', 
-      },
-    });
-
-    // Initialize hardware use-feature parameters safely
+    // 3. NUCLEAR REMOVAL: Add a uses-feature element that forcibly removes the AR camera flag
     if (!androidManifest.manifest['uses-feature']) {
       androidManifest.manifest['uses-feature'] = [];
     }
 
+    // Remove any regular definitions
     androidManifest.manifest['uses-feature'] = androidManifest.manifest['uses-feature'].filter(
       (feat) => feat.$['android:name'] !== 'android.hardware.camera.ar'
     );
 
-    // Bypass requirement constraints during Google OS package validation runs
+    // Append the removal command block
     androidManifest.manifest['uses-feature'].push({
       $: {
         'android:name': 'android.hardware.camera.ar',
-        'android:required': 'false', 
-      },
+        'tools:node': 'remove' // <-- This tells Android Studio to strictly delete the requirement from the final build
+      }
     });
 
     return config;
   });
 };
-
-// Expose the module using commonJS standards
-module.exports = withOptionalARCore;
