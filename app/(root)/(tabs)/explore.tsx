@@ -7,6 +7,7 @@ import { images } from '@/constants/utils';
 import Header from '@/components/Header';
 import { useUser } from '@clerk/expo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { PressableHybrid } from '@/components/CustomPressable';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width - 40; // Full width minus 20px padding on each side
@@ -236,7 +237,9 @@ export default function Explore() {
                   zIndex: listData.length - index,
                 }}
               >
-                <View className="flex-1 rounded-[20px] overflow-hidden bg-black shadow-sm shadow-neutral-400">
+                <PressableHybrid
+                  className="flex-1 rounded-[20px] overflow-hidden bg-black shadow-sm shadow-neutral-400"
+                >
                   <Image 
                     source={{ uri: item.image }} 
                     className="absolute w-full h-full"
@@ -256,7 +259,7 @@ export default function Explore() {
                       <Text className="text-white/90 text-xs font-Jakarta">{item.subtitle}</Text>
                     </View>
                   </View>
-                </View>
+                </PressableHybrid>
               </Animated.View>
             );
           }).reverse()}

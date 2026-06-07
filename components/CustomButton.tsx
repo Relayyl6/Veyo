@@ -13,8 +13,7 @@ import * as Haptics from 'expo-haptics';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { PressableHybrid } from '@/components/CustomPressable'; 
 import { ButtonProps } from '@/types/type';
-
-import { runOnJS } from "react-native-worklets"
+import { scheduleOnRN } from 'react-native-worklets';
 
 const getBgVariantStyle = (variant: string) => {
   switch (variant) {
@@ -93,26 +92,27 @@ const CustomButton = ({
       translateX.value = newPosition;
 
       const intensity = newPosition / MAX_TRANSLATE;
-      if (pulsarComposer?.set) {
-        pulsarComposer.set(intensity, intensity);
-      } else {
-        if (Math.floor(newPosition) % 30 === 0) {
-          runOnJS(Haptics.selectionAsync)();
-        }
+    if (pulsarComposer?.set) {
+      pulsarComposer.set(intensity, intensity);
+    } else {
+      if (Math.floor(newPosition) % 30 === 0) {
+        // THE MODERN WAY: Pass function name, then pass arguments as subsequent fields
+        scheduleOnRN(Haptics.selectionAsync);
       }
-    })
-    .onEnd(() => {
+    }
+  })
+    .onEnd((_gestureEvent) => {
       if (pulsarComposer?.stop) pulsarComposer.stop();
 
       if (translateX.value > MAX_TRANSLATE * 0.8) {
         isCompleted.value = true;
         translateX.value = withSpring(MAX_TRANSLATE, { damping: 15 });
         
-        runOnJS(triggerSuccessHaptic)();
-        
-        // THE TYPE FIX: Safely assert that onPress exists before scheduling it on the JS Thread
+        scheduleOnRN(triggerSuccessHaptic);
+      
+        // Execute optional callback safely
         if (onPress) {
-          runOnJS(onPress)();
+            scheduleOnRN(onPress, _gestureEvent as any);
         }
       } else {
         translateX.value = withSpring(0, { damping: 15, stiffness: 150 });
@@ -144,11 +144,13 @@ const CustomButton = ({
     );
   }
 
+  const { onLongPress, onPressIn, onPressOut, ...cleanProps } = props;
+
   return (
     <PressableHybrid 
       onPress={onPress} 
       className={`flex rounded-full flex-row items-center justify-center shadow-md shadow-neutral-400/70 p-4 ${getBgVariantStyle(bgVariant)} ${className}`} 
-      {...props}
+      {...cleanProps}
     >
       {IconLeft && <IconLeft />}
       <Text className={`text-lg font-bold mx-2 ${getTextVariantStyle(textVariant)}`} numberOfLines={1}>

@@ -25,11 +25,10 @@
       "@clerk/expo",
       "expo-secure-store",
       "expo-web-browser",
-      [
-        "expo-build-properties",
+       [
+        "react-native-maps",
         {
-          "android": {
-          }
+          "androidGoogleMapsApiKey": "AIzaSyDBC9dOgAb2cN9c_DZgAj9mSX2ZlaS7DOM"
         }
       ],
       [

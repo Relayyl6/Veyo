@@ -174,8 +174,8 @@
 //             isIndoorEnabled: true,
 //             mapType: GoogleMapsMapType.HYBRID,
 //             selectionEnabled: true,
-//             isMyLocationEnabled: false, // requires location permission
-//             isTrafficEnabled: true,
+//             isMyLocationEnabled: true, // requires location permission
+//             isTrafficEnabled: false,
 //             // minZoomPreference: 1,
 //             // maxZoomPreference: 20,
 //           }}

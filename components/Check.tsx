@@ -158,7 +158,7 @@ export const SuccessAnimation = () => {
       <NativeTypewriter
         texts={[
           'You have successfully verified\nyour account.',
-          'Would you like to go to the home now?',
+          'Please proceed to your home page',
         ]}
         typingSpeed={50}
         pauseDelay={1500}
@@ -167,7 +167,7 @@ export const SuccessAnimation = () => {
 
       <CustomButton
         title="Browse Home"
-        onPress={() => router.replace('/(root)/(tabs)/home')}
+        onPress={() => router.push('/(root)/(tabs)/home')}
         className='mt-5'
       />
     </View>

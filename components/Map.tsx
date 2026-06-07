@@ -2,14 +2,16 @@ import React, { useEffect, useState, useRef } from 'react';
 import { StyleSheet, View, ActivityIndicator, Text, Switch } from 'react-native';
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
-import MapView, {PROVIDER_DEFAULT} from "react-native-maps";
+// 1. PROVIDER_DEFAULT forces Apple Maps on iOS and Google Maps on Android
+import MapView, { PROVIDER_DEFAULT, Marker } from "react-native-maps";
 
 const Map = () => {
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isEnabled, setIsEnabled] = useState(false); // Controls WebView vs Native Map view state
   const webViewRef = useRef<WebView>(null);
+  const mapRef = useRef<MapView>(null); // Ref handler for smooth native camera tracking pan movements
 
-  // Replaces: showsUserLocation={true} & initialRegion
   useEffect(() => {
     (async () => {
       try {
@@ -20,7 +22,6 @@ const Map = () => {
           return;
         }
 
-        // Fast fallback check using cached device coordinates
         let lastKnown = await Location.getLastKnownPositionAsync({});
         if (lastKnown) {
           setUserLocation({
@@ -30,7 +31,6 @@ const Map = () => {
           setIsLoading(false);
         }
 
-        // Live highly accurate location polling lock
         let location = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Balanced,
         });
@@ -43,7 +43,7 @@ const Map = () => {
         setUserLocation(liveCoords);
         setIsLoading(false);
 
-        // Dynamically shift the browser frame center to live coordinates without re-rendering the root tree
+        // Update WebView script layer if active
         const updateJS = `
           if (typeof map !== 'undefined') {
             map.flyTo([${liveCoords.latitude}, ${liveCoords.longitude}], 14, { animate: true, duration: 1.5 });
@@ -53,6 +53,13 @@ const Map = () => {
         `;
         webViewRef.current?.injectJavaScript(updateJS);
 
+        // Dynamically update Native MapView camera coordinates smoothly if user has flipped the toggle
+        mapRef.current?.animateToRegion({
+          ...liveCoords,
+          latitudeDelta: 0.015,
+          longitudeDelta: 0.015,
+        }, 1000);
+
       } catch (error) {
         console.error("Error securing live coordinates: ", error);
         setIsLoading(false);
@@ -60,7 +67,7 @@ const Map = () => {
     })();
   }, []);
 
-  // Set default structural safety coordinates (e.g. Lagos, Nigeria) if phone fails device location retrieval
+  // Structural coordinate system fallbacks (Lagos, Nigeria)
   const startLat = userLocation?.latitude ?? 6.5244;
   const startLng = userLocation?.longitude ?? 3.3792;
 
@@ -79,23 +86,9 @@ const Map = () => {
     <body>
       <div id="map"></div>
       <script>
-        // Equates to: provider={PROVIDER_DEFAULT} & initialRegion setup details
-        var map = L.map('map', { 
-          zoomControl: false, 
-          attributionControl: false 
-        }).setView([${startLat}, ${startLng}], 13);
-        
-        // Equates to: mapType='satellite' (Esri World Imagery)
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-          maxZoom: 19
-        }).addTo(map);
-
-        // Equates to: showsPointsOfInterests={true} (CartoDB Hybrid Vector Street Typography & POIs Overlay)
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png', {
-          maxZoom: 19
-        }).addTo(map);
-
-        // If location is already ready on mounting layout, drop active locator marker instantly
+        var map = L.map('map', { zoomControl: false, attributionControl: false }).setView([${startLat}, ${startLng}], 13);
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }).addTo(map);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
         if (${userLocation !== null}) {
           L.marker([${startLat}, ${startLng}]).addTo(map).bindPopup("You are here").openPopup();
         }
@@ -104,16 +97,14 @@ const Map = () => {
     </html>
   `;
 
-  const [isEnabled, setIsEnabled] = useState(false);
   const toggleSwitch = () => setIsEnabled(previousState => !previousState);
-
 
   return (
     <View style={[styles.wrapper, { borderRadius: 16 }]}>
       <Switch
-        className='top-2 right-2 absolute z-10'
-        trackColor={{false: '#767577', true: '#81b0ff'}}
-        thumbColor={isEnabled ? '#f5dd4b' : '#f4f3f4'}
+        className='top-4 right-4 absolute z-50' // Increased z-index to stay accessible over native map stacks
+        trackColor={{false: '#767577', true: '#3122D2'}}
+        thumbColor={isEnabled ? '#ffffff' : '#f4f3f4'}
         ios_backgroundColor="#3e3e3e"
         onValueChange={toggleSwitch}
         value={isEnabled}
@@ -121,17 +112,35 @@ const Map = () => {
 
       {!isEnabled ? (
         <WebView
-        ref={webViewRef}
-        originWhitelist={['*']}
-        source={{ html: mapHtml }}
-        style={styles.map}
-        javaScriptEnabled={true}
-        domStorageEnabled={true}
-      />
+          ref={webViewRef}
+          originWhitelist={['*']}
+          source={{ html: mapHtml }}
+          style={styles.map}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+        />
       ) : (
         <MapView
+          ref={mapRef}
           provider={PROVIDER_DEFAULT}
-        />
+          style={styles.map} 
+          showsUserLocation={true}
+          mapType='hybrid'
+          showsMyLocationButton={true}
+          initialRegion={{
+            latitude: startLat,
+            longitude: startLng,
+            latitudeDelta: 0.015,
+            longitudeDelta: 0.015,
+          }}
+        >
+          {userLocation && (
+            <Marker 
+              coordinate={{ latitude: startLat, longitude: startLng }}
+              title="You are here"
+            />
+          )}
+        </MapView>
       )}
 
       {isLoading && (
@@ -152,13 +161,14 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   map: {
-    flex: 1,
+    flex: 1, // Forces the view structure components to fill out container boundaries completely
   },
   loaderOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(11, 21, 40, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 40
   }
 });
 
