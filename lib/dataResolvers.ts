@@ -129,3 +129,8 @@ export const getEnrichedRidesForUser = (userId: string) => {
   const userRides = rides.rides.filter((r: Ride) => r.user_id === userId);
   return userRides.map((ride: Ride) => getEnrichedRide(ride.id));
 };
+
+export const getDriverFullName = (driverProfile: { user_id: string }): string => {
+  const user = getUserById(driverProfile.user_id);
+  return user ? `${user.first_name} ${user.last_name}`.trim() : 'Driver';
+};

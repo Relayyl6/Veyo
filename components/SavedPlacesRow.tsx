@@ -160,7 +160,7 @@ export const SavedPlacesRow = () => {
                 onPress={handleAddNewPlace} 
                 className="flex-1 bg-[#0286FF] h-12 rounded-full items-center justify-center"
               >
-                <Text className="text-white font-JakartaBold">Save Place</Text>
+                <Text className="text-white font-JakartaBold">Save</Text>
               </TouchableOpacity>
             </View>
 

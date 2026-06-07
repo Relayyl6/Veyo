@@ -17,26 +17,70 @@ import { useLocationStore } from '@/store/store'
 const Index = () => {
   const { user } = useUser()
   // // This hooks gives you the exact height of the device's notch/status bar
-  const insets = useSafeAreaInsets() 
+  const insets = useSafeAreaInsets();
 
-  // const [hasPermissions, setHasPermissions] = useState(false)
+  const { setUserLocation, setDestinationLocation, setIsLoading } = useLocationStore()
 
-  // useEffect(() => {
-  //   const requestLocation = async () => {
-  //     let { status } = await Location.requestForegroundPermissionsAsync();
+  const [hasPermissions, setHasPermissions] = useState(false)
 
-  //     if (status === "denied") {
-        
-  //     }
-  //   };
+    useEffect(() => {
+    const requestLocation = async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
 
-  //   requestLocation()
-  // }, []) 
+      if (status !== "granted") {
+        setHasPermissions(false);
+        return;
+      }
 
-  // const { setUserLocation, setDestinationLocation } = useLocationStore()
+      setIsLoading(true);
+
+      try {
+        // Try lastKnown first for faster response
+        let lastKnown = await Location.getLastKnownPositionAsync({});
+        if (lastKnown) {
+          let addressResult = await Location.reverseGeocodeAsync({
+            latitude: lastKnown.coords.latitude,
+            longitude: lastKnown.coords.longitude,
+          })
+          
+          setUserLocation({
+            latitude: lastKnown.coords.latitude,
+            longitude: lastKnown.coords.longitude,
+            address: `${addressResult[0].name}, ${addressResult[0].region}`
+          });
+        }
+
+        // Get current position in the background
+        let location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+
+        let addressResult = await Location.reverseGeocodeAsync({
+          latitude: location.coords?.latitude!,
+          longitude: location.coords?.longitude!,
+        })
+
+        setUserLocation({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+          address: `${addressResult[0].name}, ${addressResult[0].region}`
+        });
+      } catch (error) {
+        console.log("Error getting location:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    requestLocation()
+  }, [])
+
+  const handleSignOut = () => {}
+  const handleDestinationPress = () => {}
+
+
 
   return (
-    // 3. Changed from SafeAreaView to a standard View so the blur reaches the absolute top
     <View className='bg-general-500 flex-1 relative'>
 
       {/* --- THE BLURRED HEADER --- */}
@@ -49,7 +93,7 @@ const Index = () => {
           zIndex: 10,
           paddingTop: insets.top,
           paddingBottom: 10,
-          backgroundColor: 'transparent' // <-- Or use 'rgba(255,255,255, 0.8)' if you want a slight tint so text is readable
+          backgroundColor: 'transparent',
         }}
       >
         <Header 

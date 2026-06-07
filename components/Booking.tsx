@@ -14,7 +14,17 @@ const Day = ({day}: {day: typeof weekdays[number]}) => {
         <View>
             <View className='flex flex-row justify-between items-center'>
                 <Text>{day}</Text>
-                <Switch value={isOn} onValueChange={(value) => setIsOn(value)} trackColor={{ true: "#999" }}/>
+                <Switch
+                    value={isOn}
+                    onValueChange={(value) => setIsOn(value)}
+                    trackColor={{ true: "#999" }}
+                    style={{
+                        transformOrigin: ['100%', '50%', 0],
+                        transform:[{
+                            scale: 0.7
+                        }]
+                    }}
+                />
             </View>
         </View>
     )

@@ -233,7 +233,7 @@ export default function SearchScreen() {
                         <Text className="mt-4 font-Jakarta text-gray-500">Searching Veyo...</Text>
                     </View>
                 ) : (
-                    <>
+                    <ScrollView showsVerticalScrollIndicator={false}>
                         <Drop title="Recent Search" next="CLEAR ALL"/>
                         <View className="flex-row flex-wrap px-4 mt-4 mb-6">
                             {recentSearches.map((item, index) => (
@@ -290,7 +290,7 @@ export default function SearchScreen() {
                                 imageUrl="https://images.unsplash.com/photo-1608686207856-001b95cf60ca?w=800&q=90" 
                             />
                         </View>
-                    </>
+                    </ScrollView>
                 )}
             </KeyboardAvoidingView>
         </SafeAreaView>
