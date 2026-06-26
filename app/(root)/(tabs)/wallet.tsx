@@ -1,327 +1,225 @@
-// // // Features: Add/remove debit cards, view Veyo app balance,
-// // // see current promotions or discount codes, and view a 
-// // // summary of ride spending.
+import React, { useRef, useState } from "react";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { Map, Camera } from "@maplibre/maplibre-react-native";
+import type { CameraRef } from "@maplibre/maplibre-react-native";
 
-// // import { StyleSheet, Text, View } from 'react-native'
-// // import React from 'react'
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-// // const Wallet = () => {
-// //   return (
-// //     <View>
-// //       <Text>Wallet</Text>
-// //     </View>
-// //   )
-// // }
-// // // 
-// // export default Wallet
+type InteractionConfig = {
+  dragPan: boolean;
+  touchZoom: boolean;
+  doubleTapZoom: boolean;
+  doubleTapHoldZoom: boolean;
+  touchRotate: boolean;
+  touchPitch: boolean;
+};
 
-// // const styles = StyleSheet.create({})
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-// import { AppleMaps, GoogleMaps } from 'expo-maps';
-// import { Alert, Button, Platform, StyleSheet, Text, View } from 'react-native';
-// import polyline from '@mapbox/polyline';
-// import { locationList } from "@/constants/LocationList"
-// import { useRef, useState } from 'react';
-// import { useBottomTabOverflow } from '@/components/BlurTabBarBackground.ios'
-// import { SafeAreaView } from 'react-native-safe-area-context';
-// import { useImage } from "expo-image";
-// import { AppleMapsMapType } from 'expo-maps/build/apple/AppleMaps.types';
-// import { GoogleMapsMapType } from 'expo-maps/build/google/GoogleMaps.types';
+const MAP_STYLE = "https://demotiles.maplibre.org/style.json";
 
-// const GOOGLE_MAPS_APIKEY = process.env.EXPO_PUBLIC_GOOGLE_API_KEY!;
+const DEFAULT_INTERACTIONS: InteractionConfig = {
+  dragPan: true,
+  touchZoom: true,
+  doubleTapZoom: true,
+  doubleTapHoldZoom: false,
+  touchRotate: true,
+  touchPitch: false,
+};
 
-// export default function App() {
-//   const [locationIndex, setLocationIndex] = useState(0);
+// ─── Component ────────────────────────────────────────────────────────────────
 
-//   const bottom = useBottomTabOverflow();
+export default function MapPage() {
+  const cameraRef = useRef<CameraRef>(null);
+  const [interactions, setInteractions] = useState<InteractionConfig>(DEFAULT_INTERACTIONS);
+  const [showControls, setShowControls] = useState(false);
 
-//   const image = useImage("https://picsum.photos/128", {
-//     onError(error) {
-//       console.error(error);
-//     },
-//   });
+  // Toggle a single interaction on/off
+  const toggle = (key: keyof InteractionConfig) => {
+    setInteractions((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
-//   const gref = useRef<GoogleMaps.MapView>(null);
-//   const aref = useRef<AppleMaps.MapView>(null);
+  const resetView = () => {
+    // setStop lives on CameraRef, not MapRef.
+    // The Camera component owns all camera movement methods.
+    cameraRef.current?.setStop({
+      center: [0, 20],
+      zoom: 2,
+      bearing: 0,
+      pitch: 0,
+      duration: 800,
+      easing: "ease",
+    });
+  };
 
-//   const handleChangeWithRef = (direction: "next" | "prev") => {
-//     const newIndex = locationIndex + (direction === "next" ? 1 : -1);
-//     const nextLocation = locationList[newIndex];
-
-//     // 1. Create the camera configuration object so you don't repeat yourself
-//     const newCameraPosition = {
-//       coordinates: {
-//         latitude: nextLocation.stores[0].point[0],
-//         longitude: nextLocation.stores[0].point[1],
-//       },
-//       zoom: 10,
-//     };
-
-//     // 2. Check the platform and trigger the correct ref
-//     if (Platform.OS === 'ios') {
-//       aref.current?.setCameraPosition(newCameraPosition);
-//     } else if (Platform.OS === 'android') {
-//       gref.current?.setCameraPosition(newCameraPosition);
-//     }
-
-//     // 3. Update state after animation is triggered
-//     setLocationIndex(newIndex);
-//   };
-
-//   const cameraPosition = {
-//     coordinates: {
-//       latitude: locationList[locationIndex].stores[0].point[0],
-//       longitude: locationList[locationIndex].stores[0].point[1]
-//     },
-//     zoom: 12
-//   }
-
-//   const renderMapControl = () => (
-//     <>
-//       <View style={{ flex: 8 }} pointerEvents="none" />
-
-//       <View style={{
-//         flex: 1,
-//         flexDirection: "row",
-//         justifyContent: "center",
-//         alignItems: "center",
-//         gap: 8,
-//         backgroundColor: "rgba(0, 0, 0, 0.5)",
-//       }} pointerEvents="auto">
-//         <Button title="Prev" onPress={() => handleChangeWithRef("prev")} />
-//         <Button title="Next" onPress={() => handleChangeWithRef("next")} />
-//       </View>
-//     </>
-//   )
-
-//   if (Platform.OS === 'ios') {
-//     return (
-//       <>
-//         <AppleMaps.View
-//           ref={aref}
-//           style={StyleSheet.absoluteFill}
-//           cameraPosition={cameraPosition}
-//           markers={markersApple}
-//           annotations={[
-//             {
-//               coordinates: { latitude: 37.8199, longitude: -122.4783 },
-//               title: "Expo HQ",
-//               text: "Expo HQ",
-//               textColor: "white",
-//               backgroundColor: "black",
-//               icon: image ? image : undefined,
-//             },
-//           ]}
-//           polylines={[
-//             {
-//               color: "blue",
-//               width: 5,
-//               coordinates: polylineCoordinates,
-//             },
-//           ]}
-//           properties={{
-//             isTrafficEnabled: false,
-//             mapType: AppleMapsMapType.STANDARD,
-//             selectionEnabled: true,
-//           }}
-//           // onPolylineClick={(event) => {
-//           //   console.log(event);
-//           //   Alert.alert("Polyline clicked", JSON.stringify(event));
-//           // }}
-
-//           onMapClick={(e) => {
-//             console.log(
-//               JSON.stringify({ type: "onMapClick", data: e }, null, 2)
-//             );
-//           }}
-//           onMarkerClick={(e) => {
-//             console.log(
-//               JSON.stringify({ type: "onMarkerClick", data: e }, null, 2)
-//             );
-//           }}
-//           onCameraMove={(e) => {
-//             console.log(
-//               JSON.stringify({ type: "onCameraMove", data: e }, null, 2)
-//             );
-//           }}
-//         />
-//         <SafeAreaView
-//           className='flex-1'
-//           style={{ paddingBottom: bottom }}
-//           pointerEvents='box-none'
-//         >
-//           {renderMapControl()}
-//         </SafeAreaView>
-//       </>
-//     );
-//   } else if (Platform.OS === 'android') {
-//     return (
-//       <>
-//         <GoogleMaps.View
-//           ref={gref}
-//           style={StyleSheet.absoluteFill}
-//           cameraPosition={cameraPosition}
-//           markers={markersGoogle}
-//           polylines={[
-//             {
-//               color: "blue",
-//               width: 5,
-//               coordinates: polylineCoordinates,
-//             },
-//           ]}
-//           properties={{
-//             isBuildingEnabled: true,
-//             isIndoorEnabled: true,
-//             mapType: GoogleMapsMapType.HYBRID,
-//             selectionEnabled: true,
-//             isMyLocationEnabled: true, // requires location permission
-//             isTrafficEnabled: false,
-//             // minZoomPreference: 1,
-//             // maxZoomPreference: 20,
-//           }}
-//           onPolylineClick={(event) => {
-//             console.log(event);
-//             Alert.alert("Polyline clicked", JSON.stringify(event));
-//           }}
-//           onMapLoaded={() => {
-//             console.log(JSON.stringify({ type: "onMapLoaded" }, null, 2));
-//           }}
-//           onMapClick={(e) => {
-//             console.log(
-//               JSON.stringify({ type: "onMapClick", data: e }, null, 2)
-//             );
-//           }}
-//           onMapLongClick={(e) => {
-//             console.log(
-//               JSON.stringify({ type: "onMapLongClick", data: e }, null, 2)
-//             );
-//           }}
-//           onPOIClick={(e) => {
-//             console.log(
-//               JSON.stringify({ type: "onPOIClick", data: e }, null, 2)
-//             );
-//           }}
-//           onMarkerClick={(e) => {
-//             console.log(
-//               JSON.stringify({ type: "onMarkerClick", data: e }, null, 2)
-//             );
-//           }}
-//           onCameraMove={(e) => {
-//             console.log(
-//               JSON.stringify({ type: "onCameraMove", data: e }, null, 2)
-//             );
-//           }}
-//         />
-//         <SafeAreaView
-//           className='flex-1'
-//           style={{ paddingBottom: bottom }}
-//           pointerEvents='box-none'
-//         >
-//           {renderMapControl()}
-//         </SafeAreaView>
-//       </>
-//     );
-//   } else {
-//     return <Text>Maps are only available on Android and iOS</Text>;
-//   }
-// }
-
-// const markersGoogle = [
-//   {
-//     coordinates: { latitude: 49.259133, longitude: -123.10079 },
-//     title: "49th Parallel Café & Lucky's Doughnuts - Main Street",
-//     snippet: "49th Parallel Café & Lucky's Doughnuts - Main Street",
-//     draggable: true,
-//   },
-//   {
-//     coordinates: { latitude: 49.268034, longitude: -123.154819 },
-//     title: "49th Parallel Café & Lucky's Doughnuts - 4th Ave",
-//     snippet: "49th Parallel Café & Lucky's Doughnuts - 4th Ave",
-//     draggable: true,
-//   },
-//   {
-//     coordinates: { latitude: 49.286036, longitude: -123.12303 },
-//     title: "49th Parallel Café & Lucky's Doughnuts - Thurlow",
-//     snippet: "49th Parallel Café & Lucky's Doughnuts - Thurlow",
-//     draggable: true,
-//   },
-//   {
-//     coordinates: { latitude: 49.311879, longitude: -123.079241 },
-//     title: "49th Parallel Café & Lucky's Doughnuts - Lonsdale",
-//     snippet: "49th Parallel Café & Lucky's Doughnuts - Lonsdale",
-//     draggable: true,
-//   },
-//   {
-//     coordinates: {
-//       latitude: 49.27235336018808,
-//       longitude: -123.13455838338278,
-//     },
-//     title: "A La Mode Pie Café - Granville Island",
-//     snippet: "A La Mode Pie Café - Granville Island",
-//     draggable: true,
-//   },
-// ];
-
-// const markersApple = [
-//   {
-//     coordinates: { latitude: 49.259133, longitude: -123.10079 },
-//     title: "49th Parallel Café & Lucky's Doughnuts - Main Street",
-//     tintColor: "orange",
-//     systemImage: "fork.knife",
-//   },
-//   {
-//     coordinates: { latitude: 49.268034, longitude: -123.154819 },
-//     title: "49th Parallel Café & Lucky's Doughnuts - 4th Ave",
-//     tintColor: "brown",
-//     systemImage: "cup.and.saucer.fill",
-//   },
-//   {
-//     coordinates: { latitude: 49.286036, longitude: -123.12303 },
-//     title: "49th Parallel Café & Lucky's Doughnuts - Thurlow",
-//     tintColor: "brown",
-//     systemImage: "cup.and.saucer.fill",
-//   },
-//   {
-//     coordinates: { latitude: 49.311879, longitude: -123.079241 },
-//     title: "49th Parallel Café & Lucky's Doughnuts - Lonsdale",
-//     tintColor: "brown",
-//     systemImage: "cup.and.saucer.fill",
-//   },
-//   {
-//     coordinates: {
-//       latitude: 49.27235336018808,
-//       longitude: -123.13455838338278,
-//     },
-//     title: "A La Mode Pie Café - Granville Island",
-//     tintColor: "orange",
-//     systemImage: "fork.knife",
-//   },
-// ];
-// const polylineCoordinates = [
-//   { latitude: 33.8121, longitude: -117.919 }, // Disneyland
-//   { latitude: 33.837, longitude: -117.912 },
-//   { latitude: 33.88, longitude: -117.9 },
-//   { latitude: 33.9456, longitude: -117.8735 },
-//   { latitude: 34.0, longitude: -117.85 },
-//   { latitude: 34.05, longitude: -117.82 },
-//   { latitude: 34.1, longitude: -117.78 },
-//   { latitude: 34.2, longitude: -118.0 },
-//   { latitude: 34.2222, longitude: -118.1234 },
-//   { latitude: 34.233, longitude: -118.2 },
-//   { latitude: 34.2355, longitude: -118.3 },
-//   { latitude: 34.1367, longitude: -118.2942 }, // Hollywood
-//   { latitude: 34.1341, longitude: -118.3215 }, // Hollywood Sign
-// ];
-
-import { View, Text } from 'react-native'
-import React from 'react'
-
-const wallet = () => {
   return (
-    <View>
-      <Text>wallet</Text>
+    <View style={styles.container}>
+      {/* ── Map ── */}
+      <Map
+        style={styles.map}
+        mapStyle={MAP_STYLE}
+        // ── Interaction props (v11 API) ──────────────────────────────────
+        dragPan={interactions.dragPan}
+        touchZoom={interactions.touchZoom}
+        doubleTapZoom={interactions.doubleTapZoom}
+        doubleTapHoldZoom={interactions.doubleTapHoldZoom}
+        touchRotate={interactions.touchRotate}
+        touchPitch={interactions.touchPitch}
+        // ── Ornaments (v11 API) ──────────────────────────────────────────
+        // Boolean props enable/disable; position accepts { top/bottom, left/right }
+        attribution={true}
+        attributionPosition={{ bottom: 8, right: 8 }}
+        logo={false}
+        compass={true}
+        compassPosition={{ top: 16, right: 16 }}
+      >
+        {/* ── Camera ── */}
+        {/*
+          In v11 Camera props were renamed to match MapLibre GL JS:
+            centerCoordinate → center
+            zoomLevel        → zoom
+            heading          → bearing
+            animationDuration→ duration
+            animationMode    → easing  ("flyTo" → "fly", "easeTo" → "ease", etc.)
+            defaultSettings  → initialViewState
+        */}
+        <Camera
+          ref={cameraRef}
+          initialViewState={{
+            center: [0, 20],     // [longitude, latitude]
+            zoom: 2,
+            bearing: 0,
+            pitch: 0,
+          }}
+        />
+      </Map>
+
+      {/* ── HUD: Reset button ── */}
+      <TouchableOpacity style={styles.resetBtn} onPress={resetView} activeOpacity={0.8}>
+        <Text style={styles.resetLabel}>⌂ Reset View</Text>
+      </TouchableOpacity>
+
+      {/* ── HUD: Controls toggle ── */}
+      <TouchableOpacity
+        style={styles.controlsToggle}
+        onPress={() => setShowControls((v) => !v)}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.resetLabel}>{showControls ? "✕ Hide" : "⚙ Controls"}</Text>
+      </TouchableOpacity>
+
+      {/* ── Interaction Controls Panel ── */}
+      {showControls && (
+        <View style={styles.panel}>
+          <Text style={styles.panelTitle}>Interaction Toggles</Text>
+          {(Object.keys(interactions) as (keyof InteractionConfig)[]).map((key) => (
+            <TouchableOpacity
+              key={key}
+              style={styles.row}
+              onPress={() => toggle(key)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.pill, interactions[key] ? styles.pillOn : styles.pillOff]}>
+                <Text style={styles.pillText}>{interactions[key] ? "ON" : "OFF"}</Text>
+              </View>
+              <Text style={styles.rowLabel}>{key}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
     </View>
-  )
+  );
 }
 
-export default wallet
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#0f0f0f",
+  },
+  map: {
+    flex: 1,
+  },
+  resetBtn: {
+    position: "absolute",
+    top: 16,
+    left: 16,
+    backgroundColor: "rgba(15,15,15,0.85)",
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+  },
+  controlsToggle: {
+    position: "absolute",
+    top: 60,
+    left: 16,
+    backgroundColor: "rgba(15,15,15,0.85)",
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+  },
+  resetLabel: {
+    color: "#f0f0f0",
+    fontSize: 13,
+    fontWeight: "600",
+    letterSpacing: 0.3,
+  },
+  panel: {
+    position: "absolute",
+    top: 108,
+    left: 16,
+    backgroundColor: "rgba(10,10,10,0.92)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+    padding: 14,
+    minWidth: 220,
+  },
+  panelTitle: {
+    color: "#888",
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    marginBottom: 10,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 6,
+    gap: 10,
+  },
+  pill: {
+    borderRadius: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    minWidth: 38,
+    alignItems: "center",
+  },
+  pillOn: {
+    backgroundColor: "#22c55e22",
+    borderWidth: 1,
+    borderColor: "#22c55e",
+  },
+  pillOff: {
+    backgroundColor: "#ef444422",
+    borderWidth: 1,
+    borderColor: "#ef4444",
+  },
+  pillText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#f0f0f0",
+    letterSpacing: 0.5,
+  },
+  rowLabel: {
+    color: "#d0d0d0",
+    fontSize: 13,
+    fontFamily: "monospace",
+  },
+});

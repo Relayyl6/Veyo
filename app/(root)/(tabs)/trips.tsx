@@ -26,11 +26,21 @@ import CustomButton from '@/components/CustomButton';
 import ActionCard from '@/components/OptionBoxes';
 import Drop from '@/components/drop';
 import SavedPlacesRow from '@/components/SavedPlacesRow';
+import Places from '@/components/Places';
+import { useLocationStore } from '@/store/store';
 
 const Rides = () => {
   const { user } = useUser();
-
   const router = useRouter()
+
+  const {setDestinationLocation} = useLocationStore()
+
+  const handleDestinationPress = (location: { latitude: number, longitude: number, address: string }) => {
+    setDestinationLocation(location)
+
+    router.push("/(utils)/book-ride")
+  }
+
   return (
     <SafeAreaView className='flex-1'>
       <Header
@@ -39,6 +49,7 @@ const Rides = () => {
       />
 
       <ScrollView className='mx-4'>
+        <Places initialLocation="at home" handlePress={handleDestinationPress} />
         <View className="flex-row items-center justify-between mt-2 px-2 mb-5">
           <Text className="text-black text-[17px] font-JakartaMedium">Current Location</Text>
           <PressableHybrid

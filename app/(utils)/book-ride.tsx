@@ -1,14 +1,23 @@
 import { StyleSheet, Text, View } from 'react-native'
 import React from 'react'
+import { useLocationStore } from '@/store/store'
 
-const book-ride = () => {
+const BookRide = () => {
+  const {
+    userAddress,
+    destinationAddress,
+    setDestinationLocation,
+    setUserLocation
+  } = useLocationStore();
+
   return (
     <View>
-      <Text>book-ride</Text>
+      <Text className='text-2xl'>You are here: {userAddress}</Text>
+      <Text className='text-2xl'>You are going to: {destinationAddress}</Text>
     </View>
   )
 }
 
-export default book-ride
+export default BookRide
 
 const styles = StyleSheet.create({})

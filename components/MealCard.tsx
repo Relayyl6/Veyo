@@ -7,7 +7,7 @@ interface SlideProps {
 }
 
 const SlideToAddButton = ({ onActivate }: SlideProps) => {
-  const [activated, setActivated] = useState(false);
+  // const [activated, setActivated] = useState(false);
   const pan = useRef(new Animated.ValueXY()).current;
   
   // Dimensions for the mini slider
@@ -26,21 +26,24 @@ const SlideToAddButton = ({ onActivate }: SlideProps) => {
       onPanResponderMove: Animated.event([null, { dx: pan.x }], { useNativeDriver: false }),
       onPanResponderRelease: (_, gesture) => {
         pan.flattenOffset();
-        // If swiped more than 50% of the way, activate it
-        if (gesture.dx > MAX_TRAVEL / 2 && !activated) {
+        if (gesture.dx > MAX_TRAVEL / 2) {
           Animated.spring(pan, {
             toValue: { x: MAX_TRAVEL, y: 0 },
             useNativeDriver: false,
-          }).start();
-          setActivated(true);
-          onActivate();
+          }).start(({ finished }) => {
+            if (finished) {
+              Animated.spring(pan, {
+                toValue: { x: 0, y: 0 },
+                useNativeDriver: false,
+              }).start();
+            }
+          });
+          onActivate(); // increments count immediately
         } else {
-          // Otherwise, snap back to start
           Animated.spring(pan, {
             toValue: { x: 0, y: 0 },
             useNativeDriver: false,
           }).start();
-          setActivated(false);
         }
       },
     })
@@ -60,11 +63,7 @@ const SlideToAddButton = ({ onActivate }: SlideProps) => {
         style={[{ transform: [{ translateX }] }]}
         className="w-7 h-7 rounded-full bg-white items-center justify-center ml-0.5 shadow-sm absolute z-10"
       >
-        <Ionicons 
-          name={activated ? "checkmark" : "add"} 
-          size={18} 
-          color="black" 
-        />
+        <Ionicons name="add" size={18} color="black" />
       </Animated.View>
     </View>
   );

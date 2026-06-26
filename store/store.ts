@@ -1,18 +1,6 @@
 import { DEFAULT_REGION, MapMarker } from '@/lib/map';
 import { create } from 'zustand';
 
-type AppMarker = MapMarker & {
-  id: number;
-  profile_image_url?: string;
-  car_image_url?: string;
-  car_seats?: number;
-  rating?: number;
-  first_name?: string;
-  last_name?: string;
-  timeMinutes?: number | null; // ETA in minutes
-  price?: number | null;       // numeric price
-};
-
 type Location = {
   latitude: number;
   longitude: number;

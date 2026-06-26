@@ -29,6 +29,7 @@ const Index = () => {
 
       if (status !== "granted") {
         setHasPermissions(false);
+        setIsLoading(false)
         return;
       }
 
@@ -76,7 +77,6 @@ const Index = () => {
   }, [])
 
   const handleSignOut = () => {}
-  const handleDestinationPress = () => {}
 
 
 
