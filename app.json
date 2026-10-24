@@ -16,7 +16,6 @@
     ],
     "web": {
       "bundler": "metro",
-      "output": "server",
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
@@ -63,7 +62,7 @@
     "android": {
       "package": "com.veyo.app",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#1C75FF"
       },
       "config": {

@@ -16,6 +16,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_PADDING = 32; // px-4 on each side
 const GAP = 8;
+
 const TOTAL = SCREEN_WIDTH - GRID_PADDING;
 
 // Width ratios: 32% square ≈ 0.32, 64% rectangle ≈ 0.64

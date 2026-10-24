@@ -4,6 +4,7 @@ import { createAnimatedPressable } from 'pressto';
 import type { CustomPressableProps, AnimatedPressableOptions } from 'pressto';
 import { cssInterop } from 'nativewind';
 import * as Haptics from 'expo-haptics';
+import { View } from "react-native"
 
 const PressableHybridBase = createAnimatedPressable((progress) => {
   'worklet';
@@ -24,22 +25,24 @@ type PressableHybridProps = Omit<CustomPressableProps, 'onPress'> & {
 export const PressableHybrid: React.FC<PressableHybridProps> = ({
   onPress,
   children,
+  className,
   ...props
 }) => {
   
   const handlePressWithHaptic = (options: AnimatedPressableOptions) => {
-
     Haptics.selectionAsync().catch(() => {});
-
     if (onPress) onPress(options);
   };
 
   return (
-    <PressableHybridBase
-      {...props}
-      onPress={handlePressWithHaptic}
-    >
-      {children}
-    </PressableHybridBase>
+    <View className={`overflow-hidden ${className ?? ''}`}>
+      <PressableHybridBase
+        {...props}
+        onPress={handlePressWithHaptic}
+        className="flex-1"
+      >
+        {children}
+      </PressableHybridBase>
+    </View>
   );
 };

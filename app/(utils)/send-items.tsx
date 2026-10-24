@@ -1,14 +1,14 @@
 import { StyleSheet, Text, View } from 'react-native'
 import React from 'react'
 
-const send-items = () => {
+const Senditems = () => {
   return (
     <View>
-      <Text>send-items</Text>
+      <Text>Senditems</Text>
     </View>
   )
 }
 
-export default send-items
+export default Senditems
 
 const styles = StyleSheet.create({})

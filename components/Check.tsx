@@ -167,7 +167,10 @@ export const SuccessAnimation = () => {
 
       <CustomButton
         title="Browse Home"
-        onPress={() => router.push('/(root)/(tabs)/home')}
+        onPress={() => {
+          console.log("Button pressed")
+          router.push('/(root)/(tabs)/home')
+        }}
         className='mt-5'
       />
     </View>

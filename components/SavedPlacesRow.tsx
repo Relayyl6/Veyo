@@ -73,7 +73,7 @@ export const SavedPlacesRow = () => {
   };
 
   return (
-    <View className="px-5 py-4">
+    <View className="px-5 py-4 mb-20">
       <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
         <View className="flex-row gap-5 items-center">
           

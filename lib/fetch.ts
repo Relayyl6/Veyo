@@ -5,7 +5,6 @@ export const fetchAPI = async (url: string, options?: RequestInit) => {
     try {
         const response = await fetch(url, options);
         if (!response.ok) {
-            // FIX 1: Added the 'throw' keyword
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         return await response.json();

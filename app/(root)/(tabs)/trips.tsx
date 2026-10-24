@@ -87,8 +87,8 @@ const Rides = () => {
           title="Slide to Confirm Payment" 
           bgVariant="slide"
           textVariant="slide"
-          onPress={() => router.push("/(root)/(tabs)/home")} 
-          className='mt-2'
+          onPress={() => console.log("It has happened")} 
+          className='my-2'
         />
 
         <View className="flex-row gap-4 w-full">

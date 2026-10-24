@@ -74,7 +74,6 @@ const AdCarousel = () => {
                 
                 {/* Linear Gradient acting as the background */}
                 <LinearGradient
-                  // Dark grey to pure black (adjust hex codes to match your exact theme)
                   colors={['#2a2a2a', '#000000']} 
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}

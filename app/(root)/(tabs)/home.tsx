@@ -108,7 +108,6 @@ const Index = () => {
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
-        // 4. Dynamic paddingTop ensures the content starts exactly underneath the custom header
         contentContainerStyle={{ paddingBottom: 20, paddingTop: insets.top + 70 }}
       >
         <AdCarousel />

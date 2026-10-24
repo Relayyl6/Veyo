@@ -14,6 +14,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { PressableHybrid } from '@/components/CustomPressable'; 
 import { ButtonProps } from '@/types/type';
 import { scheduleOnRN } from 'react-native-worklets';
+import { withDelay } from 'react-native-reanimated';
 
 const getBgVariantStyle = (variant: string) => {
   switch (variant) {
@@ -45,6 +46,8 @@ const CustomButton = ({
   IconLeft,
   IconRight,
   className,
+  trackHeight = 56,
+  thumbSize = 48,
   ...props
 }: ButtonProps) => {
   // --- UNCONDITIONAL HOOK INITIALIZATIONS (Must stay at the top layer) ---
@@ -55,7 +58,7 @@ const CustomButton = ({
   // RealtimeComposer hook handles conditional checks under the hood safely
   const pulsarComposer = useRealtimeComposer();
 
-  const THUMB_SIZE = 48;
+  const THUMB_SIZE = thumbSize;
   const PADDING = 4;
   const MAX_TRANSLATE = Math.max(0, trackWidth - THUMB_SIZE - (PADDING * 2));
 
@@ -86,8 +89,8 @@ const CustomButton = ({
   };
 
   const panGesture = Gesture.Pan()
-    .enabled(!isCompleted.value && MAX_TRANSLATE > 0)
     .onUpdate((event) => {
+      if (isCompleted.value || MAX_TRANSLATE <= 0) return;
       const newPosition = Math.max(0, Math.min(event.translationX, MAX_TRANSLATE));
       translateX.value = newPosition;
 
@@ -102,17 +105,23 @@ const CustomButton = ({
     }
   })
     .onEnd((_gestureEvent) => {
+      if (isCompleted.value) return;   // ADD THIS LINE
       if (pulsarComposer?.stop) pulsarComposer.stop();
 
       if (translateX.value > MAX_TRANSLATE * 0.8) {
         isCompleted.value = true;
-        translateX.value = withSpring(MAX_TRANSLATE, { damping: 15 });
-        
+
+        // CHANGED: added the (finished) callback to withSpring
+        translateX.value = withSpring(MAX_TRANSLATE, { damping: 15 }, (finished) => {
+          if (finished) {
+            translateX.value = withDelay(500, withSpring(0, { damping: 15, stiffness: 150 }));
+            isCompleted.value = false;
+          }
+        });
+
         scheduleOnRN(triggerSuccessHaptic);
-      
-        // Execute optional callback safely
         if (onPress) {
-            scheduleOnRN(onPress, _gestureEvent as any);
+          scheduleOnRN(onPress, _gestureEvent as any);
         }
       } else {
         translateX.value = withSpring(0, { damping: 15, stiffness: 150 });
@@ -123,19 +132,20 @@ const CustomButton = ({
   if (bgVariant === 'slide') {
     return (
       <View 
-        className={`h-14 w-full rounded-full relative ${getBgVariantStyle(bgVariant)} ${className}`}
+        className={`w-full rounded-full relative ${getBgVariantStyle(bgVariant)} ${className}`}
+        style={{ height: trackHeight }}
         onLayout={(e) => setTrackWidth(e.nativeEvent.layout.width)}
       >
         <Animated.View style={textAnimatedStyle} className="absolute w-full items-center pointer-events-none z-0">
-          <Text className={`text-base ${getTextVariantStyle(textVariant)}`}>
+          <Text className={`text-base ml-6 ${getTextVariantStyle(textVariant)}`}>
             {title}
           </Text>
         </Animated.View>
 
         <GestureDetector gesture={panGesture}>
           <Animated.View 
-            style={thumbAnimatedStyle} 
-            className="h-12 w-12 bg-blue-600 rounded-full items-center justify-center shadow-md shadow-neutral-400/80 z-10"
+            style={[thumbAnimatedStyle, { height: thumbSize, width: thumbSize }]} 
+            className="bg-blue-600 rounded-full items-center justify-center shadow-md shadow-neutral-400/80 z-10"
           >
             <FontAwesome5 name="chevron-right" size={16} color="#ffffff" />
           </Animated.View>
