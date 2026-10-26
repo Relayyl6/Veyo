@@ -133,3 +133,147 @@ export async function GET(request: Request) {
     return Response.json({ error: error.message || error }, { status: 500 });
   }
 }
+
+export async function PATCH(request: Request) {
+  try {
+    const sql = neon(process.env.DATABASE_URL!);
+    const body = await request.json();
+    const {
+      vendorId,
+      id,
+      businessName,
+      description,
+      address,
+      latitude,
+      longitude,
+      phone,
+      email,
+      logoUrl,
+      coverImageUrl,
+      isOpen,
+      preparationTimeMins,
+      deliveryFee,
+      minimumOrder,
+      openingTime,
+      closingTime,
+      daysOpen,
+    } = body;
+
+    const targetId = vendorId || id;
+    if (!targetId) {
+      return Response.json({ error: 'Missing vendorId' }, { status: 400 });
+    }
+
+    const updates: string[] = ['updated_at = NOW()'];
+    const params: any[] = [targetId];
+
+    if (businessName !== undefined) {
+      params.push(businessName);
+      updates.push(`business_name = $${params.length}`);
+    }
+    if (description !== undefined) {
+      params.push(description);
+      updates.push(`description = $${params.length}`);
+    }
+    if (address !== undefined) {
+      params.push(address);
+      updates.push(`address = $${params.length}`);
+    }
+    if (latitude !== undefined && longitude !== undefined) {
+      params.push(latitude, longitude);
+      updates.push(`latitude = $${params.length - 1}`);
+      updates.push(`longitude = $${params.length}`);
+    }
+    if (phone !== undefined) {
+      params.push(phone);
+      updates.push(`phone = $${params.length}`);
+    }
+    if (email !== undefined) {
+      params.push(email);
+      updates.push(`email = $${params.length}`);
+    }
+    if (logoUrl !== undefined) {
+      params.push(logoUrl);
+      updates.push(`logo_url = $${params.length}`);
+    }
+    if (coverImageUrl !== undefined) {
+      params.push(coverImageUrl);
+      updates.push(`cover_image_url = $${params.length}`);
+    }
+    if (isOpen !== undefined) {
+      params.push(isOpen);
+      updates.push(`is_open = $${params.length}`);
+    }
+    if (preparationTimeMins !== undefined) {
+      params.push(preparationTimeMins);
+      updates.push(`preparation_time_mins = $${params.length}`);
+    }
+    if (deliveryFee !== undefined) {
+      params.push(deliveryFee);
+      updates.push(`delivery_fee = $${params.length}`);
+    }
+    if (minimumOrder !== undefined) {
+      params.push(minimumOrder);
+      updates.push(`minimum_order = $${params.length}`);
+    }
+    if (openingTime !== undefined) {
+      params.push(openingTime);
+      updates.push(`opening_time = $${params.length}`);
+    }
+    if (closingTime !== undefined) {
+      params.push(closingTime);
+      updates.push(`closing_time = $${params.length}`);
+    }
+    if (daysOpen !== undefined) {
+      params.push(daysOpen);
+      updates.push(`days_open = $${params.length}`);
+    }
+
+    const query = `
+      UPDATE vendors
+      SET ${updates.join(', ')}
+      WHERE id = $1 AND is_deleted = false
+      RETURNING *;
+    `;
+
+    const result = await sql.query(query, params);
+    if (result.length === 0) {
+      return Response.json({ error: 'Vendor not found' }, { status: 404 });
+    }
+
+    return Response.json({ data: result[0] }, { status: 200 });
+  } catch (error: any) {
+    console.error('[API /vendor PATCH] Error:', error);
+    return Response.json({ error: error.message || error }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const sql = neon(process.env.DATABASE_URL!);
+    const { searchParams } = new URL(request.url);
+    const vendorId = searchParams.get('vendorId') || searchParams.get('id');
+
+    if (!vendorId) {
+      return Response.json({ error: 'Missing vendorId' }, { status: 400 });
+    }
+
+    // Soft delete
+    const result = await sql.query(
+      'UPDATE vendors SET is_deleted = true, is_open = false, updated_at = NOW() WHERE id = $1 RETURNING *;',
+      [vendorId]
+    );
+
+    if (result.length === 0) {
+      return Response.json({ error: 'Vendor not found' }, { status: 404 });
+    }
+
+    return Response.json(
+      { message: 'Vendor archived successfully', data: result[0] },
+      { status: 200 }
+    );
+  } catch (error: any) {
+    console.error('[API /vendor DELETE] Error:', error);
+    return Response.json({ error: error.message || error }, { status: 500 });
+  }
+}

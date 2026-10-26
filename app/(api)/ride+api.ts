@@ -210,3 +210,32 @@ export async function PATCH(request: Request) {
     return Response.json({ error: error.message || error }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const sql = neon(process.env.DATABASE_URL!);
+    const { searchParams } = new URL(request.url);
+    const rideId = searchParams.get('rideId') || searchParams.get('id');
+
+    if (!rideId) {
+      return Response.json({ error: 'Missing rideId' }, { status: 400 });
+    }
+
+    const result = await sql.query(
+      "UPDATE rides SET ride_status = 'canceled', cancel_reason = 'Canceled by user', canceled_at = NOW(), updated_at = NOW() WHERE id = $1 RETURNING *;",
+      [rideId]
+    );
+
+    if (result.length === 0) {
+      return Response.json({ error: 'Ride not found' }, { status: 404 });
+    }
+
+    return Response.json(
+      { message: 'Ride canceled successfully', data: result[0] },
+      { status: 200 }
+    );
+  } catch (error: any) {
+    console.error('[API /ride DELETE] Error:', error);
+    return Response.json({ error: error.message || error }, { status: 500 });
+  }
+}

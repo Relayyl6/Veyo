@@ -11,6 +11,19 @@ export interface UpdateDriverLocationParams {
   isAvailable?: boolean;
 }
 
+export interface UpdateDriverProfileParams {
+  driverId?: string;
+  userId?: string;
+  vehicleMake?: string;
+  vehicleModel?: string;
+  vehicleYear?: number;
+  vehicleColor?: string;
+  licensePlate?: string;
+  vehicleType?: 'standard' | 'luxury' | 'suv' | 'taxi' | 'auto';
+  isOnline?: boolean;
+  isAvailable?: boolean;
+}
+
 /**
  * Fetch online drivers for radar map clustering.
  */
@@ -63,5 +76,41 @@ export async function updateDriverLocation(params: UpdateDriverLocationParams): 
       is_online: params.isOnline ?? true,
       is_available: params.isAvailable ?? true,
     };
+  }
+}
+
+/**
+ * Update driver vehicle information, license plate, or operating status.
+ */
+export async function updateDriverProfile(params: UpdateDriverProfileParams): Promise<DriverProfile> {
+  try {
+    const res = await fetchAPI('/(api)/driver', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    return res.data;
+  } catch (err) {
+    console.warn('[driverService] API fallback for update driver profile:', err);
+    return {
+      ...mockDrivers.driver_profiles[0],
+      vehicle_make: params.vehicleMake || mockDrivers.driver_profiles[0].vehicle_make,
+      license_plate: params.licensePlate || mockDrivers.driver_profiles[0].license_plate,
+    };
+  }
+}
+
+/**
+ * Soft delete or deactivate a driver partner profile.
+ */
+export async function deleteDriverProfile(driverId: string): Promise<boolean> {
+  try {
+    const res = await fetchAPI(`/(api)/driver?driverId=${encodeURIComponent(driverId)}`, {
+      method: 'DELETE',
+    });
+    return !!res.data;
+  } catch (err) {
+    console.warn('[driverService] API fallback for delete driver profile:', err);
+    return true;
   }
 }

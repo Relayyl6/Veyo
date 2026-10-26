@@ -221,3 +221,32 @@ export async function PATCH(request: Request) {
     return Response.json({ error: error.message || error }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const sql = neon(process.env.DATABASE_URL!);
+    const { searchParams } = new URL(request.url);
+    const orderId = searchParams.get('orderId') || searchParams.get('id');
+
+    if (!orderId) {
+      return Response.json({ error: 'Missing orderId' }, { status: 400 });
+    }
+
+    const result = await sql.query(
+      "UPDATE orders SET order_status = 'canceled', cancel_reason = 'Canceled by user', canceled_at = NOW(), updated_at = NOW() WHERE id = $1 RETURNING *;",
+      [orderId]
+    );
+
+    if (result.length === 0) {
+      return Response.json({ error: 'Order not found' }, { status: 404 });
+    }
+
+    return Response.json(
+      { message: 'Order canceled successfully', data: result[0] },
+      { status: 200 }
+    );
+  } catch (error: any) {
+    console.error('[API /order DELETE] Error:', error);
+    return Response.json({ error: error.message || error }, { status: 500 });
+  }
+}

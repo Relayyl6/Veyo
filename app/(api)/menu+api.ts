@@ -94,3 +94,129 @@ export async function POST(request: Request) {
     return Response.json({ error: error.message || error }, { status: 500 });
   }
 }
+
+export async function PATCH(request: Request) {
+  try {
+    const sql = neon(process.env.DATABASE_URL!);
+    const body = await request.json();
+    const {
+      id,
+      itemId,
+      name,
+      description,
+      category,
+      price,
+      discountedPrice,
+      isAvailable,
+      isPopular,
+      isVegetarian,
+      isVegan,
+      isGlutenFree,
+      imageUrl,
+      preparationTimeMins,
+    } = body;
+
+    const targetId = id || itemId;
+    if (!targetId) {
+      return Response.json({ error: 'Missing menu item id' }, { status: 400 });
+    }
+
+    const updates: string[] = ['updated_at = NOW()'];
+    const params: any[] = [targetId];
+
+    if (name !== undefined) {
+      params.push(name);
+      updates.push(`name = $${params.length}`);
+    }
+    if (description !== undefined) {
+      params.push(description);
+      updates.push(`description = $${params.length}`);
+    }
+    if (category !== undefined) {
+      params.push(category);
+      updates.push(`category = $${params.length}`);
+    }
+    if (price !== undefined) {
+      params.push(price);
+      updates.push(`price = $${params.length}`);
+    }
+    if (discountedPrice !== undefined) {
+      params.push(discountedPrice);
+      updates.push(`discounted_price = $${params.length}`);
+    }
+    if (isAvailable !== undefined) {
+      params.push(isAvailable);
+      updates.push(`is_available = $${params.length}`);
+    }
+    if (isPopular !== undefined) {
+      params.push(isPopular);
+      updates.push(`is_popular = $${params.length}`);
+    }
+    if (isVegetarian !== undefined) {
+      params.push(isVegetarian);
+      updates.push(`is_vegetarian = $${params.length}`);
+    }
+    if (isVegan !== undefined) {
+      params.push(isVegan);
+      updates.push(`is_vegan = $${params.length}`);
+    }
+    if (isGlutenFree !== undefined) {
+      params.push(isGlutenFree);
+      updates.push(`is_gluten_free = $${params.length}`);
+    }
+    if (imageUrl !== undefined) {
+      params.push(imageUrl);
+      updates.push(`image_url = $${params.length}`);
+    }
+    if (preparationTimeMins !== undefined) {
+      params.push(preparationTimeMins);
+      updates.push(`preparation_time_mins = $${params.length}`);
+    }
+
+    const query = `
+      UPDATE menu_items
+      SET ${updates.join(', ')}
+      WHERE id = $1
+      RETURNING *;
+    `;
+
+    const result = await sql.query(query, params);
+    if (result.length === 0) {
+      return Response.json({ error: 'Menu item not found' }, { status: 404 });
+    }
+
+    return Response.json({ data: result[0] }, { status: 200 });
+  } catch (error: any) {
+    console.error('[API /menu PATCH] Error:', error);
+    return Response.json({ error: error.message || error }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const sql = neon(process.env.DATABASE_URL!);
+    const { searchParams } = new URL(request.url);
+    const itemId = searchParams.get('id') || searchParams.get('itemId');
+
+    if (!itemId) {
+      return Response.json({ error: 'Missing menu item id' }, { status: 400 });
+    }
+
+    const result = await sql.query(
+      'DELETE FROM menu_items WHERE id = $1 RETURNING *;',
+      [itemId]
+    );
+
+    if (result.length === 0) {
+      return Response.json({ error: 'Menu item not found or already deleted' }, { status: 404 });
+    }
+
+    return Response.json(
+      { message: 'Menu item deleted successfully', data: result[0] },
+      { status: 200 }
+    );
+  } catch (error: any) {
+    console.error('[API /menu DELETE] Error:', error);
+    return Response.json({ error: error.message || error }, { status: 500 });
+  }
+}

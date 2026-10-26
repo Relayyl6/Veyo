@@ -106,3 +106,40 @@ export async function updateRideStatus(
     };
   }
 }
+
+/**
+ * Cancel a ride request with optional reason.
+ */
+export async function cancelRide(rideId: string, reason?: string): Promise<Ride> {
+  try {
+    const res = await fetchAPI('/(api)/ride', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rideId, status: 'canceled', cancelReason: reason || 'Canceled by user' }),
+    });
+    return res.data;
+  } catch (err) {
+    console.warn('[rideService] API fallback for cancel ride:', err);
+    return {
+      ...mockRides.rides[0],
+      id: rideId,
+      ride_status: 'canceled' as any,
+      cancel_reason: reason || 'Canceled by user',
+    };
+  }
+}
+
+/**
+ * Delete or purge a ride record.
+ */
+export async function deleteRide(rideId: string): Promise<boolean> {
+  try {
+    const res = await fetchAPI(`/(api)/ride?rideId=${encodeURIComponent(rideId)}`, {
+      method: 'DELETE',
+    });
+    return !!res.data;
+  } catch (err) {
+    console.warn('[rideService] API fallback for delete ride:', err);
+    return true;
+  }
+}

@@ -23,6 +23,32 @@ export interface CreateMenuItemParams {
   preparationTimeMins?: number;
 }
 
+export interface UpdateMenuItemParams extends Partial<Omit<CreateMenuItemParams, 'vendorId'>> {
+  id?: string;
+  itemId?: string;
+}
+
+export interface UpdateVendorParams {
+  vendorId?: string;
+  id?: string;
+  businessName?: string;
+  description?: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  phone?: string;
+  email?: string;
+  logoUrl?: string;
+  coverImageUrl?: string;
+  isOpen?: boolean;
+  preparationTimeMins?: number;
+  deliveryFee?: number;
+  minimumOrder?: number;
+  openingTime?: string;
+  closingTime?: string;
+  daysOpen?: string[];
+}
+
 /**
  * Fetch all active vendors with optional category and search filters.
  */
@@ -61,6 +87,45 @@ export async function getVendorWithMenu(vendorId: string): Promise<(Vendor & { m
     const vendor = mockVendors.vendors.find((v) => v.id === vendorId) || mockVendors.vendors[0];
     const items = mockMenuItems.menu_items.filter((m) => m.vendor_id === vendor.id);
     return { ...vendor, menu_items: items };
+  }
+}
+
+/**
+ * Update a vendor's business profile, operating hours, delivery fees, or open status.
+ */
+export async function updateVendorProfile(vendorId: string, updates: UpdateVendorParams): Promise<Vendor> {
+  try {
+    const res = await fetchAPI('/(api)/vendor', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vendorId, ...updates }),
+    });
+    return res.data;
+  } catch (err) {
+    console.warn('[vendorService] API fallback for updateVendorProfile:', err);
+    const existing = mockVendors.vendors.find((v) => v.id === vendorId) || mockVendors.vendors[0];
+    return {
+      ...existing,
+      ...updates,
+      business_name: updates.businessName || existing.business_name,
+      delivery_fee: updates.deliveryFee ?? existing.delivery_fee,
+      is_open: updates.isOpen ?? existing.is_open,
+    } as Vendor;
+  }
+}
+
+/**
+ * Soft delete or archive a vendor entity.
+ */
+export async function deleteVendorProfile(vendorId: string): Promise<boolean> {
+  try {
+    const res = await fetchAPI(`/(api)/vendor?vendorId=${encodeURIComponent(vendorId)}`, {
+      method: 'DELETE',
+    });
+    return !!res.data;
+  } catch (err) {
+    console.warn('[vendorService] API fallback for deleteVendorProfile:', err);
+    return true;
   }
 }
 
@@ -114,5 +179,43 @@ export async function createNewMenuItem(params: CreateMenuItemParams): Promise<M
       updated_at: new Date().toISOString(),
     };
     return mockItem;
+  }
+}
+
+/**
+ * Update an existing food / menu item (price, availability, ingredients, description).
+ */
+export async function updateMenuItem(itemId: string, updates: UpdateMenuItemParams): Promise<MenuItem> {
+  try {
+    const res = await fetchAPI('/(api)/menu', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ itemId, ...updates }),
+    });
+    return res.data;
+  } catch (err) {
+    console.warn('[vendorService] API fallback for update menu item:', err);
+    const existing = mockMenuItems.menu_items.find((m) => m.id === itemId) || mockMenuItems.menu_items[0];
+    return {
+      ...existing,
+      ...updates,
+      price: updates.price !== undefined ? updates.price : existing.price,
+      is_available: updates.isAvailable !== undefined ? updates.isAvailable : existing.is_available,
+    } as MenuItem;
+  }
+}
+
+/**
+ * Delete a menu item permanently from the vendor's catalog.
+ */
+export async function deleteMenuItem(itemId: string): Promise<boolean> {
+  try {
+    const res = await fetchAPI(`/(api)/menu?itemId=${encodeURIComponent(itemId)}`, {
+      method: 'DELETE',
+    });
+    return !!res.data;
+  } catch (err) {
+    console.warn('[vendorService] API fallback for delete menu item:', err);
+    return true;
   }
 }

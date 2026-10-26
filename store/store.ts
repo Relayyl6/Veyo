@@ -131,9 +131,12 @@ interface VendorStore {
   setActiveVendor: (vendor: (Vendor & { menu_items?: MenuItem[] }) | null) => void;
   setSelectedCategory: (category: string | null) => void;
   setSearchQuery: (query: string) => void;
+  addMenuItemToActiveVendor: (item: MenuItem) => void;
+  updateMenuItemInActiveVendor: (item: MenuItem) => void;
+  deleteMenuItemFromActiveVendor: (itemId: string) => void;
 }
 
-export const useVendorStore = create<VendorStore>((set) => ({
+export const useVendorStore = create<VendorStore>((set, get) => ({
   vendors: [],
   activeVendor: null,
   selectedCategory: null,
@@ -142,6 +145,24 @@ export const useVendorStore = create<VendorStore>((set) => ({
   setActiveVendor: (activeVendor) => set({ activeVendor }),
   setSelectedCategory: (selectedCategory) => set({ selectedCategory }),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
+  addMenuItemToActiveVendor: (item) => {
+    const active = get().activeVendor;
+    if (!active) return;
+    const items = active.menu_items || [];
+    set({ activeVendor: { ...active, menu_items: [item, ...items] } });
+  },
+  updateMenuItemInActiveVendor: (item) => {
+    const active = get().activeVendor;
+    if (!active || !active.menu_items) return;
+    const updated = active.menu_items.map((i) => (i.id === item.id ? item : i));
+    set({ activeVendor: { ...active, menu_items: updated } });
+  },
+  deleteMenuItemFromActiveVendor: (itemId) => {
+    const active = get().activeVendor;
+    if (!active || !active.menu_items) return;
+    const updated = active.menu_items.filter((i) => i.id !== itemId);
+    set({ activeVendor: { ...active, menu_items: updated } });
+  },
 }));
 
 // =============================================

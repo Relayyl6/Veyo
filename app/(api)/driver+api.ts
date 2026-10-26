@@ -146,7 +146,20 @@ export async function PATCH(request: Request) {
   try {
     const sql = neon(process.env.DATABASE_URL!);
     const body = await request.json();
-    const { driverId, userId, latitude, longitude, isOnline, isAvailable } = body;
+    const {
+      driverId,
+      userId,
+      latitude,
+      longitude,
+      isOnline,
+      isAvailable,
+      vehicleMake,
+      vehicleModel,
+      vehicleColor,
+      vehicleYear,
+      licensePlate,
+      vehicleType,
+    } = body;
 
     const conditionCol = driverId ? 'id' : 'user_id';
     const conditionVal = driverId || userId;
@@ -175,17 +188,80 @@ export async function PATCH(request: Request) {
       updates.push(`is_available = $${params.length}`);
     }
 
+    if (vehicleMake !== undefined) {
+      params.push(vehicleMake);
+      updates.push(`vehicle_make = $${params.length}`);
+    }
+
+    if (vehicleModel !== undefined) {
+      params.push(vehicleModel);
+      updates.push(`vehicle_model = $${params.length}`);
+    }
+
+    if (vehicleColor !== undefined) {
+      params.push(vehicleColor);
+      updates.push(`vehicle_color = $${params.length}`);
+    }
+
+    if (vehicleYear !== undefined) {
+      params.push(vehicleYear);
+      updates.push(`vehicle_year = $${params.length}`);
+    }
+
+    if (licensePlate !== undefined) {
+      params.push(licensePlate);
+      updates.push(`license_plate = $${params.length}`);
+    }
+
+    if (vehicleType !== undefined) {
+      params.push(vehicleType);
+      updates.push(`vehicle_type = $${params.length}`);
+    }
+
     const query = `
       UPDATE driver_profiles
       SET ${updates.join(', ')}
-      WHERE ${conditionCol} = $1
+      WHERE ${conditionCol} = $1 AND is_deleted = false
       RETURNING *;
     `;
 
     const result = await sql.query(query, params);
+    if (result.length === 0) {
+      return Response.json({ error: 'Driver profile not found' }, { status: 404 });
+    }
     return Response.json({ data: result[0] }, { status: 200 });
   } catch (error: any) {
     console.error('[API /driver PATCH] Error:', error);
+    return Response.json({ error: error.message || error }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const sql = neon(process.env.DATABASE_URL!);
+    const { searchParams } = new URL(request.url);
+    const driverId = searchParams.get('driverId') || searchParams.get('id');
+
+    if (!driverId) {
+      return Response.json({ error: 'Missing driverId' }, { status: 400 });
+    }
+
+    // Soft delete
+    const result = await sql.query(
+      'UPDATE driver_profiles SET is_deleted = true, is_online = false, is_available = false, updated_at = NOW() WHERE id = $1 RETURNING *;',
+      [driverId]
+    );
+
+    if (result.length === 0) {
+      return Response.json({ error: 'Driver profile not found' }, { status: 404 });
+    }
+
+    return Response.json(
+      { message: 'Driver profile deactivated successfully', data: result[0] },
+      { status: 200 }
+    );
+  } catch (error: any) {
+    console.error('[API /driver DELETE] Error:', error);
     return Response.json({ error: error.message || error }, { status: 500 });
   }
 }

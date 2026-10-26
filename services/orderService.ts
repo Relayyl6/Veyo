@@ -104,3 +104,39 @@ export async function updateOrderStatus(
     };
   }
 }
+
+/**
+ * Cancel an order before preparation/dispatch.
+ */
+export async function cancelOrder(orderId: string, reason?: string): Promise<Order> {
+  try {
+    const res = await fetchAPI('/(api)/order', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId, status: 'canceled', cancelReason: reason || 'Canceled by user' }),
+    });
+    return res.data;
+  } catch (err) {
+    console.warn('[orderService] API fallback for cancel order:', err);
+    return {
+      ...mockOrders.orders[0],
+      id: orderId,
+      order_status: 'canceled' as any,
+    };
+  }
+}
+
+/**
+ * Delete or purge an order.
+ */
+export async function deleteOrder(orderId: string): Promise<boolean> {
+  try {
+    const res = await fetchAPI(`/(api)/order?orderId=${encodeURIComponent(orderId)}`, {
+      method: 'DELETE',
+    });
+    return !!res.data;
+  } catch (err) {
+    console.warn('[orderService] API fallback for delete order:', err);
+    return true;
+  }
+}
