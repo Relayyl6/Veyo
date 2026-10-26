@@ -24,7 +24,9 @@ import FoodDetailModal from '@/components/FoodDetailModal';
 import CartSummaryModal from '@/components/CartSummaryModal';
 import OrderSuccessModal from '@/components/OrderSuccessModal';
 import OrderTrackingModal from '@/components/OrderTrackingModal';
-import { nearbyData, discoveryData } from '@/constants/item';
+import RoleSwitcherPill from '@/components/RoleSwitcherPill';
+import { discoveryData } from '@/constants/item';
+import { useUserStore } from '@/store/store';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -38,56 +40,65 @@ const CARD_HEIGHT = 150;
 const FOOD_DISCOVERY_LIST: FoodItem[] = [
   {
     id: 'f1',
-    title: 'Naija Fusion',
+    title: 'Chicken Masala',
     cuisine: 'Traditional',
     priceLevel: '₦₦',
-    rating: '4.8',
-    time: '25 min',
+    rating: '4.5',
+    time: '30 mins',
+    cookingTime: '30 mins',
+    price: 14.0,
     imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80',
   },
   {
     id: 'f2',
-    title: 'Pizza Central',
-    cuisine: 'Italian',
-    priceLevel: '₦₦₦',
-    rating: '4.6',
-    time: '18 min',
-    imageUrl: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=600&q=80',
+    title: 'Cheese Burger',
+    cuisine: 'Fast Food',
+    priceLevel: '₦₦',
+    rating: '4.2',
+    time: '8 mins',
+    cookingTime: '8 mins',
+    price: 9.0,
+    imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&q=80',
   },
   {
     id: 'f3',
-    title: 'The Green Bowl',
-    cuisine: 'Healthy',
+    title: 'Special Noodles',
+    cuisine: 'Asian',
     priceLevel: '₦₦',
-    rating: '4.9',
-    time: '20 min',
-    imageUrl: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&q=80',
+    rating: '4.7',
+    time: '15 mins',
+    cookingTime: '15 mins',
+    price: 12.5,
+    imageUrl: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=600&q=80',
   },
   {
     id: 'f4',
-    title: 'Stack & Sizzle',
-    cuisine: 'Burgers',
-    priceLevel: '₦₦',
-    rating: '4.2',
-    time: '20 min',
-    imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&q=80',
+    title: 'Pizza Central',
+    cuisine: 'Italian',
+    priceLevel: '₦₦₦',
+    rating: '4.8',
+    time: '18 mins',
+    cookingTime: '18 mins',
+    price: 14.99,
+    imageUrl: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=600&q=80',
   },
 ];
 
 const CATEGORY_CHIPS = [
-  { id: 'all', name: 'All', icon: 'restaurant' },
+  { id: 'best_dishes', name: 'Best Dishes', icon: 'restaurant' },
+  { id: 'burger', name: 'Burger', icon: 'fast-food' },
+  { id: 'noodles', name: 'Noodles', icon: 'pizza' },
+  { id: 'juice', name: 'Juice', icon: 'cafe' },
   { id: 'healthy', name: 'Healthy', icon: 'leaf' },
-  { id: 'burgers', name: 'Burgers', icon: 'fast-food' },
-  { id: 'italian', name: 'Italian', icon: 'pizza' },
-  { id: 'traditional', name: 'Traditional', icon: 'flame' },
 ];
 
 export default function ExploreScreen() {
   const router = useRouter();
   const { user } = useUser();
   const insets = useSafeAreaInsets();
+  const role = useUserStore((state) => state.role);
 
-  const [activeCategory, setActiveCategory] = useState('all');
+  const [activeCategory, setActiveCategory] = useState('best_dishes');
   const [listData, setListData] = useState(discoveryData);
   const scrollAnim = useSharedValue(0);
   const currentIndexRef = useRef(0);
@@ -132,15 +143,26 @@ export default function ExploreScreen() {
       setSelectedFoodItem({
         id: item.id,
         title: item.title,
-        price: 14.5,
+        price: typeof item.price === 'number' ? item.price : 14.0,
         rating: item.rating,
-        reviewsCount: 140,
-        description: `Delicious chef-curated ${item.title} prepared with farm-fresh ingredients.`,
+        reviewsCount: 120,
+        description: `Freshly prepared ${item.title} crafted with premium ingredients and authentic seasonings.`,
         imageUrl: item.imageUrl,
         tags: [item.cuisine, 'Popular'],
+        restaurantName: 'Brooklyn Bites',
+        restaurantAddress: '789 Park Avenue, New York, NY',
+        cookingTime: item.time,
+        cuisine: item.cuisine,
       });
       setFoodDetailVisible(true);
     }
+  };
+
+  const handleQuickAdd = (item: FoodItem) => {
+    Alert.alert('Added to Cart', `1x ${item.title} added to your cart.`, [
+      { text: 'View Cart', onPress: () => setCartModalVisible(true) },
+      { text: 'Keep Browsing', style: 'cancel' },
+    ]);
   };
 
   const handleOrderCompleted = (orderId: string) => {
@@ -180,8 +202,21 @@ export default function ExploreScreen() {
         }}
         showsVerticalScrollIndicator={false}
       >
-        {/* 2. "What would you like to have?" Hero Search Section */}
-        <Text style={styles.heroTitle}>What would you like to have?</Text>
+        {/* Role Switcher Pill */}
+        <RoleSwitcherPill />
+
+        {/* Vendor Notice Banner when in Merchant Mode */}
+        {role === 'vendor_admin' && (
+          <View style={styles.vendorModeBanner}>
+            <Ionicons name="storefront" size={16} color="#0286FF" />
+            <Text style={styles.vendorModeText}>
+              Viewing Customer Storefront. Head to Profile tab to manage orders & menu.
+            </Text>
+          </View>
+        )}
+
+        {/* 2. Hero Search Section */}
+        <Text style={styles.heroTitle}>Food Discovery</Text>
 
         {/* Search Input Bar */}
         <TouchableOpacity
@@ -231,18 +266,35 @@ export default function ExploreScreen() {
           })}
         </ScrollView>
 
-        {/* 3. 2-Column Food / Restaurant Grid (Image 1: Naija Fusion, Pizza Central, etc.) */}
+        {/* 3. Veyo Plus Promo Banner (from media reference) */}
+        <View style={styles.promoBanner}>
+          <Text style={styles.promoTag}>VEYO PLUS PROMO</Text>
+          <Text style={styles.promoTitle}>Get 10% off all food orders</Text>
+          <Text style={styles.promoSub}>
+            Exclusive premium offer valid this week only for our gold members
+          </Text>
+          <TouchableOpacity
+            style={styles.promoClaimBtn}
+            onPress={() => Alert.alert('Promo Claimed', '10% discount applied to your checkout cart!')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.promoClaimText}>Claim Now</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* 4. 2-Column Food / Restaurant Grid with Instant Add */}
         <View style={styles.foodGrid}>
           {FOOD_DISCOVERY_LIST.map((item) => (
             <FoodDiscoveryCard
               key={item.id}
               item={item}
               onPress={handleCardPress}
+              onQuickAdd={handleQuickAdd}
             />
           ))}
         </View>
 
-        {/* 4. Free Delivery Banner */}
+        {/* 5. Free Delivery Banner */}
         <TouchableOpacity
           style={styles.freeDeliveryBanner}
           activeOpacity={0.9}
@@ -257,7 +309,7 @@ export default function ExploreScreen() {
           </View>
         </TouchableOpacity>
 
-        {/* 5. Quick Discovery Swiper Carousel */}
+        {/* 6. Quick Discovery Swiper Carousel */}
         <View style={styles.sectionHeaderRow}>
           <Text style={styles.sectionTitle}>Quick Discovery</Text>
           <TouchableOpacity onPress={() => router.push('/(utils)/search')}>
@@ -285,7 +337,7 @@ export default function ExploreScreen() {
           </View>
         </GestureDetector>
 
-        {/* 6. Weekend Hangouts Category Grid */}
+        {/* 7. Weekend Hangouts Category Grid */}
         <View style={[styles.sectionHeaderRow, { marginTop: 24 }]}>
           <Text style={styles.sectionTitle}>Weekend Hangouts</Text>
           <Ionicons name="arrow-forward" size={18} color="#3122D2" />
@@ -338,6 +390,10 @@ export default function ExploreScreen() {
               'Hand-crafted artisan pizza made fresh to order with Italian mozzarella.',
             imageUrl: food.imageUrl,
             tags: ['Italian', 'Popular'],
+            restaurantName: 'Pizza Paradise',
+            restaurantAddress: '789 Park Avenue, New York, NY',
+            cookingTime: '20 min',
+            cuisine: 'Italian',
           });
           setFoodDetailVisible(true);
         }}
@@ -347,11 +403,15 @@ export default function ExploreScreen() {
         }}
       />
 
-      {/* 2. Food Detail & Customization */}
+      {/* 2. Food Detail & Customization with Track Order shortcut */}
       <FoodDetailModal
         visible={foodDetailVisible}
         item={selectedFoodItem}
         onClose={() => setFoodDetailVisible(false)}
+        onTrackOrder={() => {
+          setFoodDetailVisible(false);
+          setTrackingModalVisible(true);
+        }}
         onAddToCart={(it, qty) => {
           Alert.alert('Added to Cart', `${qty}x ${it.title} added!`, [
             { text: 'View Cart', onPress: () => setCartModalVisible(true) },
@@ -396,6 +456,23 @@ const styles = StyleSheet.create({
   scroll: {
     flex: 1,
   },
+  vendorModeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 12,
+  },
+  vendorModeText: {
+    flex: 1,
+    fontFamily: 'JakartaMedium',
+    fontSize: 12,
+    color: '#1E40AF',
+    marginLeft: 8,
+  },
   heroTitle: {
     fontFamily: 'JakartaBold',
     fontSize: 22,
@@ -406,7 +483,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
+    borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderWidth: 1,
@@ -416,78 +493,127 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 6,
     elevation: 2,
-    marginBottom: 14,
-    gap: 10,
+    marginBottom: 16,
   },
   searchBarPlaceholder: {
     flex: 1,
     fontFamily: 'JakartaMedium',
     fontSize: 13,
-    color: '#9CA3AF',
+    color: '#858585',
+    marginLeft: 10,
   },
   filterSlidersIcon: {
     width: 32,
     height: 32,
     borderRadius: 10,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#F5F8FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   categoryPillsRow: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 18,
+    marginBottom: 16,
   },
   categoryPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 18,
     borderWidth: 1,
     borderColor: '#EEEEEE',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
   },
   categoryPillActive: {
-    backgroundColor: '#3122D2',
-    borderColor: '#3122D2',
+    backgroundColor: '#FF6B00',
+    borderColor: '#FF6B00',
   },
   categoryPillText: {
     fontFamily: 'JakartaBold',
     fontSize: 12,
     color: '#4B5563',
+    marginLeft: 6,
   },
   categoryPillTextActive: {
     color: '#FFFFFF',
   },
+
+  // Promo Banner
+  promoBanner: {
+    backgroundColor: '#EEF2FF',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#C3D9FF',
+  },
+  promoTag: {
+    fontFamily: 'JakartaBold',
+    fontSize: 10,
+    color: '#3122D2',
+    letterSpacing: 0.8,
+  },
+  promoTitle: {
+    fontFamily: 'JakartaBold',
+    fontSize: 18,
+    color: '#0B1528',
+    marginTop: 4,
+  },
+  promoSub: {
+    fontFamily: 'JakartaMedium',
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 2,
+    marginBottom: 12,
+    lineHeight: 16,
+  },
+  promoClaimBtn: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#3122D2',
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+  },
+  promoClaimText: {
+    fontFamily: 'JakartaBold',
+    fontSize: 12,
+    color: '#FFFFFF',
+  },
+
   foodGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 14,
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
   freeDeliveryBanner: {
-    backgroundColor: '#3122D2',
-    borderRadius: 20,
-    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    backgroundColor: '#0286FF',
+    borderRadius: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
     marginBottom: 20,
+    shadowColor: '#0286FF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 3,
   },
   freeDeliveryTextCol: {
     flex: 1,
   },
   freeDeliveryTitle: {
-    fontFamily: 'JakartaExtraBold',
+    fontFamily: 'JakartaBold',
     fontSize: 16,
     color: '#FFFFFF',
   },
   freeDeliverySub: {
     fontFamily: 'JakartaMedium',
-    fontSize: 11,
-    color: '#C7D2FE',
+    fontSize: 12,
+    color: '#E0F2FE',
     marginTop: 2,
   },
   freeDeliveryArrow: {
@@ -500,9 +626,9 @@ const styles = StyleSheet.create({
   },
   sectionHeaderRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    justifyContent: 'space-between',
+    marginBottom: 14,
   },
   sectionTitle: {
     fontFamily: 'JakartaBold',
@@ -511,12 +637,11 @@ const styles = StyleSheet.create({
   },
   viewAllText: {
     fontFamily: 'JakartaBold',
-    fontSize: 10,
+    fontSize: 12,
     color: '#3122D2',
-    letterSpacing: 0.5,
   },
   row: {
     flexDirection: 'row',
-    width: '100%',
+    marginBottom: 20,
   },
 });

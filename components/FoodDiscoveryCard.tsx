@@ -6,16 +6,18 @@ export interface FoodItem {
   id: string | number;
   title: string;
   cuisine: string;
-  priceLevel: string; // e.g. "₦₦" or "₦₦₦"
+  priceLevel: string; // e.g. "₦₦" or "$$"
   rating: string;
   time: string;
   imageUrl: string;
-  price?: string;
+  price?: string | number;
+  cookingTime?: string;
 }
 
 interface FoodDiscoveryCardProps {
   item: FoodItem;
   onPress?: (item: FoodItem) => void;
+  onQuickAdd?: (item: FoodItem) => void;
   style?: object;
 }
 
@@ -25,8 +27,15 @@ const CARD_WIDTH = (width - 44) / 2; // 2-column layout with 16px screen padding
 export default function FoodDiscoveryCard({
   item,
   onPress,
+  onQuickAdd,
   style,
 }: FoodDiscoveryCardProps) {
+  const displayPrice = item.price
+    ? typeof item.price === 'number'
+      ? `$${item.price.toFixed(2)}`
+      : item.price
+    : '$14.00';
+
   return (
     <TouchableOpacity
       style={[styles.container, style]}
@@ -54,13 +63,24 @@ export default function FoodDiscoveryCard({
           {item.title}
         </Text>
 
-        <Text style={styles.subtitle} numberOfLines={1}>
-          {item.cuisine} • {item.priceLevel}
+        <Text style={styles.cookingTimeText} numberOfLines={1}>
+          Cooking Time : {item.cookingTime || item.time}
         </Text>
 
-        <View style={styles.timeRow}>
-          <Ionicons name="time-outline" size={12} color="#858585" />
-          <Text style={styles.timeText}>{item.time}</Text>
+        <View style={styles.bottomRow}>
+          <Text style={styles.priceText}>{displayPrice}</Text>
+
+          <TouchableOpacity
+            style={styles.quickAddBtn}
+            onPress={(e) => {
+              e.stopPropagation();
+              if (onQuickAdd) onQuickAdd(item);
+              else if (onPress) onPress(item);
+            }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="add" size={16} color="#FFFFFF" />
+          </TouchableOpacity>
         </View>
       </View>
     </TouchableOpacity>
@@ -98,11 +118,10 @@ const styles = StyleSheet.create({
     right: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    paddingHorizontal: 6,
-    paddingVertical: 2.5,
-    borderRadius: 12,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -113,30 +132,44 @@ const styles = StyleSheet.create({
     fontFamily: 'JakartaBold',
     fontSize: 10,
     color: '#0B1528',
+    marginLeft: 3,
   },
   content: {
     padding: 10,
   },
   title: {
     fontFamily: 'JakartaBold',
-    fontSize: 13,
+    fontSize: 14,
     color: '#0B1528',
-    marginBottom: 2,
   },
-  subtitle: {
+  cookingTimeText: {
     fontFamily: 'JakartaMedium',
     fontSize: 11,
     color: '#858585',
-    marginBottom: 6,
+    marginTop: 3,
   },
-  timeRow: {
+  bottomRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'space-between',
+    marginTop: 8,
   },
-  timeText: {
-    fontFamily: 'JakartaMedium',
-    fontSize: 10,
-    color: '#858585',
+  priceText: {
+    fontFamily: 'JakartaBold',
+    fontSize: 14,
+    color: '#0B1528',
+  },
+  quickAddBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#FF6B00',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#FF6B00',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 2,
   },
 });

@@ -275,3 +275,51 @@ Every UI surface prioritizes reusable, modular component design to allow cross-s
    - `RideChatModal`: real-time driver chat with arrival countdown, timestamps, bubble styling, text input.
 
 Both checklists must pass before any change is merged. Where a rule appears in both documents, the stricter form applies.
+
+---
+
+## 11. Role-Tailored Architecture & Unified Systems
+
+The application supports three operational roles via `useUserStore` (`'customer' | 'driver' | 'vendor_admin'`):
+
+### 11.1 Driver Partner (`driver`)
+- **`components/DriverProfileHub.tsx`**: Complete driver operational profile implementing the exact Sarah Lee reference UI:
+  - Online toggle (`● Receiving requests` / `○ Offline`).
+  - Driver verification card (`✔ Verified Driver`, `★ 4.78`).
+  - Vehicle card (`2023 Tesla Model 3`, `Red Luxury Sedan`, plate `TES1234`).
+  - Direct deposit card (`Wells Fargo •••• 4455`).
+  - Quad metrics (`Total Rides: 189`, `Total Orders: 74`, `Acceptance Rate: 94%`).
+  - Safety performance (`Acceptance: 89%`, `Cancellation: 4.1%`).
+  - Recent activity feed (Downtown Drop-off, Food Delivery, Airport Run).
+- **`trips.tsx` Driver Live Dispatch**:
+  - Shift metrics (time online, shift earnings, completed trips count).
+  - Live radar map with surge zones.
+  - Interactive dispatch card with 14s timer, upfront fare, route, and Accept/Decline actions.
+  - In-transit trip lifecycle: En-route to pickup -> In Trip -> Complete Trip & collect fare.
+- **`wallet.tsx` Driver Payouts**:
+  - Instant Cash Out to Wells Fargo `•••• 4455`.
+  - Base fares, 100% tips, and peak surge boost breakdown.
+  - Payout history statements.
+
+### 11.2 Merchant / Vendor (`vendor_admin`)
+- **`components/VendorDashboardHub.tsx`**: Complete restaurant operations hub:
+  - Store status switch: `Accepting Orders (Open)` vs `Store Paused (Closed)`.
+  - Today's metrics: revenue (`$1,248.50`), active orders (`38`), avg prep time (`14 min`).
+  - Kitchen Order Fulfillment Queue: New -> In Prep -> Ready for Courier -> Dispatched.
+  - **Full Catalog CRUD Operations**:
+    - `createNewMenuItem`: Adds dish with price, category, cooking time, dietary tags, description.
+    - `updateMenuItem`: Modifies price, availability, prep time, description.
+    - `deleteMenuItem`: Deletes item with confirmation dialog.
+    - Stock toggle: Instant in-stock / sold-out state toggle.
+- **`wallet.tsx` Merchant Settlements**:
+  - Net settlement balance (`$1,061.22`).
+  - Transparent 15% platform fee deduction (`-$187.28`).
+  - Auto weekly deposits to Wells Fargo Commercial.
+  - 1099-K annual tax statement download.
+
+### 11.3 What Is Unified Across Roles
+1. **Global Role Switcher (`RoleSwitcherPill.tsx`)**: Reusable segmented pill (`[ 👤 Rider | 🚗 Driver | 🏪 Merchant ]`) allowing instant switching with Zustand persistence.
+2. **Unified Payout & Settlement Core (`Wells Fargo •••• 4455`)**: Same verified bank integration across all roles.
+3. **Unified Communications (`RideChatModal.tsx`)**: Shared low-latency in-app chat.
+4. **Unified Order & GPS Route Tracking (`OrderTrackingModal.tsx`)**: Shared courier/driver polyline tracking.
+5. **Unified Safe-Area Ergonomics**: Shared navigation floating tab bar with `insets.bottom + 90` clearance.

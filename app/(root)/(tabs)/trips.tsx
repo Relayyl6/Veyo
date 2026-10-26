@@ -23,7 +23,8 @@ import {
 
 import Map from '@/components/Map';
 import Header from '@/components/Header';
-import { useLocationStore } from '@/store/store';
+import { useLocationStore, useUserStore } from '@/store/store';
+import RoleSwitcherPill from '@/components/RoleSwitcherPill';
 import { rides as mockRidesData } from '@/constants/data';
 import { getEnrichedRide } from '@/lib/dataResolvers';
 import { images } from '@/constants/utils';
@@ -120,6 +121,8 @@ export default function MobilityScreen() {
   const router = useRouter();
   const { user } = useUser();
   const { setDestinationLocation, setUserLocation } = useLocationStore();
+  const role = useUserStore((state) => state.role);
+  const [driverTripStatus, setDriverTripStatus] = useState<'incoming' | 'en_route_pickup' | 'in_trip' | 'idle'>('incoming');
 
   const [activeTab, setActiveTab] = useState<'mobility' | 'past' | 'scheduled'>('mobility');
   const [scheduledList, setScheduledList] = useState<ScheduledRide[]>(INITIAL_SCHEDULED_RIDES);
@@ -219,6 +222,207 @@ export default function MobilityScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Role Switcher Pill */}
+        <RoleSwitcherPill />
+
+        {role === 'driver' ? (
+          /* ================= DRIVER LIVE RADAR & DISPATCH MODE ================= */
+          <View style={styles.driverDispatchCol}>
+            {/* 1. Driver Shift Summary Card */}
+            <View style={styles.driverShiftCard}>
+              <View style={styles.shiftHeaderRow}>
+                <View style={styles.onlineStatusBadge}>
+                  <View style={styles.pulseGreenDot} />
+                  <Text style={styles.onlineStatusBadgeText}>ONLINE DISPATCH</Text>
+                </View>
+                <Text style={styles.surgeIndicatorText}>● 1.4x Surge Active</Text>
+              </View>
+
+              <View style={styles.shiftMetricsRow}>
+                <View style={styles.shiftMetricCol}>
+                  <Text style={styles.shiftMetricVal}>$184.50</Text>
+                  <Text style={styles.shiftMetricLbl}>Shift Earnings</Text>
+                </View>
+                <View style={styles.shiftMetricCol}>
+                  <Text style={styles.shiftMetricVal}>5h 12m</Text>
+                  <Text style={styles.shiftMetricLbl}>Time Online</Text>
+                </View>
+                <View style={styles.shiftMetricCol}>
+                  <Text style={styles.shiftMetricVal}>8</Text>
+                  <Text style={styles.shiftMetricLbl}>Trips Done</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* 2. Embedded Navigation & Radar Map */}
+            <View style={styles.driverMapFrame}>
+              <Map
+                height={210}
+                showExpandButton={true}
+                showRecenterButton={true}
+                showDriverCount={true}
+                interactive={true}
+              />
+            </View>
+
+            {/* 3. Driver Dispatch Request Status Card */}
+            {driverTripStatus === 'incoming' && (
+              <View style={styles.incomingDispatchCard}>
+                <View style={styles.dispatchTopRow}>
+                  <View style={styles.incomingPill}>
+                    <Ionicons name="time" size={12} color="#D97706" />
+                    <Text style={styles.incomingPillText}>INCOMING REQUEST (14s)</Text>
+                  </View>
+                  <Text style={styles.dispatchFare}>$24.50</Text>
+                </View>
+
+                {/* Rider Info */}
+                <View style={styles.dispatchRiderRow}>
+                  <Image
+                    source={{ uri: 'https://randomuser.me/api/portraits/men/44.jpg' }}
+                    style={styles.dispatchRiderAvatar}
+                  />
+                  <View style={{ flex: 1, marginLeft: 10 }}>
+                    <Text style={styles.dispatchRiderName}>David K.</Text>
+                    <Text style={styles.dispatchRiderRating}>★ 4.9 • 120 rides</Text>
+                  </View>
+                  <View style={styles.surgeBoostBadge}>
+                    <Text style={styles.surgeBoostText}>+$3.00 Boost</Text>
+                  </View>
+                </View>
+
+                {/* Route */}
+                <View style={styles.dispatchRouteBox}>
+                  <View style={styles.routePointRow}>
+                    <View style={[styles.routeDot, { backgroundColor: '#0CC25F' }]} />
+                    <Text style={styles.routeAddressText}>78 Marina Blvd (1.8 km • 4 min)</Text>
+                  </View>
+                  <View style={styles.routeHairline} />
+                  <View style={styles.routePointRow}>
+                    <View style={[styles.routeDot, { backgroundColor: '#F56565' }]} />
+                    <Text style={styles.routeAddressText}>Lekki Phase 1, Admiralty Way (8.4 km)</Text>
+                  </View>
+                </View>
+
+                {/* Buttons */}
+                <View style={styles.dispatchBtnRow}>
+                  <TouchableOpacity
+                    style={styles.declineBtn}
+                    onPress={() => setDriverTripStatus('idle')}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.declineBtnText}>Decline</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.acceptBtn}
+                    onPress={() => setDriverTripStatus('en_route_pickup')}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={styles.acceptBtnText}>Accept Ride</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            {driverTripStatus === 'en_route_pickup' && (
+              <View style={styles.activeTripCard}>
+                <View style={styles.dispatchTopRow}>
+                  <View style={[styles.incomingPill, { backgroundColor: '#EFF6FF' }]}>
+                    <Ionicons name="navigate" size={12} color="#0286FF" />
+                    <Text style={[styles.incomingPillText, { color: '#0286FF' }]}>PICKUP EN ROUTE</Text>
+                  </View>
+                  <Text style={styles.dispatchFare}>ETA 4 min</Text>
+                </View>
+
+                <Text style={styles.activeTripTitle}>Picking up David K. at 78 Marina Blvd</Text>
+
+                <View style={styles.activeTripActionRow}>
+                  <TouchableOpacity
+                    style={styles.chatRiderBtn}
+                    onPress={() => setChatModalVisible(true)}
+                  >
+                    <Ionicons name="chatbubble-ellipses" size={16} color="#3122D2" />
+                    <Text style={styles.chatRiderText}>Chat</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.startTripBtn}
+                    onPress={() => setDriverTripStatus('in_trip')}
+                  >
+                    <Text style={styles.startTripText}>Start Trip →</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            {driverTripStatus === 'in_trip' && (
+              <View style={styles.activeTripCard}>
+                <View style={styles.dispatchTopRow}>
+                  <View style={[styles.incomingPill, { backgroundColor: '#ECFDF5' }]}>
+                    <Ionicons name="car-sport" size={12} color="#059669" />
+                    <Text style={[styles.incomingPillText, { color: '#059669' }]}>TRIP IN PROGRESS</Text>
+                  </View>
+                  <Text style={styles.dispatchFare}>$24.50</Text>
+                </View>
+
+                <Text style={styles.activeTripTitle}>Destination: Lekki Phase 1, Admiralty Way</Text>
+
+                <TouchableOpacity
+                  style={[styles.startTripBtn, { backgroundColor: '#059669', width: '100%', marginTop: 12 }]}
+                  onPress={() => {
+                    Alert.alert('Trip Completed!', 'Collected $24.50. Added to driver balance.');
+                    setDriverTripStatus('idle');
+                  }}
+                >
+                  <Text style={styles.startTripText}>Complete Trip & Collect Fare ✓</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {driverTripStatus === 'idle' && (
+              <View style={styles.idleCard}>
+                <Ionicons name="navigate-outline" size={32} color="#0286FF" />
+                <Text style={styles.idleTitle}>Online & Searching for Requests</Text>
+                <Text style={styles.idleSub}>High demand near Victoria Island (1.4x Surge Active)</Text>
+                <TouchableOpacity
+                  style={styles.simulateBtn}
+                  onPress={() => setDriverTripStatus('incoming')}
+                >
+                  <Text style={styles.simulateBtnText}>Simulate New Incoming Request</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* 4. Driver Quick Controls */}
+            <View style={styles.driverQuickActions}>
+              <TouchableOpacity
+                style={styles.driverQuickBtn}
+                onPress={() => Alert.alert('Surge Heatmap', 'Downtown Victoria Island & Lekki Phase 1 currently have 1.4x surge.')}
+              >
+                <Ionicons name="flame" size={18} color="#EA580C" />
+                <Text style={styles.driverQuickText}>Heatmap</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.driverQuickBtn}
+                onPress={() => Alert.alert('Safety Hub', '24/7 Driver SOS and Incident Hotline active.')}
+              >
+                <Ionicons name="shield-checkmark" size={18} color="#3122D2" />
+                <Text style={styles.driverQuickText}>Safety Hub</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.driverQuickBtn}
+                onPress={() => Alert.alert('Break Mode', 'Driver paused. Requests paused for 15 mins.')}
+              >
+                <Ionicons name="pause-circle" size={18} color="#6B7280" />
+                <Text style={styles.driverQuickText}>Break</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          <>
         {/* 2. SEGMENTED TAB SELECTOR (Mobility | Past Trips | Scheduled) */}
         <View style={styles.segmentedControl}>
           <TouchableOpacity
@@ -649,6 +853,8 @@ export default function MobilityScreen() {
               ))
             )}
           </View>
+        )}
+          </>
         )}
       </ScrollView>
 
@@ -1381,5 +1587,309 @@ const styles = StyleSheet.create({
     fontFamily: 'JakartaBold',
     fontSize: 13,
     color: '#4B5563',
+  },
+  // DRIVER LIVE DISPATCH STYLES
+  driverDispatchCol: {
+    gap: 16,
+  },
+  driverShiftCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1.5,
+    borderColor: '#3122D2',
+    shadowColor: '#3122D2',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  shiftHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  onlineStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ECFDF5',
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    gap: 6,
+  },
+  pulseGreenDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#10B981',
+  },
+  onlineStatusBadgeText: {
+    fontFamily: 'JakartaBold',
+    fontSize: 10,
+    color: '#059669',
+    letterSpacing: 0.5,
+  },
+  surgeIndicatorText: {
+    fontFamily: 'JakartaBold',
+    fontSize: 12,
+    color: '#EA580C',
+  },
+  shiftMetricsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 14,
+    padding: 12,
+  },
+  shiftMetricCol: {
+    alignItems: 'center',
+  },
+  shiftMetricVal: {
+    fontFamily: 'JakartaBold',
+    fontSize: 16,
+    color: '#0B1528',
+  },
+  shiftMetricLbl: {
+    fontFamily: 'JakartaMedium',
+    fontSize: 11,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  driverMapFrame: {
+    height: 210,
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E6F3FF',
+  },
+  incomingDispatchCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 2,
+    borderColor: '#F59E0B',
+    shadowColor: '#F59E0B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  dispatchTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  incomingPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    gap: 4,
+  },
+  incomingPillText: {
+    fontFamily: 'JakartaBold',
+    fontSize: 10,
+    color: '#D97706',
+    letterSpacing: 0.5,
+  },
+  dispatchFare: {
+    fontFamily: 'JakartaBold',
+    fontSize: 22,
+    color: '#0286FF',
+  },
+  dispatchRiderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  dispatchRiderAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+  },
+  dispatchRiderName: {
+    fontFamily: 'JakartaBold',
+    fontSize: 15,
+    color: '#0B1528',
+  },
+  dispatchRiderRating: {
+    fontFamily: 'JakartaMedium',
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  surgeBoostBadge: {
+    backgroundColor: '#FFF7ED',
+    borderWidth: 1,
+    borderColor: '#FDBA74',
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  surgeBoostText: {
+    fontFamily: 'JakartaBold',
+    fontSize: 11,
+    color: '#EA580C',
+  },
+  dispatchRouteBox: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 14,
+  },
+  routePointRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  routeDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  routeHairline: {
+    width: 2,
+    height: 12,
+    backgroundColor: '#D1D5DB',
+    marginLeft: 3,
+    marginVertical: 2,
+  },
+  routeAddressText: {
+    fontFamily: 'JakartaMedium',
+    fontSize: 12,
+    color: '#374151',
+  },
+  dispatchBtnRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  declineBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    alignItems: 'center',
+  },
+  declineBtnText: {
+    fontFamily: 'JakartaSemiBold',
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  acceptBtn: {
+    flex: 2,
+    backgroundColor: '#0286FF',
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  acceptBtnText: {
+    fontFamily: 'JakartaBold',
+    fontSize: 14,
+    color: '#FFFFFF',
+  },
+  activeTripCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 1.5,
+    borderColor: '#0286FF',
+  },
+  activeTripTitle: {
+    fontFamily: 'JakartaBold',
+    fontSize: 15,
+    color: '#0B1528',
+    marginTop: 6,
+  },
+  activeTripActionRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 14,
+  },
+  chatRiderBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#EEF2FF',
+    gap: 6,
+  },
+  chatRiderText: {
+    fontFamily: 'JakartaBold',
+    fontSize: 13,
+    color: '#3122D2',
+  },
+  startTripBtn: {
+    flex: 2,
+    backgroundColor: '#3122D2',
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  startTripText: {
+    fontFamily: 'JakartaBold',
+    fontSize: 13,
+    color: '#FFFFFF',
+  },
+  idleCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  idleTitle: {
+    fontFamily: 'JakartaBold',
+    fontSize: 16,
+    color: '#0B1528',
+    marginTop: 10,
+  },
+  idleSub: {
+    fontFamily: 'JakartaMedium',
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  simulateBtn: {
+    backgroundColor: '#0286FF',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+  },
+  simulateBtnText: {
+    fontFamily: 'JakartaBold',
+    fontSize: 13,
+    color: '#FFFFFF',
+  },
+  driverQuickActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  driverQuickBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
+    gap: 6,
+  },
+  driverQuickText: {
+    fontFamily: 'JakartaSemiBold',
+    fontSize: 12,
+    color: '#1F2937',
   },
 });

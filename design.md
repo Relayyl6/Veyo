@@ -277,3 +277,52 @@ Before any UI change is considered complete, verify:
 - [ ] No `import { styled } from 'nativewind'`.
 - [ ] No `"output": "server"` in `app.json`.
 - [ ] Android eager bundle export passes locally.
+
+---
+
+## 12. Role-Based Screen Architecture & Unified Systems
+
+The Veyo design system provides tailored ergonomics for three user archetypes while sharing a unified visual foundation:
+
+### 12.1 Driver Partner (`driver`)
+- **Profile & Operational Hub (`DriverProfileHub.tsx`)**:
+  - Live dispatch toggle (`● Receiving requests` / `○ Offline`).
+  - Driver credential card: Sarah Lee, `✔ Verified Driver` emerald badge (`#065F46`), `★ 4.78` rating.
+  - Registered vehicle card: `2023 Tesla Model 3`, `Red Luxury Sedan`, plate badge `TES1234`.
+  - Payout account strip: Wells Fargo (`•••• 4455`) with instant direct deposit indicator.
+  - Quad metrics: Total Rides (189), Total Orders (74), Acceptance Rate (94% with teal progress bar).
+  - Safety Performance: Acceptance (89%), Cancellation (4.1% in red `#EF4444`).
+  - Recent activity feed: Downtown Drop-off, Food Delivery, JFK Airport Run.
+- **Mobility Tab (Driver Dispatch & Radar)**:
+  - Online Shift HUD: Time online (`5h 12m`), Shift earnings (`$184.50`), Trips completed (`8`).
+  - Interactive Incoming Request Card with countdown timer (14s), upfront fare (`$24.50` with `+$3.00 Surge Boost`), rider details (`David K. ★ 4.9`), and [Decline] / [Accept] actions.
+  - Live in-transit controls: [Start Trip], [Complete Trip & Collect Fare], Rider chat/call shortcuts.
+- **Wallet Tab (Driver Earnings & Payouts)**:
+  - Available Driver Balance (`$482.30`).
+  - [Instant Cash Out to Wells Fargo] with 1-2 minute delivery.
+  - Weekly earnings breakdown (Base Fares `$612.00`, 100% Tips `$124.50`, Surge Boost `$212.00`).
+  - Driver payout history statements.
+
+### 12.2 Merchant / Vendor (`vendor_admin`)
+- **Storefront & Catalog Hub (`VendorDashboardHub.tsx`)**:
+  - Pizzeria header: Pizza Paradise / Brooklyn Bites, `✔ Verified Merchant` badge, `10:00 AM - 10:00 PM`.
+  - Operating status switch: `● Accepting Orders (Open)` vs `○ Store Paused (Closed)`.
+  - Merchant performance quad: Gross revenue (`$1,248.50`, `+14%`), 38 orders, avg prep time (`14 min`), store rating (`4.8 ★`).
+  - Kitchen Order Fulfillment Queue: Segmented tabs (`All`, `New`, `In Kitchen`, `Ready for Courier`) with lifecycle status transitions.
+  - Menu Catalog Management (Full CRUD):
+    - Add New Dish modal (Name, Category, Price, Prep Time, Description, Image URL, Veg/Vegan tags).
+    - Edit existing dish pricing and details.
+    - Delete dish with confirmation dialog.
+    - In-stock / Sold-out real-time inventory toggle.
+- **Wallet Tab (Merchant Settlements)**:
+  - Net settlement balance (`$1,061.22`).
+  - Wells Fargo Commercial automatic weekly deposits.
+  - Transparent 15% platform fee deduction breakdown (`-$187.28`).
+  - Annual 1099-K tax statements.
+
+### 12.3 What Is Unified Across Roles
+1. **Global Role Switcher (`RoleSwitcherPill.tsx`)**: Unified segmented pill (`[ 👤 Rider | 🚗 Driver | 🏪 Merchant ]`) enabling instantaneous state switching.
+2. **Unified Payout Banking (`Wells Fargo •••• 4455`)**: Consistent direct-deposit banking cards and routing across Driver, Merchant, and Rider.
+3. **Unified Communications (`RideChatModal.tsx`)**: Shared low-latency in-app chat with status banners and message history.
+4. **Unified Order & Route Tracking (`OrderTrackingModal.tsx`)**: Shared live courier/driver GPS polyline visualization.
+5. **Unified Navigation & Ergonomics**: Shared 70px floating animated tab bar with safe-area bottom clearance (`insets.bottom + 90`).
