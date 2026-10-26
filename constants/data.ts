@@ -1,3 +1,18 @@
+import type {
+  User,
+  DriverProfile,
+  Vendor,
+  MenuItem,
+  Ride,
+  Order,
+  OrderItem,
+  Payment,
+  WalletTransaction,
+  DriverEarning,
+  UserActivity,
+  Review,
+} from '@/types/data';
+
 enum UserRole {
   CUSTOMER = 'customer',
   DRIVER = 'driver',

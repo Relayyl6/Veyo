@@ -1,4 +1,5 @@
 import {MarkerData} from "@/types/type";
+import type { DriverProfile, AppMarker, Location as GeoLocation } from "@/types/data";
 import { getDriverFullName, getEnrichedRide } from "./dataResolvers";
 
 // Use ambient types from data.d.ts: DriverProfile, NearbyDriver, Location, etc.
@@ -40,7 +41,7 @@ export const estimateEtaMinutes = (distanceKm: number, avgSpeedKmh = 30) => {
 };
 
 /** Build a Google Directions URL for debugging or quick-open (not for API). */
-export const buildGoogleDirectionsUrl = (origin: Location, destination: Location) => {
+export const buildGoogleDirectionsUrl = (origin: GeoLocation, destination: GeoLocation) => {
     return `https://www.google.com/maps/dir/?api=1&origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}`;
 };
 
@@ -71,9 +72,9 @@ export const generateMarkersFromData = ({
     const metersToDegrees = (meters: number) => meters / 111320;
     const maxOffsetDegrees = metersToDegrees(maxOffsetMeters);
 
-    return data.map((driver) => {
-        const baseLat = (driver.current_latitude as number) || (userLatitude as number) || DEFAULT_REGION.latitude;
-        const baseLng = (driver.current_longitude as number) || (userLongitude as number) || DEFAULT_REGION.longitude;
+    return data.map((driver: any) => {
+        const baseLat = (driver.current_latitude as number) || (driver.latitude as number) || (userLatitude as number) || DEFAULT_REGION.latitude;
+        const baseLng = (driver.current_longitude as number) || (driver.longitude as number) || (userLongitude as number) || DEFAULT_REGION.longitude;
 
         // small jitter if driver coords are identical to user or missing
         const lat = baseLat + (Math.random() - 0.5) * maxOffsetDegrees;

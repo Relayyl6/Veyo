@@ -1,6 +1,6 @@
 import { View, Text, Image } from 'react-native'
 import React from 'react'
-// import { Ride } from '@/types/data'
+import { Ride } from '@/types/data'
 import { getEnrichedRide } from '@/lib/dataResolvers'
 import { icons } from '@/constants/utils'
 import { formatDate, formatTime } from '@/constants/item'

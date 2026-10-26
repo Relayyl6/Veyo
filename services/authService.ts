@@ -74,7 +74,7 @@ export async function registerUserAccount(params: RegisterUserParams): Promise<U
   } catch (err) {
     console.warn('[authService] API fallback for user account:', err);
     // Offline / Mock fallback
-    const mockUser: User = {
+    const mockUser = {
       id: `u-${Date.now()}`,
       clerk_id: params.clerkId,
       email: params.email,
@@ -89,7 +89,7 @@ export async function registerUserAccount(params: RegisterUserParams): Promise<U
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-    return mockUser;
+    return mockUser as User;
   }
 }
 
@@ -106,7 +106,7 @@ export async function registerDriverProfile(params: RegisterDriverParams): Promi
     return res.data;
   } catch (err) {
     console.warn('[authService] API fallback for driver profile:', err);
-    const mockDriver: DriverProfile = {
+    const mockDriver = {
       id: `dp-${Date.now()}`,
       user_id: params.userId || 'current-user',
       license_number: params.licenseNumber,
@@ -129,7 +129,7 @@ export async function registerDriverProfile(params: RegisterDriverParams): Promi
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-    return mockDriver;
+    return mockDriver as DriverProfile;
   }
 }
 

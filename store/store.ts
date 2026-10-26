@@ -1,6 +1,6 @@
 import { DEFAULT_REGION, MapMarker } from '@/lib/map';
 import { create } from 'zustand';
-import { User, DriverProfile, Vendor, MenuItem, Ride, Order } from '@/types/data';
+import { User, DriverProfile, Vendor, MenuItem, Ride, Order, AppMarker } from '@/types/data';
 
 type Location = {
   latitude: number;
@@ -154,13 +154,13 @@ export const useVendorStore = create<VendorStore>((set, get) => ({
   updateMenuItemInActiveVendor: (item) => {
     const active = get().activeVendor;
     if (!active || !active.menu_items) return;
-    const updated = active.menu_items.map((i) => (i.id === item.id ? item : i));
+    const updated = active.menu_items.map((i: MenuItem) => (i.id === item.id ? item : i));
     set({ activeVendor: { ...active, menu_items: updated } });
   },
   deleteMenuItemFromActiveVendor: (itemId) => {
     const active = get().activeVendor;
     if (!active || !active.menu_items) return;
-    const updated = active.menu_items.filter((i) => i.id !== itemId);
+    const updated = active.menu_items.filter((i: MenuItem) => i.id !== itemId);
     set({ activeVendor: { ...active, menu_items: updated } });
   },
 }));

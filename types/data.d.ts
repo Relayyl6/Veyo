@@ -1,7 +1,9 @@
+import type { MapMarker } from '@/lib/map';
+
 // =============================================
 // ENUM TYPES
 // =============================================
-declare type AppMarker = MapMarker & {
+export type AppMarker = MapMarker & {
   id: number;
   profile_image_url?: string;
   car_image_url?: string;
@@ -13,14 +15,14 @@ declare type AppMarker = MapMarker & {
   price?: number | null;       // numeric price
 };
 
-declare enum UserRole {
+export enum UserRole {
   CUSTOMER = 'customer',
   DRIVER = 'driver',
   VENDOR_ADMIN = 'vendor_admin',
   SUPER_ADMIN = 'super_admin',
 }
 
-declare enum RideStatus {
+export enum RideStatus {
   SEARCHING = 'searching',
   ACCEPTED = 'accepted',
   ARRIVED = 'arrived',
@@ -29,7 +31,7 @@ declare enum RideStatus {
   CANCELED = 'canceled',
 }
 
-declare enum OrderStatus {
+export enum OrderStatus {
   PENDING = 'pending',
   CONFIRMING = 'confirming',
   PREPARING = 'preparing',
@@ -39,14 +41,14 @@ declare enum OrderStatus {
   CANCELED = 'canceled',
 }
 
-declare enum PaymentStatus {
+export enum PaymentStatus {
   PENDING = 'pending',
   PAID = 'paid',
   FAILED = 'failed',
   REFUNDED = 'refunded',
 }
 
-declare enum PaymentMethod {
+export enum PaymentMethod {
   WALLET = 'wallet',
   CREDIT_CARD = 'credit_card',
   DEBIT_CARD = 'debit_card',
@@ -54,7 +56,7 @@ declare enum PaymentMethod {
   BANK_TRANSFER = 'bank_transfer',
 }
 
-declare enum ActivityType {
+export enum ActivityType {
   RIDE = 'ride',
   ORDER = 'order',
   WALLET_TOPUP = 'wallet_topup',
@@ -63,7 +65,7 @@ declare enum ActivityType {
   REFUND = 'refund',
 }
 
-declare enum VendorCategory {
+export enum VendorCategory {
   ITALIAN = 'italian',
   JAPANESE = 'japanese',
   AMERICAN = 'american',
@@ -76,7 +78,7 @@ declare enum VendorCategory {
   CAFE = 'cafe',
 }
 
-declare enum VehicleType {
+export enum VehicleType {
   STANDARD = 'standard',
   LUXURY = 'luxury',
   SUV = 'suv',
@@ -88,7 +90,7 @@ declare enum VehicleType {
 // USER TYPES
 // =============================================
 
-declare interface User {
+export interface User {
   id: string;
   clerk_id: string;
   email: string;
@@ -117,7 +119,7 @@ declare interface User {
 // DRIVER TYPES
 // =============================================
 
-declare interface DriverProfile {
+export interface DriverProfile {
   id: string;
   user_id: string;
   user?: User;
@@ -161,7 +163,7 @@ declare interface DriverProfile {
 // VENDOR TYPES
 // =============================================
 
-declare interface Vendor {
+export interface Vendor {
   id: string;
   owner_id: string;
   owner?: User;
@@ -196,7 +198,7 @@ declare interface Vendor {
   updated_at: string;
 }
 
-declare interface MenuItem {
+export interface MenuItem {
   id: string;
   vendor_id: string;
   vendor?: Vendor;
@@ -224,7 +226,7 @@ declare interface MenuItem {
 // RIDE TYPES
 // =============================================
 
-declare interface Ride {
+export interface Ride {
   id: string;
   ride_number: string;
 
@@ -275,7 +277,7 @@ declare interface Ride {
   updated_at: string;
 }
 
-declare interface RideLocation {
+export interface RideLocation {
   id: string;
   ride_id: string;
   latitude: number;
@@ -287,7 +289,7 @@ declare interface RideLocation {
 // ORDER TYPES
 // =============================================
 
-declare interface Order {
+export interface Order {
   id: string;
   order_number: string;
 
@@ -340,7 +342,7 @@ declare interface Order {
   updated_at: string;
 }
 
-declare interface OrderItem {
+export interface OrderItem {
   id: string;
   order_id: string;
   order?: Order;
@@ -361,7 +363,7 @@ declare interface OrderItem {
 // TRANSACTION TYPES
 // =============================================
 
-declare interface WalletTransaction {
+export interface WalletTransaction {
   id: string;
   user_id: string;
   user?: User;
@@ -378,7 +380,7 @@ declare interface WalletTransaction {
   created_at: string;
 }
 
-declare interface Payment {
+export interface Payment {
   id: string;
   user_id: string;
   user?: User;
@@ -400,7 +402,7 @@ declare interface Payment {
   updated_at: string;
 }
 
-declare interface DriverEarning {
+export interface DriverEarning {
   id: string;
   driver_id: string;
   driver?: DriverProfile;
@@ -423,7 +425,7 @@ declare interface DriverEarning {
 // ACTIVITY TYPES
 // =============================================
 
-declare interface UserActivity {
+export interface UserActivity {
   id: string;
   user_id: string;
   user?: User;
@@ -447,7 +449,7 @@ declare interface UserActivity {
 // REVIEW TYPES
 // =============================================
 
-declare interface Review {
+export interface Review {
   id: string;
   reviewer_id: string;
   reviewer?: User;
@@ -472,7 +474,7 @@ declare interface Review {
 // API REQUEST / RESPONSE TYPES
 // =============================================
 
-declare interface CreateRideRequest {
+export interface CreateRideRequest {
   origin_address: string;
   destination_address: string;
   origin_latitude: number;
@@ -482,7 +484,7 @@ declare interface CreateRideRequest {
   payment_method: PaymentMethod;
 }
 
-declare interface CreateOrderRequest {
+export interface CreateOrderRequest {
   vendor_id: string;
   items: Array<{
     menu_item_id: string;
@@ -497,12 +499,12 @@ declare interface CreateOrderRequest {
   tip_amount?: number;
 }
 
-declare interface AcceptRideRequest {
+export interface AcceptRideRequest {
   ride_id: string;
   driver_id: string;
 }
 
-declare interface UpdateRideStatusRequest {
+export interface UpdateRideStatusRequest {
   ride_id: string;
   status: RideStatus;
   location?: {
@@ -511,13 +513,13 @@ declare interface UpdateRideStatusRequest {
   };
 }
 
-declare interface UpdateOrderStatusRequest {
+export interface UpdateOrderStatusRequest {
   order_id: string;
   status: OrderStatus;
   driver_id?: string;
 }
 
-declare interface VendorDashboardStats {
+export interface VendorDashboardStats {
   total_orders: number;
   total_revenue: number;
   average_rating: number;
@@ -529,7 +531,7 @@ declare interface VendorDashboardStats {
   }>;
 }
 
-declare interface DriverDashboardStats {
+export interface DriverDashboardStats {
   total_rides: number;
   total_orders: number;
   total_earnings: number;
@@ -540,7 +542,7 @@ declare interface DriverDashboardStats {
   online_hours_today: number;
 }
 
-declare interface CustomerDashboardData {
+export interface CustomerDashboardData {
   recent_rides: Ride[];
   recent_orders: Order[];
   wallet_balance: number;
@@ -557,13 +559,13 @@ declare interface CustomerDashboardData {
 // UTILITY TYPES
 // =============================================
 
-declare type Location = {
+export type Location = {
   latitude: number;
   longitude: number;
   address?: string;
 };
 
-declare type PriceBreakdown = {
+export type PriceBreakdown = {
   subtotal: number;
   tax: number;
   fee: number;
@@ -572,23 +574,23 @@ declare type PriceBreakdown = {
   total: number;
 };
 
-declare type TimeEstimate = {
+export type TimeEstimate = {
   minutes: number;
   formatted: string;
   timestamp: string;
 };
 
-declare type NearbyDriver = DriverProfile & {
+export type NearbyDriver = DriverProfile & {
   distance_km: number;
   eta_minutes: number;
 };
 
-declare type NearbyVendor = Vendor & {
+export type NearbyVendor = Vendor & {
   distance_km: number;
   eta_minutes: number;
 };
 
-declare type OrderTracking = {
+export type OrderTracking = {
   order: Order;
   current_status: OrderStatus;
   estimated_delivery_time: string | null;
@@ -601,7 +603,7 @@ declare type OrderTracking = {
   }>;
 };
 
-declare type RideTracking = {
+export type RideTracking = {
   ride: Ride;
   current_status: RideStatus;
   estimated_arrival: string | null;

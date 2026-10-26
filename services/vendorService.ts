@@ -142,7 +142,7 @@ export async function getMenuItemsForVendor(vendorId: string, category?: string)
   } catch (err) {
     console.warn('[vendorService] API fallback for menu items:', err);
     let items = mockMenuItems.menu_items.filter((m) => m.vendor_id === vendorId);
-    if (category) items = items.filter((m) => m.category.toLowerCase() === category.toLowerCase());
+    if (category) items = items.filter((m) => m.category?.toLowerCase() === category.toLowerCase());
     return items;
   }
 }

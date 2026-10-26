@@ -35,7 +35,7 @@ export async function requestRide(params: CreateRideParams): Promise<Ride> {
     return res.data;
   } catch (err) {
     console.warn('[rideService] API fallback for ride request:', err);
-    const mockRide: Ride = {
+    const mockRide = {
       id: `r-${Date.now()}`,
       ride_number: `RD-${Date.now().toString().slice(-6)}`,
       user_id: params.userId || 'current-user',
@@ -62,7 +62,7 @@ export async function requestRide(params: CreateRideParams): Promise<Ride> {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-    return mockRide;
+    return mockRide as Ride;
   }
 }
 
