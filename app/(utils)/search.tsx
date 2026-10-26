@@ -20,6 +20,8 @@ import SearchMap, { SearchMapItem } from '@/components/SearchMap';
 import MealCard from '@/components/MealCard';
 import Drop, { SearchPill, TrendingItem } from '@/components/drop';
 import CategoryCard from '@/components/CategoryCard';
+import WhereToInput from '@/components/WhereToInput';
+import RideOptionCard, { RideOption } from '@/components/RideOptionCard';
 import { PressableHybrid } from '@/components/CustomPressable';
 import { useCartStore } from '@/store/store';
 
@@ -90,6 +92,43 @@ const MEALS_DATA = [
   { id: 6, title: 'Cold-Pressed Detox Juice', time: '5 mins', price: '8.50', rating: '4.9', imageUrl: 'https://images.unsplash.com/photo-1613478223719-2ab802602423?w=800&q=90' },
 ];
 
+const MOBILITY_CAROUSEL: RideOption[] = [
+  {
+    id: 'opt-black',
+    name: 'Veyo Black',
+    eta: '3 min arrival',
+    subtitle: 'VIP Chauffeur',
+    price: '₦4,200',
+    badge: 'RECOMMENDED',
+    badgeType: 'recommended',
+    iconType: 'black',
+    seats: 4,
+    imageUrl: 'https://images.unsplash.com/photo-1541348263662-e0c8de4259ba?w=800&q=90',
+  },
+  {
+    id: 'opt-elite',
+    name: 'Veyo Elite',
+    eta: '5 min arrival',
+    subtitle: 'Luxury Sedan',
+    price: '₦3,500',
+    iconType: 'comfort',
+    seats: 4,
+    imageUrl: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&q=90',
+  },
+  {
+    id: 'opt-econ',
+    name: 'Veyo Economy',
+    eta: '4 min arrival',
+    subtitle: 'Quick Daily Ride',
+    price: '₦2,400',
+    badge: 'FASTEST',
+    badgeType: 'fastest',
+    iconType: 'car',
+    seats: 4,
+    imageUrl: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800&q=90',
+  },
+];
+
 export default function SearchScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ q?: string; category?: string; mode?: string }>();
@@ -104,6 +143,8 @@ export default function SearchScreen() {
   const [favorites, setFavorites] = useState<Record<string, boolean>>({ '1': true });
   const [selectedCard, setSelectedCard] = useState<SearchMapItem | null>(SEARCH_RESULTS[0]);
   const [savePillVisible, setSavePillVisible] = useState(true);
+  const [discoveryType, setDiscoveryType] = useState<'food' | 'mobility'>('food');
+  const [destinationInput, setDestinationInput] = useState('');
 
   // Cart store integration
   const { addItem, getItemCount, getSubtotal } = useCartStore();
@@ -488,108 +529,261 @@ export default function SearchScreen() {
           }}
         />
 
-        <SearchBar
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          onSubmitEditing={() => executeSearch()}
-          onClearPress={clearSearch}
-          placeholder="Search food, restaurants, or rides..."
-        />
+        {/* Discovery Switcher: Food vs Mobility (Matches Image 1) */}
+        <View style={styles.discoveryTypeTrack}>
+          <TouchableOpacity
+            style={[
+              styles.discoveryTypeBtn,
+              discoveryType === 'food' && styles.discoveryTypeBtnActive,
+            ]}
+            onPress={() => setDiscoveryType('food')}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name="restaurant-outline"
+              size={13}
+              color={discoveryType === 'food' ? '#FFFFFF' : '#6B7280'}
+            />
+            <Text
+              style={[
+                styles.discoveryTypeText,
+                discoveryType === 'food' && styles.discoveryTypeTextActive,
+              ]}
+            >
+              Food Discovery
+            </Text>
+          </TouchableOpacity>
 
-        {/* Quick Category Chips */}
-        <View style={styles.categoryPillsScroll}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
-            {['Healthy Food', 'Sushi', 'Italian Pizza', 'Burgers', 'Fresh Drinks', 'Express Rides'].map((cat) => (
-              <TouchableOpacity
-                key={cat}
-                style={[
-                  styles.categoryFilterPill,
-                  searchQuery === cat && styles.categoryFilterPillActive,
-                ]}
-                onPress={() => {
-                  setSearchQuery(cat);
-                  executeSearch(cat);
-                }}
-              >
-                <Text
-                  style={[
-                    styles.categoryFilterPillText,
-                    searchQuery === cat && styles.categoryFilterPillTextActive,
-                  ]}
-                >
-                  {cat}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          <TouchableOpacity
+            style={[
+              styles.discoveryTypeBtn,
+              discoveryType === 'mobility' && styles.discoveryTypeBtnActive,
+            ]}
+            onPress={() => setDiscoveryType('mobility')}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name="car-outline"
+              size={14}
+              color={discoveryType === 'mobility' ? '#FFFFFF' : '#6B7280'}
+            />
+            <Text
+              style={[
+                styles.discoveryTypeText,
+                discoveryType === 'mobility' && styles.discoveryTypeTextActive,
+              ]}
+            >
+              Mobility Destination
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        {isSearching ? (
-          <View style={styles.searchingLoader}>
-            <ActivityIndicator size="large" color="#3122D2" />
-            <Text style={styles.searchingText}>Searching Veyo Engine...</Text>
-          </View>
-        ) : (
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-            {/* Recent Searches */}
-            <Drop title="Recent Search" next="CLEAR ALL" />
-            <View style={styles.recentPillsWrapper}>
-              {recentSearches.map((item, index) => (
-                <SearchPill
-                  key={index}
-                  title={item}
-                  onRemove={() => console.log(`Remove ${item}`)}
-                />
-              ))}
+        {discoveryType === 'mobility' ? (
+          /* =================================================== */
+          /* MOBILITY DESTINATION SEARCH (Matches Image 1 Left)  */
+          /* =================================================== */
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40, gap: 14 }}
+          >
+            {/* 1. "Where to?" Dual Input Card */}
+            <Text style={styles.mobilitySectionTitle}>Where to?</Text>
+            <WhereToInput
+              originText="Current Location"
+              destinationText={destinationInput}
+              isEditable={true}
+              onDestinationChange={setDestinationInput}
+              onDestinationPress={() => executeSearch(destinationInput || 'Victoria Island')}
+            />
+
+            {/* 2. Recent Destinations */}
+            <View style={styles.recentSectionHeader}>
+              <Text style={styles.mobilitySectionTitle}>Recent</Text>
+              <TouchableOpacity onPress={() => console.log('See All')}>
+                <Text style={styles.seeAllText}>See All</Text>
+              </TouchableOpacity>
             </View>
 
-            {/* Trending Searches */}
-            <Drop title="Trending Searches" next="SEE ALL" />
-            <View style={{ paddingHorizontal: 16 }}>
-              {trendingSearches.map((item, index) => (
-                <TrendingItem
-                  key={index}
-                  index={index + 1}
-                  title={item}
-                  onPress={() => {
-                    setSearchQuery(item);
-                    executeSearch(item);
+            <View style={styles.recentRow}>
+              <TouchableOpacity
+                style={styles.recentBox}
+                activeOpacity={0.8}
+                onPress={() => {
+                  setDestinationInput('Work (Marina)');
+                  executeSearch('Marina');
+                }}
+              >
+                <View style={[styles.recentIconSquare, { backgroundColor: '#EEF2FF' }]}>
+                  <Ionicons name="briefcase-outline" size={16} color="#3122D2" />
+                </View>
+                <Text style={styles.recentBoxTitle}>Work</Text>
+                <Text style={styles.recentBoxSubtitle}>15 mins away</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.recentBox}
+                activeOpacity={0.8}
+                onPress={() => {
+                  setDestinationInput('Home (VI)');
+                  executeSearch('Victoria Island');
+                }}
+              >
+                <View style={[styles.recentIconSquare, { backgroundColor: '#FFF7ED' }]}>
+                  <Ionicons name="home-outline" size={16} color="#F97316" />
+                </View>
+                <Text style={styles.recentBoxTitle}>Home</Text>
+                <Text style={styles.recentBoxSubtitle}>32 mins away</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Full-Width Card: Eko Gym & Fitness */}
+            <TouchableOpacity
+              style={styles.gymCard}
+              activeOpacity={0.8}
+              onPress={() => {
+                setDestinationInput('Eko Gym & Fitness');
+                executeSearch('Eko Gym');
+              }}
+            >
+              <View style={[styles.recentIconSquare, { backgroundColor: '#CCFBF1' }]}>
+                <Ionicons name="barbell-outline" size={16} color="#0D9488" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.gymCardTitle}>Eko Gym & Fitness</Text>
+                <Text style={styles.gymCardSub}>Victoria Island, Lagos</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+            </TouchableOpacity>
+
+            {/* 3. Vehicle Type Horizontal Cards Carousel */}
+            <Text style={[styles.mobilitySectionTitle, { marginTop: 6 }]}>Vehicle Type</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingVertical: 4 }}
+            >
+              {MOBILITY_CAROUSEL.map((veh) => (
+                <RideOptionCard
+                  key={veh.id}
+                  option={veh}
+                  layout="card"
+                  onSelect={(v) => {
+                    setDestinationInput(v.name);
+                    executeSearch('Victoria Island');
                   }}
                 />
               ))}
-            </View>
-
-            {/* Visual Discovery Cards */}
-            <Drop title="Popular Categories" next="SEE ALL" />
-            <View style={{ paddingHorizontal: 16, paddingTop: 10 }}>
-              <View style={{ flexDirection: 'row', gap: 12 }}>
-                <CategoryCard
-                  flex={1}
-                  height={200}
-                  title="Healthy Dining"
-                  subtitle="Nutritious & Fresh"
-                  imageUrl="https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=90"
-                />
-                <CategoryCard
-                  flex={1}
-                  height={200}
-                  title="Express Mobility"
-                  subtitle="Cars & Couriers"
-                  imageUrl="https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&q=90"
-                />
-              </View>
-
-              <View style={{ height: 12 }} />
-
-              <CategoryCard
-                width="100%"
-                height={150}
-                title="Gourmet & Groceries"
-                subtitle="Delivered to your doorstep"
-                imageUrl="https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=90"
-              />
-            </View>
+            </ScrollView>
           </ScrollView>
+        ) : (
+          /* =================================================== */
+          /* FOOD DISCOVERY SEARCH (Matches Image 1 Right)       */
+          /* =================================================== */
+          <>
+            <SearchBar
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              onSubmitEditing={() => executeSearch()}
+              onClearPress={clearSearch}
+              placeholder="Search dishes or restaurants..."
+            />
+
+            {/* Quick Category Chips */}
+            <View style={styles.categoryPillsScroll}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
+                {['Healthy Food', 'Sushi', 'Italian Pizza', 'Burgers', 'Fresh Drinks', 'Express Rides'].map((cat) => (
+                  <TouchableOpacity
+                    key={cat}
+                    style={[
+                      styles.categoryFilterPill,
+                      searchQuery === cat && styles.categoryFilterPillActive,
+                    ]}
+                    onPress={() => {
+                      setSearchQuery(cat);
+                      executeSearch(cat);
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.categoryFilterPillText,
+                        searchQuery === cat && styles.categoryFilterPillTextActive,
+                      ]}
+                    >
+                      {cat}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
+            {isSearching ? (
+              <View style={styles.searchingLoader}>
+                <ActivityIndicator size="large" color="#3122D2" />
+                <Text style={styles.searchingText}>Searching Veyo Engine...</Text>
+              </View>
+            ) : (
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+                {/* Recent Searches */}
+                <Drop title="Recent Search" next="CLEAR ALL" />
+                <View style={styles.recentPillsWrapper}>
+                  {recentSearches.map((item, index) => (
+                    <SearchPill
+                      key={index}
+                      title={item}
+                      onRemove={() => console.log(`Remove ${item}`)}
+                    />
+                  ))}
+                </View>
+
+                {/* Trending Searches */}
+                <Drop title="Trending Searches" next="SEE ALL" />
+                <View style={{ paddingHorizontal: 16 }}>
+                  {trendingSearches.map((item, index) => (
+                    <TrendingItem
+                      key={index}
+                      index={index + 1}
+                      title={item}
+                      onPress={() => {
+                        setSearchQuery(item);
+                        executeSearch(item);
+                      }}
+                    />
+                  ))}
+                </View>
+
+                {/* Visual Discovery Cards */}
+                <Drop title="Popular Categories" next="SEE ALL" />
+                <View style={{ paddingHorizontal: 16, paddingTop: 10 }}>
+                  <View style={{ flexDirection: 'row', gap: 12 }}>
+                    <CategoryCard
+                      flex={1}
+                      height={200}
+                      title="Healthy Dining"
+                      subtitle="Nutritious & Fresh"
+                      imageUrl="https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=90"
+                    />
+                    <CategoryCard
+                      flex={1}
+                      height={200}
+                      title="Express Mobility"
+                      subtitle="Cars & Couriers"
+                      imageUrl="https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&q=90"
+                    />
+                  </View>
+
+                  <View style={{ height: 12 }} />
+
+                  <CategoryCard
+                    width="100%"
+                    height={150}
+                    title="Gourmet & Groceries"
+                    subtitle="Delivered to your doorstep"
+                    imageUrl="https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=90"
+                  />
+                </View>
+              </ScrollView>
+            )}
+          </>
         )}
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -972,5 +1166,116 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginTop: 12,
     marginBottom: 16,
+  },
+  discoveryTypeTrack: {
+    flexDirection: 'row',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 14,
+    marginHorizontal: 16,
+    padding: 3,
+    marginBottom: 14,
+  },
+  discoveryTypeBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 9,
+    borderRadius: 11,
+  },
+  discoveryTypeBtnActive: {
+    backgroundColor: '#3122D2',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  discoveryTypeText: {
+    fontFamily: 'JakartaMedium',
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  discoveryTypeTextActive: {
+    fontFamily: 'JakartaBold',
+    color: '#FFFFFF',
+  },
+  mobilitySectionTitle: {
+    fontFamily: 'JakartaBold',
+    fontSize: 16,
+    color: '#0B1528',
+  },
+  recentSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  seeAllText: {
+    fontFamily: 'JakartaBold',
+    fontSize: 12,
+    color: '#3122D2',
+  },
+  recentRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  recentBox: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  recentIconSquare: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  recentBoxTitle: {
+    fontFamily: 'JakartaBold',
+    fontSize: 13,
+    color: '#0B1528',
+    marginBottom: 2,
+  },
+  recentBoxSubtitle: {
+    fontFamily: 'JakartaMedium',
+    fontSize: 11,
+    color: '#858585',
+  },
+  gymCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  gymCardTitle: {
+    fontFamily: 'JakartaBold',
+    fontSize: 13,
+    color: '#0B1528',
+  },
+  gymCardSub: {
+    fontFamily: 'JakartaMedium',
+    fontSize: 11,
+    color: '#858585',
+    marginTop: 1,
   },
 });

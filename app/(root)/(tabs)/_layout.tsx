@@ -30,7 +30,7 @@ export default function TabsLayout() {
               break;
             case 'trips':
               iconSource = icons.trips;
-              displayTitle = "Trips";
+              displayTitle = "Mobility";
               break;
             case 'wallet':
               iconSource = icons.wallet;

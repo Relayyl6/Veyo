@@ -225,14 +225,43 @@ Five core tabs are defined in `app/(root)/(tabs)/_layout.tsx`:
 | Tab Route | Screen Title | Responsibility | Key Components |
 | :--- | :--- | :--- | :--- |
 | `home.tsx` | Home | Live greeting, carousel promotions, service options, recent trip deck, insights | `AdCarousel`, `ServiceGrid`, `RideCardDeck`, `VeyoInsightsScreen` |
-| `explore.tsx` | Explore | Food & vendor discovery feed, cuisine category cards, recommendations | `CategoryCard`, `CarouselCard`, `nearbyData` |
-| `trips.tsx` | Trips | Complete ride planner & history hub: past journeys with receipts & support, scheduled future rides, radar map card | `Map`, `SavedPlacesRow`, `TripCard`, `ScheduleModal`, `SupportModal` |
-| `wallet.tsx` | Wallet | Payment methods, balance cards, top-ups, transaction history | `PaymentCards`, `TransactionList` |
-| `profile.tsx` | Profile | User details, emergency contacts, app settings, logout | `ProfileSettings`, `EmergencyContacts` |
+| `explore.tsx` | Explore | Food discovery grid, restaurant storefront, dish customization, live tracking | `FoodDiscoveryCard`, `VendorStorefrontModal`, `FoodDetailModal`, `OrderTrackingModal` |
+| `trips.tsx` | Mobility | Swift mobility booking, traffic alerts, destination shortcuts, ride tiers, package tracker | `Map`, `TrafficAlertBanner`, `QuickActionGrid`, `DestinationShortcuts`, `RideOptionCard`, `PackageTrackerCard`, `QuietModeModal`, `RideChatModal` |
+| `wallet.tsx` | Wallet | Available balance, student transport mode budget, spending chart, vouchers & modals | `WalletBalanceCard`, `StudentBudgetCard`, `SpendingChart`, `SendMoneyModal`, `TopUpModal`, `AnalyticsModal`, `TransactionHistoryModal` |
+| `profile.tsx` | Profile | User details, AI tailored experience preferences, emergency contacts, referral banner | `AITailoredPreferences`, `EmergencyContacts`, `ReferralBanner` |
 
 ---
 
-## 10. Design QA Checklist
+## 10. Reusable Component Catalog
+
+| Component | Path | Responsibility | Visual Reference |
+| :--- | :--- | :--- | :--- |
+| `TrafficAlertBanner` | `components/TrafficAlertBanner.tsx` | Amber alert card with "Avoid Third Mainland traffic? [Reroute]" | Mobility Map Screen |
+| `WhereToInput` | `components/WhereToInput.tsx` | Dual-box origin/destination selector with connecting indicator | Mobility Destination Search |
+| `DestinationShortcuts` | `components/DestinationShortcuts.tsx` | Circular shortcut pills (Home, School, Work, Add) | Mobility Screen |
+| `QuickActionGrid` | `components/QuickActionGrid.tsx` | Dual cards: "Book a Ride" (Swift city mobility) & "Send Items" (Same-day delivery) | Mobility Screen |
+| `RideOptionCard` | `components/RideOptionCard.tsx` | Vehicle tiers in row layout (Economy, Comfort, Veyo EV, Bike) or card layout (Veyo Black) | Mobility & Search |
+| `PackageTrackerCard` | `components/PackageTrackerCard.tsx` | Dark shipment card with tracking ID, EN ROUTE badge, progress track, and ETA | Mobility Screen |
+| `FoodDiscoveryCard` | `components/FoodDiscoveryCard.tsx` | 2-column food cards with image, star rating, cuisine, price-level (`₦₦`), and prep time | Explore Screen |
+| `VendorStorefrontModal` | `components/VendorStorefrontModal.tsx` | Pizza Paradise storefront banner, logo, delivery metrics, menu grid, view cart bar | Vendor Storefront |
+| `FoodDetailModal` | `components/FoodDetailModal.tsx` | Margherita Pizza hero image, rating, protein radio options, extra toppings, instructions, stepper | Food Detail Modal |
+| `CartSummaryModal` | `components/CartSummaryModal.tsx` | Cart items list, delivery address, promo code, subtotal, checkout payment methods | Cart & Checkout |
+| `OrderSuccessModal` | `components/OrderSuccessModal.tsx` | Large checkmark dialog, Order ID, "Track Order" and "Back to Home" CTAs | Order Completed |
+| `OrderTrackingModal` | `components/OrderTrackingModal.tsx` | Delivery route map, 3:25 PM ETA, 4-step stepper, Jackub Kurner courier with Call & Chat | Order Tracking |
+| `AITailoredPreferences` | `components/AITailoredPreferences.tsx` | Fast pickup preference (AI prioritizes nearby drivers), Budget-first, Comfort-first | Profile Screen |
+| `WalletBalanceCard` | `components/WalletBalanceCard.tsx` | ₦84,200.50 balance card, SAVED pill, Top Up & Send CTAs, last transaction snippet | Wallet Hub |
+| `StudentBudgetCard` | `components/StudentBudgetCard.tsx` | Dark budget protection card, toggle, monthly limit, remaining bar (67%) | Wallet Hub |
+| `SpendingChart` | `components/SpendingChart.tsx` | Weekly interactive spending bar chart (Mon-Sun) with active highlight | Wallet Hub |
+| `SendMoneyModal` | `components/SendMoneyModal.tsx` | Recents avatars, bank selector, verified Chukwudi Eze recipient, ₦50,000 chips | Wallet Sub-flow |
+| `TopUpModal` | `components/TopUpModal.tsx` | Veyo Microfinance Bank details, account copy actions, share details CTA | Wallet Sub-flow |
+| `AnalyticsModal` | `components/AnalyticsModal.tsx` | 7-30 day filter, Total Earnings, Number of Trips, Driver Rating, Commission vs Net bar chart | Wallet Sub-flow |
+| `TransactionHistoryModal` | `components/TransactionHistoryModal.tsx` | History/Ongoing/Scheduled tabs, category filters, Today & Yesterday grouped transactions | Wallet Sub-flow |
+| `QuietModeModal` | `components/QuietModeModal.tsx` | How Quiet Mode works, 4 rules (playlist, avoid noise, +5m max, nods only), "Got it" CTA | Mobility Sub-flow |
+| `RideChatModal` | `components/RideChatModal.tsx` | Driver arriving banner (5 MIN countdown), chat bubbles with timestamps, input bar | Mobility Sub-flow |
+
+---
+
+## 11. Design QA Checklist
 
 Before any UI change is considered complete, verify:
 

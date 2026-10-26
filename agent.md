@@ -238,6 +238,40 @@ Before submitting changes or completing a task, verify the following:
 | Multi-role onboarding | §5.6 Role Onboarding Cards | §6 Multi-Role & Domain CRUD Pipeline |
 | Food & menu item patterns | §5.7 Food & Restaurant Patterns | §6.2, §7.4 Food Cart & Vendor Store |
 | Build stability | §7 Platform Splitting (design) | §3 EAS Build & `app.json` |
-| QA gate | §10 Design QA Checklist | §8 Quality & Verification Checklist |
+| Reusable Component Catalog | §10 Reusable Components | §10 Modular Component Architecture |
+| QA gate | §11 Design QA Checklist | §8 Quality & Verification Checklist |
+
+---
+
+## 10. Modular Component Architecture
+
+Every UI surface prioritizes reusable, modular component design to allow cross-screen composability:
+
+1. **Mobility & Navigation**:
+   - `TrafficAlertBanner`: warning banner with "Reroute" action.
+   - `WhereToInput`: dual-point origin/destination entry box.
+   - `DestinationShortcuts`: fast circular shortcuts for Home, School, Work, Add.
+   - `QuickActionGrid`: swift mobility & package dispatch cards.
+   - `RideOptionCard`: vehicle tier rows (Economy, Comfort, Veyo EV, Bike) and carousel cards (Veyo Black).
+   - `PackageTrackerCard`: en-route shipment tracking card.
+2. **Food Catalog & Ordering**:
+   - `FoodDiscoveryCard`: 2-column food discovery cards with rating and prep time.
+   - `VendorStorefrontModal`: complete store profile, metrics strip, featured menu, view cart bar.
+   - `FoodDetailModal`: customizable dish dialog with protein radios, topping checkboxes, instructions, quantity stepper.
+   - `CartSummaryModal`: cart list, promo code, delivery address, order summary, multi-method checkout.
+   - `OrderSuccessModal`: completion checkmark dialog with Order ID.
+   - `OrderTrackingModal`: live delivery route map, 3:25 PM arrival ETA, 4-step progress stepper, courier card with Call & Chat.
+3. **Wallet & Financial Suite**:
+   - `WalletBalanceCard`: ₦ balance card with Top Up, Send, and history preview.
+   - `StudentBudgetCard`: budget protection mode with monthly limit and progress indicator.
+   - `SpendingChart`: weekly spending bar chart with day selection.
+   - `SendMoneyModal`: contact avatars, bank selector, verified recipient, amount chips.
+   - `TopUpModal`: virtual bank transfer details with copy buttons.
+   - `AnalyticsModal`: 7–30 day analytics with earnings vs commission bar charts.
+   - `TransactionHistoryModal`: categorized transactions grouped by date.
+4. **Interactive Support & Rider Settings**:
+   - `AITailoredPreferences`: preference toggles (Fast pickup, Budget-first, Comfort-first).
+   - `QuietModeModal`: rules for silent rides with "Got it" confirmation.
+   - `RideChatModal`: real-time driver chat with arrival countdown, timestamps, bubble styling, text input.
 
 Both checklists must pass before any change is merged. Where a rule appears in both documents, the stricter form applies.

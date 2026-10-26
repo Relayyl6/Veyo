@@ -1,57 +1,108 @@
 import React, { useRef, useState } from 'react';
-import { View, Text, Image, Dimensions, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  Image,
+  Dimensions,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  TextInput,
+  Alert,
+} from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { FontAwesome, Ionicons } from '@expo/vector-icons';
-import CategoryCard from '@/components/CategoryCard';
-import { images } from '@/constants/utils';
-import Header from '@/components/Header';
+import { FontAwesome, Ionicons, Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useUser } from '@clerk/expo';
-import { PressableHybrid } from '@/components/CustomPressable';
-// import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Header from '@/components/Header';
+import { images } from '@/constants/utils';
+import CategoryCard from '@/components/CategoryCard';
+import CarouselCard from '@/components/CarousalCard';
+import FoodDiscoveryCard, { FoodItem } from '@/components/FoodDiscoveryCard';
+import VendorStorefrontModal from '@/components/VendorStorefrontModal';
+import FoodDetailModal from '@/components/FoodDetailModal';
+import CartSummaryModal from '@/components/CartSummaryModal';
+import OrderSuccessModal from '@/components/OrderSuccessModal';
+import OrderTrackingModal from '@/components/OrderTrackingModal';
+import { nearbyData, discoveryData } from '@/constants/item';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
-  useAnimatedStyle,
   withSpring,
-  interpolate,
-  Extrapolation,
-  runOnJS } from 'react-native-reanimated';
-import CarouselCard from '@/components/CarousalCard';
-import { nearbyData, discoveryData } from "@/constants/item";
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+  runOnJS,
+} from 'react-native-reanimated';
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = width - 40; // Full width minus 20px padding on each side
 const CARD_HEIGHT = 150;
 
-const ITEM_WIDTH = width * 0.75;
-const OFFSET_TO_EDGE = (width - ITEM_WIDTH) / 2;
+const FOOD_DISCOVERY_LIST: FoodItem[] = [
+  {
+    id: 'f1',
+    title: 'Naija Fusion',
+    cuisine: 'Traditional',
+    priceLevel: '₦₦',
+    rating: '4.8',
+    time: '25 min',
+    imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80',
+  },
+  {
+    id: 'f2',
+    title: 'Pizza Central',
+    cuisine: 'Italian',
+    priceLevel: '₦₦₦',
+    rating: '4.6',
+    time: '18 min',
+    imageUrl: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=600&q=80',
+  },
+  {
+    id: 'f3',
+    title: 'The Green Bowl',
+    cuisine: 'Healthy',
+    priceLevel: '₦₦',
+    rating: '4.9',
+    time: '20 min',
+    imageUrl: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&q=80',
+  },
+  {
+    id: 'f4',
+    title: 'Stack & Sizzle',
+    cuisine: 'Burgers',
+    priceLevel: '₦₦',
+    rating: '4.2',
+    time: '20 min',
+    imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&q=80',
+  },
+];
 
+const CATEGORY_CHIPS = [
+  { id: 'all', name: 'All', icon: 'restaurant' },
+  { id: 'healthy', name: 'Healthy', icon: 'leaf' },
+  { id: 'burgers', name: 'Burgers', icon: 'fast-food' },
+  { id: 'italian', name: 'Italian', icon: 'pizza' },
+  { id: 'traditional', name: 'Traditional', icon: 'flame' },
+];
 
-
-export default function Explore() {
-  const [listData, setListData] = useState(discoveryData);
-  const scrollAnim = useSharedValue(0);
-  const currentIndexRef = useRef(0);
+export default function ExploreScreen() {
+  const router = useRouter();
   const { user } = useUser();
   const insets = useSafeAreaInsets();
 
-  const maybeGrowList = (nextIndex: number) => {
-    setListData(prevData => {
-      if (nextIndex >= prevData.length - 2) {
-        return [
-          ...prevData,
-          ...discoveryData.map(item => ({ ...item, id: `${item.id}-${prevData.length}` })),
-        ];
-      }
-      return prevData;
-    });
-  };
+  const [activeCategory, setActiveCategory] = useState('all');
+  const [listData, setListData] = useState(discoveryData);
+  const scrollAnim = useSharedValue(0);
+  const currentIndexRef = useRef(0);
+
+  // Modals state
+  const [vendorModalVisible, setVendorModalVisible] = useState(false);
+  const [foodDetailVisible, setFoodDetailVisible] = useState(false);
+  const [selectedFoodItem, setSelectedFoodItem] = useState<any>(null);
+  const [cartModalVisible, setCartModalVisible] = useState(false);
+  const [orderSuccessVisible, setOrderSuccessVisible] = useState(false);
+  const [latestOrderId, setLatestOrderId] = useState('VE-90210');
+  const [trackingModalVisible, setTrackingModalVisible] = useState(false);
 
   const panGesture = Gesture.Pan()
     .activeOffsetX([-10, 10])
-    .onStart(() => {
-      // no-op: scrollAnim is already at rest or mid-spring; UI thread reads current value directly
-    })
     .onUpdate((event) => {
       const newFloatIndex = currentIndexRef.current - event.translationX / width;
       scrollAnim.value = newFloatIndex;
@@ -60,95 +111,46 @@ export default function Explore() {
       const dx = event.translationX;
       const vx = event.velocityX;
       const SWIPE_THRESHOLD = width * 0.25;
-      const VELOCITY_THRESHOLD = 500; // px/s, RNGH's native velocity unit
+      const VELOCITY_THRESHOLD = 500;
 
       let step = 0;
       if (dx < -SWIPE_THRESHOLD || vx < -VELOCITY_THRESHOLD) step = 1;
       else if (dx > SWIPE_THRESHOLD || vx > VELOCITY_THRESHOLD) step = -1;
 
       const nextIndex = Math.max(0, currentIndexRef.current + step);
-
       scrollAnim.value = withSpring(nextIndex, { damping: 15, stiffness: 150 });
 
       runOnJS(() => {
         currentIndexRef.current = nextIndex;
-        maybeGrowList(nextIndex);
       })();
     });
 
-  // We use PanResponder to handle the custom swiping logic since we aren't using a FlatList
-  // const panResponder = useRef(
-  //   PanResponder.create({
-  //     // CAPTURE-phase handlers run BEFORE children (like the PressableHybrid
-  //     // inside each card) get a chance to claim the touch responder.
-  //     // Using only the bubble-phase "onMoveShouldSetPanResponder" (as before)
-  //     // meant the inner Pressable was winning the responder race on every
-  //     // touch, which is why swiping felt unresponsive/inconsistent.
-  //     onStartShouldSetPanResponderCapture: () => false, // don't steal simple taps
-  //     onMoveShouldSetPanResponderCapture: (_, gesture) => {
-  //       return Math.abs(gesture.dx) > 10 && Math.abs(gesture.dx) > Math.abs(gesture.dy);
-  //     },
-  //     // Keep the bubble-phase version too as a fallback for any nested view
-  //     // that isn't itself a Touchable.
-  //     onMoveShouldSetPanResponder: (_, gesture) => {
-  //       return Math.abs(gesture.dx) > 10 && Math.abs(gesture.dx) > Math.abs(gesture.dy);
-  //     },
+  const handleCardPress = (item: FoodItem) => {
+    if (item.title === 'Pizza Central' || item.cuisine === 'Italian') {
+      setVendorModalVisible(true);
+    } else {
+      setSelectedFoodItem({
+        id: item.id,
+        title: item.title,
+        price: 14.5,
+        rating: item.rating,
+        reviewsCount: 140,
+        description: `Delicious chef-curated ${item.title} prepared with farm-fresh ingredients.`,
+        imageUrl: item.imageUrl,
+        tags: [item.cuisine, 'Popular'],
+      });
+      setFoodDetailVisible(true);
+    }
+  };
 
-  //     onPanResponderGrant: () => {
-  //       scrollAnim.stopAnimation((value) => {
-  //         currentIndexRef.current = value;
-  //       });
-  //     },
-
-  //     onPanResponderMove: (_, gesture) => {
-  //       const newFloatIndex = currentIndexRef.current - (gesture.dx / width);
-  //       scrollAnim.setValue(newFloatIndex);
-  //     },
-
-  //     onPanResponderRelease: (_, gesture) => {
-  //       let step = 0;
-  //       const SWIPE_THRESHOLD = width * 0.25;
-  //       const VELOCITY_THRESHOLD = 0.5;
-
-  //       if (gesture.dx < -SWIPE_THRESHOLD || gesture.vx < -VELOCITY_THRESHOLD) {
-  //         step = 1;
-  //       } else if (gesture.dx > SWIPE_THRESHOLD || gesture.vx > VELOCITY_THRESHOLD) {
-  //         step = -1;
-  //       }
-
-  //       let nextIndex = currentIndexRef.current + step;
-  //       nextIndex = Math.max(0, nextIndex);
-
-  //       Animated.spring(scrollAnim, {
-  //         toValue: nextIndex,
-  //         useNativeDriver: true,
-  //         friction: 8,
-  //         tension: 40,
-  //       }).start(() => {
-  //         currentIndexRef.current = nextIndex;
-
-  //         // FIX: do the length check *inside* the setListData updater so it
-  //         // always sees the freshest array length, instead of relying on the
-  //         // `listData` variable captured when this PanResponder was created
-  //         // (which useRef() only builds once, on first render).
-  //         setListData(prevData => {
-  //           if (nextIndex >= prevData.length - 2) {
-  //             return [
-  //               ...prevData,
-  //               ...discoveryData.map(item => ({ ...item, id: `${item.id}-${prevData.length}` }))
-  //             ];
-  //           }
-  //           return prevData;
-  //         });
-  //       });
-  //     },
-  //   })
-  // ).current;
-
-  // const insets = useSafeAreaInsets()
+  const handleOrderCompleted = (orderId: string) => {
+    setLatestOrderId(orderId);
+    setOrderSuccessVisible(true);
+  };
 
   return (
-    <SafeAreaView className="flex-1 bg-transparent">
+    <SafeAreaView style={styles.container} edges={['top']}>
+      {/* 1. Header */}
       <View
         style={{
           position: 'absolute',
@@ -158,32 +160,119 @@ export default function Explore() {
           zIndex: 10,
           paddingTop: insets.top,
           paddingBottom: 10,
-          backgroundColor: 'transparent'
+          backgroundColor: 'transparent',
         }}
       >
         <Header
           name={user?.firstName as string | undefined}
+          title="VI, Lagos"
           image={images.logohor}
-          onNotificationPress={() => console.log("something")}
+          onNotificationPress={() => setCartModalVisible(true)}
         />
       </View>
 
       <ScrollView
-        className="flex-1 mx-4"
+        style={styles.scroll}
+        contentContainerStyle={{
+          paddingTop: insets.top + 70,
+          paddingBottom: insets.bottom + 90,
+          paddingHorizontal: 16,
+        }}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100, paddingTop: insets.top + 70 }}
       >
+        {/* 2. "What would you like to have?" Hero Search Section */}
+        <Text style={styles.heroTitle}>What would you like to have?</Text>
 
-        {/* Header */}
-        <View className="flex-row items-center justify-between pt-4 px-2 mb-3">
-          <Text className="text-black text-[17px] font-JakartaMedium">Quick Discovery</Text>
-          <TouchableOpacity>
-            <Text className="text-[#3122D2] text-[10px] font-JakartaBold tracking-wide">VIEW ALL</Text>
+        {/* Search Input Bar */}
+        <TouchableOpacity
+          style={styles.searchBarBox}
+          activeOpacity={0.88}
+          onPress={() => router.push('/(utils)/search')}
+        >
+          <Ionicons name="search" size={18} color="#858585" />
+          <Text style={styles.searchBarPlaceholder}>
+            Search for dishes or restaurants
+          </Text>
+          <View style={styles.filterSlidersIcon}>
+            <Ionicons name="options-outline" size={16} color="#3122D2" />
+          </View>
+        </TouchableOpacity>
+
+        {/* Category Pills Strip */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryPillsRow}
+        >
+          {CATEGORY_CHIPS.map((chip) => {
+            const active = activeCategory === chip.id;
+            return (
+              <TouchableOpacity
+                key={chip.id}
+                style={[styles.categoryPill, active && styles.categoryPillActive]}
+                onPress={() => setActiveCategory(chip.id)}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name={chip.icon as any}
+                  size={14}
+                  color={active ? '#FFFFFF' : '#4B5563'}
+                />
+                <Text
+                  style={[
+                    styles.categoryPillText,
+                    active && styles.categoryPillTextActive,
+                  ]}
+                >
+                  {chip.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {/* 3. 2-Column Food / Restaurant Grid (Image 1: Naija Fusion, Pizza Central, etc.) */}
+        <View style={styles.foodGrid}>
+          {FOOD_DISCOVERY_LIST.map((item) => (
+            <FoodDiscoveryCard
+              key={item.id}
+              item={item}
+              onPress={handleCardPress}
+            />
+          ))}
+        </View>
+
+        {/* 4. Free Delivery Banner */}
+        <TouchableOpacity
+          style={styles.freeDeliveryBanner}
+          activeOpacity={0.9}
+          onPress={() => setCartModalVisible(true)}
+        >
+          <View style={styles.freeDeliveryTextCol}>
+            <Text style={styles.freeDeliveryTitle}>Free Delivery</Text>
+            <Text style={styles.freeDeliverySub}>On orders over ₦5,000</Text>
+          </View>
+          <View style={styles.freeDeliveryArrow}>
+            <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
+          </View>
+        </TouchableOpacity>
+
+        {/* 5. Quick Discovery Swiper Carousel */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionTitle}>Quick Discovery</Text>
+          <TouchableOpacity onPress={() => router.push('/(utils)/search')}>
+            <Text style={styles.viewAllText}>VIEW ALL</Text>
           </TouchableOpacity>
         </View>
 
         <GestureDetector gesture={panGesture}>
-          <View className="items-center justify-center relative" style={{ height: CARD_HEIGHT + 20 }}>
+          <View
+            style={{
+              height: CARD_HEIGHT + 20,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
             {listData.map((item, index) => (
               <CarouselCard
                 key={item.id}
@@ -196,99 +285,238 @@ export default function Explore() {
           </View>
         </GestureDetector>
 
-
-
-        {/* --- TOP RATED NEARBY SECTION --- */}
-        <View className="flex-row items-center justify-between mt-6 px-2 mb-4">
-          <Text className="text-black text-[17px] font-JakartaMedium">Top Rated Nearby</Text>
-          <View className="flex-row items-center gap-1">
-            <Ionicons name="location-outline" size={14} color="#3122D2" />
-            <Text className="text-[#3122D2] text-[10px] font-JakartaBold">VI, Lagos</Text>
-          </View>
+        {/* 6. Weekend Hangouts Category Grid */}
+        <View style={[styles.sectionHeaderRow, { marginTop: 24 }]}>
+          <Text style={styles.sectionTitle}>Weekend Hangouts</Text>
+          <Ionicons name="arrow-forward" size={18} color="#3122D2" />
         </View>
 
-        <View className="pb-5">
-          {nearbyData.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              activeOpacity={0.9}
-              className="bg-white rounded-3xl p-3 mb-4 shadow-md shadow-neutral-700"
-            >
-              <View className="relative w-full h-44 rounded-2xl overflow-hidden mb-3">
-                <Image
-                  source={{ uri: item.image }}
-                  className="w-full h-full"
-                  resizeMode="cover"
-                />
+        <View style={styles.row}>
+          <CategoryCard
+            flex={1}
+            height={280}
+            title="Luxe Nightlife"
+            subtitle="8 CURATED SPOTS"
+            imageUrl="https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?w=800&q=90"
+          />
 
-                <View className="absolute top-3 right-3 bg-white/95 rounded-full px-2.5 py-1 flex-row items-center gap-1 shadow-sm">
-                  <FontAwesome name="star" size={12} color="#D97706" />
-                  <Text className="font-JakartaBold text-xs text-black">{item.rating}</Text>
-                </View>
+          <View style={{ width: 12 }} />
 
-                <View className="absolute bottom-3 left-3 bg-[#3122D2] rounded-full px-3 py-1.5 shadow-sm">
-                  <Text className="font-JakartaBold text-[11px] text-white tracking-wide">{item.time}</Text>
-                </View>
-              </View>
-
-              <View className="px-1 pb-1">
-                <View className="flex-row justify-between items-center mb-1">
-                  <Text className="text-[17px] font-JakartaBold text-black">{item.title}</Text>
-                  <Text className="text-[13px] text-gray-500 font-Jakarta">{item.deliveryInfo}</Text>
-                </View>
-                <Text className="text-[13px] text-gray-500 font-Jakarta">{item.category}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-
-
-
-        <View className="flex-row items-center justify-between -mt-2 px-2 mb-5">
-          <Text className="text-black text-[17px] font-JakartaMedium">Weekend Hangouts</Text>
-          <View className="flex-row items-center gap-1">
-            <Ionicons name="arrow-forward-outline" size={20} color="#3122D2" />
-          </View>
-        </View>
-
-        <View style={[styles.row]}>
-            {/* Left Column: One Tall Card */}
+          <View style={{ flex: 1, height: 280, justifyContent: 'space-between' }}>
             <CategoryCard
-                flex={1}
-                height={300}
-                title="Luxe Nightlife"
-                subtitle="8 CURATED SPOTS"
-                imageUrl="https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?w=800&q=90"
+              width="100%"
+              height={134}
+              title="Quiet Cafes"
+              subtitle="12 locations"
+              imageUrl="https://images.unsplash.com/photo-1521017432531-fbd92d768814?w=800&q=90"
             />
 
-            <View style={{ width: 12 }} />
-
-            {/* Right Column: Two Short Stacked Cards */}
-            <View style={{ flex: 1, height: 300, justifyContent: 'space-between' }}>
-                <CategoryCard
-                  width="100%"
-                  height={144}
-                  title="Quiet Cafes"
-                  subtitle="12 locations"
-                  imageUrl="https://images.unsplash.com/photo-1521017432531-fbd92d768814?w=800&q=90"
-                />
-
-                <CategoryCard
-                  width="100%"
-                  height={144}
-                  title="Art & Culture"
-                  subtitle="Museums & Galleries"
-                  imageUrl="https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&q=90"
-                />
-            </View>
+            <CategoryCard
+              width="100%"
+              height={134}
+              title="Art & Culture"
+              subtitle="Museums & Galleries"
+              imageUrl="https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&q=90"
+            />
+          </View>
         </View>
       </ScrollView>
+
+      {/* MODALS */}
+      {/* 1. Vendor Storefront (Pizza Paradise) */}
+      <VendorStorefrontModal
+        visible={vendorModalVisible}
+        onClose={() => setVendorModalVisible(false)}
+        onSelectFoodItem={(food) => {
+          setSelectedFoodItem({
+            id: food.id,
+            title: food.name,
+            price: food.price,
+            rating: '4.8',
+            reviewsCount: 120,
+            description:
+              'Hand-crafted artisan pizza made fresh to order with Italian mozzarella.',
+            imageUrl: food.imageUrl,
+            tags: ['Italian', 'Popular'],
+          });
+          setFoodDetailVisible(true);
+        }}
+        onViewCart={() => {
+          setVendorModalVisible(false);
+          setCartModalVisible(true);
+        }}
+      />
+
+      {/* 2. Food Detail & Customization */}
+      <FoodDetailModal
+        visible={foodDetailVisible}
+        item={selectedFoodItem}
+        onClose={() => setFoodDetailVisible(false)}
+        onAddToCart={(it, qty) => {
+          Alert.alert('Added to Cart', `${qty}x ${it.title} added!`, [
+            { text: 'View Cart', onPress: () => setCartModalVisible(true) },
+            { text: 'Continue', style: 'cancel' },
+          ]);
+        }}
+      />
+
+      {/* 3. Cart Summary & Checkout */}
+      <CartSummaryModal
+        visible={cartModalVisible}
+        onClose={() => setCartModalVisible(false)}
+        onOrderCompleted={handleOrderCompleted}
+      />
+
+      {/* 4. Order Completed Modal */}
+      <OrderSuccessModal
+        visible={orderSuccessVisible}
+        orderId={latestOrderId}
+        onTrackOrder={() => {
+          setOrderSuccessVisible(false);
+          setTrackingModalVisible(true);
+        }}
+        onBackToHome={() => setOrderSuccessVisible(false)}
+      />
+
+      {/* 5. Live Delivery Tracking Modal */}
+      <OrderTrackingModal
+        visible={trackingModalVisible}
+        orderId={latestOrderId}
+        onClose={() => setTrackingModalVisible(false)}
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: { padding: 16 },
-  row: { flexDirection: 'row', width: '100%' }
+  container: {
+    flex: 1,
+    backgroundColor: '#F6F8FA',
+  },
+  scroll: {
+    flex: 1,
+  },
+  heroTitle: {
+    fontFamily: 'JakartaBold',
+    fontSize: 22,
+    color: '#0B1528',
+    marginBottom: 14,
+  },
+  searchBarBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+    marginBottom: 14,
+    gap: 10,
+  },
+  searchBarPlaceholder: {
+    flex: 1,
+    fontFamily: 'JakartaMedium',
+    fontSize: 13,
+    color: '#9CA3AF',
+  },
+  filterSlidersIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#EEF2FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryPillsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 18,
+  },
+  categoryPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
+  },
+  categoryPillActive: {
+    backgroundColor: '#3122D2',
+    borderColor: '#3122D2',
+  },
+  categoryPillText: {
+    fontFamily: 'JakartaBold',
+    fontSize: 12,
+    color: '#4B5563',
+  },
+  categoryPillTextActive: {
+    color: '#FFFFFF',
+  },
+  foodGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 14,
+  },
+  freeDeliveryBanner: {
+    backgroundColor: '#3122D2',
+    borderRadius: 20,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  freeDeliveryTextCol: {
+    flex: 1,
+  },
+  freeDeliveryTitle: {
+    fontFamily: 'JakartaExtraBold',
+    fontSize: 16,
+    color: '#FFFFFF',
+  },
+  freeDeliverySub: {
+    fontFamily: 'JakartaMedium',
+    fontSize: 11,
+    color: '#C7D2FE',
+    marginTop: 2,
+  },
+  freeDeliveryArrow: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontFamily: 'JakartaBold',
+    fontSize: 16,
+    color: '#0B1528',
+  },
+  viewAllText: {
+    fontFamily: 'JakartaBold',
+    fontSize: 10,
+    color: '#3122D2',
+    letterSpacing: 0.5,
+  },
+  row: {
+    flexDirection: 'row',
+    width: '100%',
+  },
 });

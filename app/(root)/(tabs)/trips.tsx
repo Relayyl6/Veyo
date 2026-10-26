@@ -23,12 +23,21 @@ import {
 
 import Map from '@/components/Map';
 import Header from '@/components/Header';
-import SavedPlacesRow from '@/components/SavedPlacesRow';
 import { useLocationStore } from '@/store/store';
 import { rides as mockRidesData } from '@/constants/data';
 import { getEnrichedRide } from '@/lib/dataResolvers';
 import { images } from '@/constants/utils';
 import { Ride } from '@/types/data';
+
+// Mobility Reusable Components
+import TrafficAlertBanner from '@/components/TrafficAlertBanner';
+import QuickActionGrid from '@/components/QuickActionGrid';
+import DestinationShortcuts, { ShortcutItem } from '@/components/DestinationShortcuts';
+import RideOptionCard, { RideOption } from '@/components/RideOptionCard';
+import PackageTrackerCard from '@/components/PackageTrackerCard';
+import QuietModeModal from '@/components/QuietModeModal';
+import RideChatModal from '@/components/RideChatModal';
+import OrderTrackingModal from '@/components/OrderTrackingModal';
 
 interface ScheduledRide {
   id: string;
@@ -67,16 +76,59 @@ const INITIAL_SCHEDULED_RIDES: ScheduledRide[] = [
   },
 ];
 
-const TripsScreen = () => {
+const MOBILITY_OPTIONS: RideOption[] = [
+  {
+    id: 'opt-econ',
+    name: 'Economy',
+    eta: '4 mins away',
+    subtitle: 'Affordable daily trips',
+    price: '₦2,400',
+    badge: 'FASTEST',
+    badgeType: 'fastest',
+    iconType: 'car',
+  },
+  {
+    id: 'opt-comfort',
+    name: 'Comfort',
+    eta: '6 mins away',
+    subtitle: 'Premium cars with AC',
+    price: '₦3,800',
+    iconType: 'comfort',
+  },
+  {
+    id: 'opt-ev',
+    name: 'Veyo EV',
+    eta: '8 mins away',
+    subtitle: 'Zero emission ride',
+    price: '₦2,100',
+    badge: 'ECO FRIENDLY',
+    badgeType: 'eco',
+    iconType: 'ev',
+  },
+  {
+    id: 'opt-bike',
+    name: 'Bike',
+    eta: '2 mins away',
+    subtitle: 'Beat the heavy traffic',
+    price: '₦850',
+    iconType: 'bike',
+  },
+];
+
+export default function MobilityScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useUser();
   const { setDestinationLocation, setUserLocation } = useLocationStore();
 
-  const [activeTab, setActiveTab] = useState<'past' | 'scheduled'>('past');
+  const [activeTab, setActiveTab] = useState<'mobility' | 'past' | 'scheduled'>('mobility');
   const [scheduledList, setScheduledList] = useState<ScheduledRide[]>(INITIAL_SCHEDULED_RIDES);
+  const [selectedRideOption, setSelectedRideOption] = useState<RideOption>(MOBILITY_OPTIONS[0]);
 
-  // Support modal state
+  // Modals state
+  const [quietModeVisible, setQuietModeVisible] = useState(false);
+  const [chatModalVisible, setChatModalVisible] = useState(false);
+  const [trackingModalVisible, setTrackingModalVisible] = useState(false);
   const [supportModalVisible, setSupportModalVisible] = useState(false);
   const [selectedRideForSupport, setSelectedRideForSupport] = useState<any>(null);
 
@@ -109,44 +161,38 @@ const TripsScreen = () => {
   };
 
   const handleCancelScheduled = (id: string) => {
-    Alert.alert(
-      'Cancel Scheduled Trip',
-      'Are you sure you want to cancel this scheduled reservation? No cancellation fee applies before driver dispatch.',
-      [
-        { text: 'Keep Reservation', style: 'cancel' },
-        {
-          text: 'Yes, Cancel',
-          style: 'destructive',
-          onPress: () => {
-            setScheduledList((prev) => prev.filter((item) => item.id !== id));
-          },
+    Alert.alert('Cancel Reservation', 'Are you sure you want to cancel this scheduled ride?', [
+      { text: 'Keep Reservation', style: 'cancel' },
+      {
+        text: 'Cancel Ride',
+        style: 'destructive',
+        onPress: () => {
+          setScheduledList((prev) => prev.filter((item) => item.id !== id));
+          Alert.alert('Reservation Canceled', 'Your scheduled reservation has been canceled.');
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleCreateSchedule = () => {
     if (!scheduleTitle.trim()) {
-      Alert.alert('Required', 'Please enter a title for your scheduled ride.');
+      Alert.alert('Required', 'Please enter a title for this trip.');
       return;
     }
-
-    const newTrip: ScheduledRide = {
+    const newRide: ScheduledRide = {
       id: `sched-${Date.now()}`,
       title: scheduleTitle,
-      date: scheduleDate,
-      time: 'Scheduled',
+      date: scheduleDate.split(',')[0] || 'Upcoming',
+      time: scheduleDate.split(',')[1] || '08:00 AM',
       origin: 'Current Location',
       destination: scheduleDestination,
-      vehicleType: 'Veyo Standard',
+      vehicleType: 'Veyo Comfort Sedan',
       estimatedFare: 32.0,
       status: 'confirmed',
     };
-
-    setScheduledList([newTrip, ...scheduledList]);
+    setScheduledList([newRide, ...scheduledList]);
     setScheduleModalVisible(false);
     setScheduleTitle('');
-    setActiveTab('scheduled');
     Alert.alert('Trip Scheduled', 'Your upcoming ride has been reserved successfully.');
   };
 
@@ -173,93 +219,31 @@ const TripsScreen = () => {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* 2. OVERVIEW METRICS BANNER */}
-        <View style={styles.metricsRow}>
-          <View style={styles.metricCard}>
-            <View style={[styles.metricIconCircle, { backgroundColor: '#EBF4FF' }]}>
-              <Ionicons name="time" size={16} color="#0286FF" />
-            </View>
-            <View>
-              <Text style={styles.metricValue}>{pastRidesList.length}</Text>
-              <Text style={styles.metricLabel}>Past Trips</Text>
-            </View>
-          </View>
-
-          <View style={styles.metricCard}>
-            <View style={[styles.metricIconCircle, { backgroundColor: '#F0FFF4' }]}>
-              <Ionicons name="calendar" size={16} color="#0CC25F" />
-            </View>
-            <View>
-              <Text style={styles.metricValue}>{scheduledList.length}</Text>
-              <Text style={styles.metricLabel}>Scheduled</Text>
-            </View>
-          </View>
-
-          <View style={styles.metricCard}>
-            <View style={[styles.metricIconCircle, { backgroundColor: '#FFF5F5' }]}>
-              <Ionicons name="shield-checkmark" size={16} color="#3122D2" />
-            </View>
-            <View>
-              <Text style={styles.metricValue}>100%</Text>
-              <Text style={styles.metricLabel}>Protected</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* 3. HERO EMBEDDED MAP CARD */}
-        <View style={styles.mapSection}>
-          <View style={styles.mapHeaderRow}>
-            <View style={styles.mapTitleGroup}>
-              <Ionicons name="compass" size={18} color="#0286FF" />
-              <Text style={styles.mapTitle}>Live Navigation & Area Radar</Text>
-            </View>
-            <TouchableOpacity
-              style={styles.mapActionPill}
-              activeOpacity={0.7}
-              onPress={() => router.push('/(utils)/map')}
-            >
-              <Text style={styles.mapActionText}>Explore Full Map</Text>
-              <Feather name="arrow-up-right" size={14} color="#0286FF" />
-            </TouchableOpacity>
-          </View>
-
-          <Map
-            height={210}
-            showExpandButton={true}
-            showRecenterButton={true}
-            showDriverCount={true}
-            interactive={true}
-          />
-        </View>
-
-        {/* 4. QUICK ACTION SHORTCUTS */}
-        <View style={styles.quickActionRow}>
-          <TouchableOpacity
-            style={[styles.quickActionButton, styles.primaryQuickAction]}
-            activeOpacity={0.8}
-            onPress={() => router.push('/(utils)/book-ride')}
-          >
-            <FontAwesome5 name="car" size={16} color="#FFFFFF" />
-            <Text style={styles.primaryQuickActionText}>Book Ride Now</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.quickActionButton, styles.secondaryQuickAction]}
-            activeOpacity={0.8}
-            onPress={() => setScheduleModalVisible(true)}
-          >
-            <Ionicons name="calendar-outline" size={18} color="#0286FF" />
-            <Text style={styles.secondaryQuickActionText}>Schedule Future</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* 5. SAVED PLACES SHORTCUT ROW */}
-        <View style={styles.savedPlacesContainer}>
-          <SavedPlacesRow />
-        </View>
-
-        {/* 6. SEGMENTED TAB SELECTOR */}
+        {/* 2. SEGMENTED TAB SELECTOR (Mobility | Past Trips | Scheduled) */}
         <View style={styles.segmentedControl}>
+          <TouchableOpacity
+            style={[
+              styles.segmentButton,
+              activeTab === 'mobility' && styles.segmentButtonActive,
+            ]}
+            onPress={() => setActiveTab('mobility')}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name="navigate"
+              size={15}
+              color={activeTab === 'mobility' ? '#FFFFFF' : '#858585'}
+            />
+            <Text
+              style={[
+                styles.segmentText,
+                activeTab === 'mobility' && styles.segmentTextActive,
+              ]}
+            >
+              Mobility
+            </Text>
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={[
               styles.segmentButton,
@@ -270,7 +254,7 @@ const TripsScreen = () => {
           >
             <Ionicons
               name="receipt-outline"
-              size={16}
+              size={15}
               color={activeTab === 'past' ? '#FFFFFF' : '#858585'}
             />
             <Text
@@ -279,7 +263,7 @@ const TripsScreen = () => {
                 activeTab === 'past' && styles.segmentTextActive,
               ]}
             >
-              Past Trips ({pastRidesList.length})
+              Past ({pastRidesList.length})
             </Text>
           </TouchableOpacity>
 
@@ -293,7 +277,7 @@ const TripsScreen = () => {
           >
             <Ionicons
               name="calendar-outline"
-              size={16}
+              size={15}
               color={activeTab === 'scheduled' ? '#FFFFFF' : '#858585'}
             />
             <Text
@@ -307,9 +291,132 @@ const TripsScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* 7. TAB CONTENT */}
-        {activeTab === 'past' ? (
-          /* --- PAST TRIPS TAB --- */
+        {/* ============================================================== */}
+        {/* TAB 1: MOBILITY HUB (Image 2)                                   */}
+        {/* ============================================================== */}
+        {activeTab === 'mobility' && (
+          <View style={styles.mobilityHubCol}>
+            {/* Top Map Card with Traffic Alert Overlay Banner */}
+            <View style={styles.heroMapWrapper}>
+              <Map
+                height={210}
+                showExpandButton={true}
+                showRecenterButton={true}
+                showDriverCount={true}
+                interactive={true}
+              />
+
+              {/* Traffic Alert Banner (Matches Image 2) */}
+              <View style={styles.trafficAlertPosition}>
+                <TrafficAlertBanner
+                  title="TRAFFIC ALERT"
+                  subtitle="Avoid Third Mainland traffic?"
+                  buttonText="Reroute"
+                  onReroutePress={() =>
+                    Alert.alert('Route Optimized', 'Alternative route via Ikorodu Rd selected. Saves 14 mins.')
+                  }
+                />
+              </View>
+            </View>
+
+            {/* Quick Action Grid: Book a Ride & Send Items (Matches Image 2) */}
+            <QuickActionGrid
+              onBookRidePress={() => router.push('/(utils)/search?mode=Map')}
+              onSendItemsPress={() =>
+                Alert.alert('Send Package', 'Choose parcel size and destination contact.')
+              }
+            />
+
+            {/* Where to? Shortcuts (Home, School, Work, Add) (Matches Image 2) */}
+            <DestinationShortcuts
+              onShortcutPress={(s) => {
+                if (s.address) {
+                  setDestinationLocation({
+                    latitude: 6.425,
+                    longitude: 3.421,
+                    address: s.address,
+                  });
+                  router.push('/(utils)/search?mode=Map');
+                }
+              }}
+              onAddPress={() => router.push('/(utils)/search')}
+              onEditPress={() => Alert.alert('Saved Places', 'Manage your favorite shortcuts.')}
+            />
+
+            {/* Ride Options Section (Matches Image 2) */}
+            <View style={styles.rideOptionsSection}>
+              <View style={styles.rideOptionsHeaderRow}>
+                <Text style={styles.rideOptionsTitle}>Ride Options</Text>
+                <TouchableOpacity
+                  style={styles.scheduleRidePill}
+                  activeOpacity={0.8}
+                  onPress={() => setScheduleModalVisible(true)}
+                >
+                  <Ionicons name="calendar-outline" size={13} color="#3122D2" />
+                  <Text style={styles.scheduleRidePillText}>Schedule Ride</Text>
+                </TouchableOpacity>
+              </View>
+
+              {MOBILITY_OPTIONS.map((opt) => (
+                <RideOptionCard
+                  key={opt.id}
+                  option={opt}
+                  isSelected={selectedRideOption.id === opt.id}
+                  onSelect={(o) => setSelectedRideOption(o)}
+                  layout="row"
+                />
+              ))}
+            </View>
+
+            {/* Track Your Packages Card (Matches Image 2) */}
+            <PackageTrackerCard
+              packageId="ID: VEYO-29384-NG"
+              statusText="EN ROUTE"
+              pickupLocation="Pickup: Ikeja"
+              etaText="Est. 25m"
+              progressPercent={65}
+              onPress={() => setTrackingModalVisible(true)}
+            />
+
+            {/* Quiet Mode & Live Chat Quick Access Strip */}
+            <View style={styles.assistStrip}>
+              <TouchableOpacity
+                style={styles.assistCard}
+                activeOpacity={0.85}
+                onPress={() => setQuietModeVisible(true)}
+              >
+                <View style={[styles.assistIconCircle, { backgroundColor: '#EEF2FF' }]}>
+                  <Ionicons name="volume-mute" size={16} color="#3122D2" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.assistTitle}>Quiet Mode</Text>
+                  <Text style={styles.assistSub}>Ride in peace, stay in silence</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.assistCard}
+                activeOpacity={0.85}
+                onPress={() => setChatModalVisible(true)}
+              >
+                <View style={[styles.assistIconCircle, { backgroundColor: '#F0FDF4' }]}>
+                  <Ionicons name="chatbubbles" size={16} color="#0CC25F" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.assistTitle}>Driver Chat</Text>
+                  <Text style={styles.assistSub}>Chat with Barry John (5 MIN)</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* ============================================================== */}
+        {/* TAB 2: PAST TRIPS LIST                                          */}
+        {/* ============================================================== */}
+        {activeTab === 'past' && (
           <View style={styles.listContainer}>
             {pastRidesList.length === 0 ? (
               <View style={styles.emptyState}>
@@ -331,58 +438,50 @@ const TripsScreen = () => {
                     })
                   : 'Recent Trip';
 
-                const driverInfo = ride.customer ? ride.driverDetails : null;
+                const driverInfo = ride.driver || {
+                  first_name: 'Driver',
+                  last_name: 'Partner',
+                  profile_image_url: 'https://randomuser.me/api/portraits/men/32.jpg',
+                  rating: 4.9,
+                  car_seats: 4,
+                };
 
                 return (
                   <View key={ride.id || index} style={styles.tripCard}>
-                    {/* Card Top: Number & Status */}
-                    <View style={styles.cardHeader}>
-                      <View>
-                        <Text style={styles.rideNumber}>
-                          {ride.ride_number || `Ride #${index + 1}`}
+                    <View style={styles.tripHeader}>
+                      <View style={styles.tripIdContainer}>
+                        <Ionicons name="car-sport" size={15} color="#0286FF" />
+                        <Text style={styles.tripIdText}>
+                          {ride.ride_number || `RD-${index + 101}`}
                         </Text>
-                        <Text style={styles.rideDate}>{formattedDate}</Text>
+                        <Text style={styles.tripTimeText}>• {formattedDate}</Text>
                       </View>
-
                       <View
                         style={[
                           styles.statusBadge,
-                          isCompleted
-                            ? styles.statusCompletedBadge
-                            : styles.statusCanceledBadge,
+                          isCompleted ? styles.completedBadge : styles.canceledBadge,
                         ]}
                       >
-                        <View
-                          style={[
-                            styles.statusDot,
-                            { backgroundColor: isCompleted ? '#0CC25F' : '#F56565' },
-                          ]}
-                        />
                         <Text
                           style={[
-                            styles.statusText,
-                            { color: isCompleted ? '#2F855A' : '#C53030' },
+                            styles.statusBadgeText,
+                            isCompleted ? styles.completedText : styles.canceledText,
                           ]}
                         >
-                          {isCompleted ? 'Completed' : 'Canceled'}
+                          {ride.ride_status ? ride.ride_status.toUpperCase() : 'COMPLETED'}
                         </Text>
                       </View>
                     </View>
 
                     {/* Route Timeline */}
                     <View style={styles.routeTimeline}>
-                      {/* Origin */}
                       <View style={styles.timelineRow}>
                         <View style={[styles.timelineIcon, styles.originDot]} />
                         <Text style={styles.addressText} numberOfLines={1}>
                           {ride.origin_address || 'Origin Address'}
                         </Text>
                       </View>
-
-                      {/* Line connector */}
                       <View style={styles.timelineConnector} />
-
-                      {/* Destination */}
                       <View style={styles.timelineRow}>
                         <View style={[styles.timelineIcon, styles.destDot]} />
                         <Text style={styles.addressText} numberOfLines={1}>
@@ -391,70 +490,55 @@ const TripsScreen = () => {
                       </View>
                     </View>
 
-                    {/* Stats Row */}
-                    <View style={styles.statsRow}>
-                      <View style={styles.statItem}>
-                        <Text style={styles.statLabel}>Total Fare</Text>
-                        <Text style={styles.statFare}>
-                          ${Number(ride.total_fare || 0).toFixed(2)}
+                    {/* Trip Metrics */}
+                    <View style={styles.metricsQuad}>
+                      <View style={styles.metricQuadItem}>
+                        <Text style={styles.quadLabel}>Total Fare</Text>
+                        <Text style={styles.quadValueHighlight}>
+                          ₦{Number(ride.total_fare || 14.5).toFixed(2)}
                         </Text>
                       </View>
-
-                      <View style={styles.statDivider} />
-
-                      <View style={styles.statItem}>
-                        <Text style={styles.statLabel}>Distance</Text>
-                        <Text style={styles.statValue}>
-                          {ride.distance_km ? `${ride.distance_km} km` : '4.8 km'}
+                      <View style={styles.metricQuadItem}>
+                        <Text style={styles.quadLabel}>Distance</Text>
+                        <Text style={styles.quadValue}>
+                          {ride.distance_km || '4.2'} km
                         </Text>
                       </View>
-
-                      <View style={styles.statDivider} />
-
-                      <View style={styles.statItem}>
-                        <Text style={styles.statLabel}>Duration</Text>
-                        <Text style={styles.statValue}>
-                          {ride.ride_time_mins ? `${ride.ride_time_mins} min` : '22 min'}
+                      <View style={styles.metricQuadItem}>
+                        <Text style={styles.quadLabel}>Duration</Text>
+                        <Text style={styles.quadValue}>
+                          {ride.ride_time_mins || '18'} mins
                         </Text>
                       </View>
-
-                      <View style={styles.statDivider} />
-
-                      <View style={styles.statItem}>
-                        <Text style={styles.statLabel}>Payment</Text>
-                        <Text style={styles.statValue}>
+                      <View style={styles.metricQuadItem}>
+                        <Text style={styles.quadLabel}>Payment</Text>
+                        <Text style={styles.quadValueSuccess}>
                           {ride.payment_status || 'Paid'}
                         </Text>
                       </View>
                     </View>
 
-                    {/* Driver details snippet if available */}
-                    {driverInfo && (
-                      <View style={styles.driverSnippet}>
-                        <Image
-                          source={{
-                            uri:
-                              driverInfo.avatar_url ||
-                              'https://images.unsplash.com/photo-1534528741775-53994a69daeb',
-                          }}
-                          style={styles.driverAvatar}
-                        />
-                        <View style={styles.driverMeta}>
-                          <Text style={styles.driverName}>
-                            {driverInfo.full_name || 'Verified Driver'}
-                          </Text>
-                          <Text style={styles.driverVehicle}>
-                            {driverInfo.vehicle || 'Comfort Vehicle'}
-                          </Text>
-                        </View>
-                        <View style={styles.ratingBadge}>
-                          <Ionicons name="star" size={12} color="#EAB308" />
-                          <Text style={styles.ratingText}>
-                            {driverInfo.rating || '4.9'}
-                          </Text>
-                        </View>
+                    {/* Driver Profile Strip */}
+                    <View style={styles.driverStrip}>
+                      <Image
+                        source={{ uri: driverInfo.profile_image_url }}
+                        style={styles.driverAvatar}
+                      />
+                      <View style={styles.driverInfo}>
+                        <Text style={styles.driverName}>
+                          {driverInfo.first_name} {driverInfo.last_name}
+                        </Text>
+                        <Text style={styles.driverVehicle}>
+                          Veyo Executive • {driverInfo.car_seats || 4} Seats
+                        </Text>
                       </View>
-                    )}
+                      <View style={styles.ratingBadge}>
+                        <Ionicons name="star" size={12} color="#EAB308" />
+                        <Text style={styles.ratingText}>
+                          {driverInfo.rating || '4.9'}
+                        </Text>
+                      </View>
+                    </View>
 
                     {/* Action Footer */}
                     <View style={styles.cardFooter}>
@@ -481,8 +565,12 @@ const TripsScreen = () => {
               })
             )}
           </View>
-        ) : (
-          /* --- SCHEDULED TRIPS TAB --- */
+        )}
+
+        {/* ============================================================== */}
+        {/* TAB 3: SCHEDULED TRIPS LIST                                     */}
+        {/* ============================================================== */}
+        {activeTab === 'scheduled' && (
           <View style={styles.listContainer}>
             {scheduledList.length === 0 ? (
               <View style={styles.emptyState}>
@@ -502,7 +590,6 @@ const TripsScreen = () => {
             ) : (
               scheduledList.map((item) => (
                 <View key={item.id} style={styles.scheduledCard}>
-                  {/* Card Header */}
                   <View style={styles.scheduledCardHeader}>
                     <View style={styles.scheduledTimePill}>
                       <Ionicons name="time-outline" size={14} color="#0286FF" />
@@ -510,7 +597,6 @@ const TripsScreen = () => {
                       <Text style={styles.scheduledTimeDot}>•</Text>
                       <Text style={styles.scheduledTimeText}>{item.time}</Text>
                     </View>
-
                     <View style={styles.confirmedBadge}>
                       <Text style={styles.confirmedBadgeText}>Confirmed</Text>
                     </View>
@@ -518,7 +604,6 @@ const TripsScreen = () => {
 
                   <Text style={styles.scheduledTitle}>{item.title}</Text>
 
-                  {/* Route points */}
                   <View style={styles.routeTimeline}>
                     <View style={styles.timelineRow}>
                       <View style={[styles.timelineIcon, styles.originDot]} />
@@ -535,12 +620,11 @@ const TripsScreen = () => {
                     </View>
                   </View>
 
-                  {/* Estimated Details */}
                   <View style={styles.scheduledFooterMeta}>
                     <View>
                       <Text style={styles.metaVehicleLabel}>{item.vehicleType}</Text>
                       <Text style={styles.metaFareEstimate}>
-                        Est. ${item.estimatedFare.toFixed(2)}
+                        Est. ₦{item.estimatedFare.toFixed(2)}
                       </Text>
                     </View>
 
@@ -550,15 +634,14 @@ const TripsScreen = () => {
                         activeOpacity={0.8}
                         onPress={() => handleCancelScheduled(item.id)}
                       >
-                        <Text style={styles.cancelScheduledBtnText}>Cancel</Text>
+                        <Text style={styles.cancelScheduledText}>Cancel</Text>
                       </TouchableOpacity>
-
                       <TouchableOpacity
-                        style={styles.editScheduledBtn}
+                        style={styles.viewRouteBtn}
                         activeOpacity={0.8}
-                        onPress={() => router.push('/(utils)/map')}
+                        onPress={() => router.push('/(utils)/search?mode=Map')}
                       >
-                        <Text style={styles.editScheduledBtnText}>View Route</Text>
+                        <Text style={styles.viewRouteText}>View Route</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -569,309 +652,182 @@ const TripsScreen = () => {
         )}
       </ScrollView>
 
-      {/* 8. TRIP SUPPORT MODAL */}
+      {/* AUXILIARY MODALS */}
+      {/* 1. Quiet Mode Modal (Image 5) */}
+      <QuietModeModal
+        visible={quietModeVisible}
+        onClose={() => setQuietModeVisible(false)}
+      />
+
+      {/* 2. Ride Chat Interface (Image 5) */}
+      <RideChatModal
+        visible={chatModalVisible}
+        driverName="Barry John"
+        driverAvatar="https://randomuser.me/api/portraits/men/32.jpg"
+        etaMinutes={5}
+        onClose={() => setChatModalVisible(false)}
+      />
+
+      {/* 3. Live Order / Shipment Tracking (Image 1) */}
+      <OrderTrackingModal
+        visible={trackingModalVisible}
+        orderId="VEYO-29384-NG"
+        onClose={() => setTrackingModalVisible(false)}
+      />
+
+      {/* 4. Schedule Ride Modal */}
       <Modal
-        visible={supportModalVisible}
-        transparent={true}
+        visible={scheduleModalVisible}
         animationType="slide"
-        onRequestClose={() => setSupportModalVisible(false)}
+        transparent={true}
+        onRequestClose={() => setScheduleModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHandle} />
-            <Text style={styles.modalHeaderTitle}>Trip Support & Assistance</Text>
-            <Text style={styles.modalHeaderSubtitle}>
-              Ride {selectedRideForSupport?.ride_number || 'Details'}
-            </Text>
-
-            <View style={styles.supportOptionsList}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.scheduleModalSheet}>
+            <Text style={styles.modalSheetTitle}>Schedule a Future Ride</Text>
+            <View style={styles.scheduleForm}>
+              <Text style={styles.inputLabel}>Trip Purpose / Label</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="e.g. Flight Departure, Office Commute"
+                value={scheduleTitle}
+                onChangeText={setScheduleTitle}
+              />
+              <Text style={styles.inputLabel}>Scheduled Time</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="e.g. Tomorrow, 07:00 AM"
+                value={scheduleDate}
+                onChangeText={setScheduleDate}
+              />
+              <Text style={styles.inputLabel}>Destination</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="Destination Address"
+                value={scheduleDestination}
+                onChangeText={setScheduleDestination}
+              />
+            </View>
+            <View style={styles.scheduleActions}>
               <TouchableOpacity
-                style={styles.supportOptionItem}
-                activeOpacity={0.7}
-                onPress={() => {
-                  setSupportModalVisible(false);
-                  Alert.alert(
-                    'Lost Item Support',
-                    'A support ticket has been registered. We are alerting the driver to verify and contact you securely.'
-                  );
-                }}
+                style={styles.scheduleCancelBtn}
+                onPress={() => setScheduleModalVisible(false)}
               >
-                <View style={[styles.supportOptionIcon, { backgroundColor: '#FFF5F5' }]}>
-                  <Ionicons name="briefcase" size={20} color="#F56565" />
-                </View>
-                <View style={styles.supportOptionTextGroup}>
-                  <Text style={styles.supportOptionTitle}>I left an item in the car</Text>
-                  <Text style={styles.supportOptionDesc}>
-                    Contact driver or report misplaced belongings
-                  </Text>
-                </View>
-                <Feather name="chevron-right" size={18} color="#AAAAAA" />
+                <Text style={styles.scheduleCancelBtnText}>Cancel</Text>
               </TouchableOpacity>
-
               <TouchableOpacity
-                style={styles.supportOptionItem}
-                activeOpacity={0.7}
-                onPress={() => {
-                  setSupportModalVisible(false);
-                  Alert.alert(
-                    'Fare Review',
-                    'Our billing team is reviewing this trip fare. You will receive an update in your notifications within 2 hours.'
-                  );
-                }}
+                style={styles.scheduleSubmitBtn}
+                onPress={handleCreateSchedule}
               >
-                <View style={[styles.supportOptionIcon, { backgroundColor: '#EBF4FF' }]}>
-                  <Ionicons name="card" size={20} color="#0286FF" />
-                </View>
-                <View style={styles.supportOptionTextGroup}>
-                  <Text style={styles.supportOptionTitle}>Fare or billing query</Text>
-                  <Text style={styles.supportOptionDesc}>
-                    Dispute charges, tolls, or review detailed receipt
-                  </Text>
-                </View>
-                <Feather name="chevron-right" size={18} color="#AAAAAA" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.supportOptionItem}
-                activeOpacity={0.7}
-                onPress={() => {
-                  setSupportModalVisible(false);
-                  Alert.alert(
-                    'Receipt Emailed',
-                    'An itemized PDF receipt has been sent to your registered email address.'
-                  );
-                }}
-              >
-                <View style={[styles.supportOptionIcon, { backgroundColor: '#F0FFF4' }]}>
-                  <Ionicons name="document-text" size={20} color="#0CC25F" />
-                </View>
-                <View style={styles.supportOptionTextGroup}>
-                  <Text style={styles.supportOptionTitle}>Download Tax Invoice</Text>
-                  <Text style={styles.supportOptionDesc}>
-                    Get official PDF receipt for expense reporting
-                  </Text>
-                </View>
-                <Feather name="chevron-right" size={18} color="#AAAAAA" />
+                <Text style={styles.scheduleSubmitBtnText}>Confirm Booking</Text>
               </TouchableOpacity>
             </View>
-
-            <TouchableOpacity
-              style={styles.modalCloseButton}
-              activeOpacity={0.8}
-              onPress={() => setSupportModalVisible(false)}
-            >
-              <Text style={styles.modalCloseButtonText}>Close</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
-      {/* 9. SCHEDULE RIDE MODAL */}
+      {/* 5. Trip Support Sheet */}
       <Modal
-        visible={scheduleModalVisible}
-        transparent={true}
+        visible={supportModalVisible}
         animationType="slide"
-        onRequestClose={() => setScheduleModalVisible(false)}
+        transparent={true}
+        onRequestClose={() => setSupportModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHandle} />
-            <Text style={styles.modalHeaderTitle}>Schedule a Future Trip</Text>
-            <Text style={styles.modalHeaderSubtitle}>
-              Reserve a ride ahead of time for peace of mind
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalSheet}>
+            <View style={styles.dragHandle} />
+            <Text style={styles.modalSheetTitle}>Trip Support & Assistance</Text>
+            <Text style={styles.modalSheetSubtitle}>
+              Ride {selectedRideForSupport?.ride_number || 'RD-Selected'}
             </Text>
 
-            <View style={styles.scheduleForm}>
-              <Text style={styles.inputLabel}>Trip Title / Label</Text>
-              <TextInput
-                style={styles.textInput}
-                placeholder="e.g. Flight to Abuja, Morning Commute"
-                value={scheduleTitle}
-                onChangeText={setScheduleTitle}
-                placeholderTextColor="#AAAAAA"
-              />
+            <TouchableOpacity
+              style={styles.supportOption}
+              onPress={() => {
+                setSupportModalVisible(false);
+                Alert.alert('Item Recovery', 'Driver has been alerted regarding a lost item.');
+              }}
+            >
+              <Ionicons name="briefcase-outline" size={20} color="#0286FF" />
+              <View style={styles.supportOptionTextContainer}>
+                <Text style={styles.supportOptionTitle}>I left an item in the car</Text>
+                <Text style={styles.supportOptionDesc}>
+                  Contact the driver or file a lost property report.
+                </Text>
+              </View>
+            </TouchableOpacity>
 
-              <Text style={styles.inputLabel}>Date & Departure Time</Text>
-              <TextInput
-                style={styles.textInput}
-                placeholder="e.g. Tomorrow, 06:30 AM"
-                value={scheduleDate}
-                onChangeText={setScheduleDate}
-                placeholderTextColor="#AAAAAA"
-              />
+            <TouchableOpacity
+              style={styles.supportOption}
+              onPress={() => {
+                setSupportModalVisible(false);
+                Alert.alert('Dispute Logged', 'A support ticket has been opened.');
+              }}
+            >
+              <Ionicons name="card-outline" size={20} color="#0286FF" />
+              <View style={styles.supportOptionTextContainer}>
+                <Text style={styles.supportOptionTitle}>Fare or billing query</Text>
+                <Text style={styles.supportOptionDesc}>
+                  Review receipt breakdown, toll charges, or fare estimate issues.
+                </Text>
+              </View>
+            </TouchableOpacity>
 
-              <Text style={styles.inputLabel}>Destination</Text>
-              <TextInput
-                style={styles.textInput}
-                placeholder="Where would you like to go?"
-                value={scheduleDestination}
-                onChangeText={setScheduleDestination}
-                placeholderTextColor="#AAAAAA"
-              />
-            </View>
+            <TouchableOpacity
+              style={styles.supportOption}
+              onPress={() => {
+                setSupportModalVisible(false);
+                Alert.alert('Invoice Sent', 'An official tax invoice has been emailed to you.');
+              }}
+            >
+              <Ionicons name="download-outline" size={20} color="#0286FF" />
+              <View style={styles.supportOptionTextContainer}>
+                <Text style={styles.supportOptionTitle}>Download Tax Invoice</Text>
+                <Text style={styles.supportOptionDesc}>
+                  Get a verified PDF receipt for corporate expense claims.
+                </Text>
+              </View>
+            </TouchableOpacity>
 
-            <View style={styles.scheduleActions}>
-              <TouchableOpacity
-                style={styles.scheduleCancelBtn}
-                activeOpacity={0.8}
-                onPress={() => setScheduleModalVisible(false)}
-              >
-                <Text style={styles.scheduleCancelBtnText}>Dismiss</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.scheduleSubmitBtn}
-                activeOpacity={0.8}
-                onPress={handleCreateSchedule}
-              >
-                <Text style={styles.scheduleSubmitBtnText}>Confirm Reservation</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setSupportModalVisible(false)}
+            >
+              <Text style={styles.modalCloseButtonText}>Close Support</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
     </View>
   );
-};
-
-export default TripsScreen;
+}
 
 const styles = StyleSheet.create({
   screenContainer: {
     flex: 1,
     backgroundColor: '#F6F8FA',
-    position: 'relative',
   },
   headerWrapper: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    zIndex: 20,
-    backgroundColor: '#F6F8FA',
+    zIndex: 10,
+    backgroundColor: 'transparent',
+    paddingBottom: 10,
   },
   scrollContainer: {
     flex: 1,
   },
   scrollContent: {
     paddingHorizontal: 16,
-  },
-  metricsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginVertical: 12,
-    gap: 8,
-  },
-  metricCard: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#EEEEEE',
-  },
-  metricIconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  metricValue: {
-    fontFamily: 'JakartaBold',
-    fontSize: 14,
-    color: '#0B1528',
-  },
-  metricLabel: {
-    fontFamily: 'JakartaMedium',
-    fontSize: 10,
-    color: '#858585',
-  },
-  mapSection: {
-    marginBottom: 14,
-  },
-  mapHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-    paddingHorizontal: 2,
-  },
-  mapTitleGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  mapTitle: {
-    fontFamily: 'JakartaBold',
-    fontSize: 14,
-    color: '#0B1528',
-  },
-  mapActionPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  mapActionText: {
-    fontFamily: 'JakartaBold',
-    fontSize: 11,
-    color: '#0286FF',
-  },
-  quickActionRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 14,
-  },
-  quickActionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 13,
-    borderRadius: 14,
-    gap: 8,
-  },
-  primaryQuickAction: {
-    backgroundColor: '#0286FF',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#0286FF',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.25,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
-  },
-  primaryQuickActionText: {
-    fontFamily: 'JakartaBold',
-    fontSize: 13,
-    color: '#FFFFFF',
-  },
-  secondaryQuickAction: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#C3D9FF',
-  },
-  secondaryQuickActionText: {
-    fontFamily: 'JakartaBold',
-    fontSize: 13,
-    color: '#0286FF',
-  },
-  savedPlacesContainer: {
-    marginBottom: 14,
+    paddingBottom: 40,
   },
   segmentedControl: {
     flexDirection: 'row',
     backgroundColor: '#EEEEEE',
     borderRadius: 14,
-    padding: 4,
+    padding: 3,
     marginBottom: 16,
   },
   segmentButton: {
@@ -879,104 +835,206 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 10,
-    gap: 6,
+    gap: 5,
+    paddingVertical: 9,
+    borderRadius: 11,
   },
   segmentButtonActive: {
-    backgroundColor: '#0286FF',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+    backgroundColor: '#3122D2',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   segmentText: {
-    fontFamily: 'JakartaBold',
+    fontFamily: 'JakartaMedium',
     fontSize: 12,
     color: '#666666',
   },
   segmentTextActive: {
+    fontFamily: 'JakartaBold',
     color: '#FFFFFF',
   },
-  listContainer: {
-    gap: 12,
+  mobilityHubCol: {
+    gap: 16,
   },
-  tripCard: {
+  heroMapWrapper: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    position: 'relative',
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
+  },
+  trafficAlertPosition: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+    right: 12,
+    zIndex: 20,
+  },
+  rideOptionsSection: {
+    marginTop: 4,
+  },
+  rideOptionsHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  rideOptionsTitle: {
+    fontFamily: 'JakartaBold',
+    fontSize: 16,
+    color: '#0B1528',
+  },
+  scheduleRidePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  scheduleRidePillText: {
+    fontFamily: 'JakartaBold',
+    fontSize: 11,
+    color: '#3122D2',
+  },
+  assistStrip: {
+    flexDirection: 'column',
+    gap: 10,
+    marginTop: 4,
+  },
+  assistCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 18,
     padding: 14,
     borderWidth: 1,
     borderColor: '#EEEEEE',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.05,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+    gap: 12,
   },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
+  assistIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  rideNumber: {
+  assistTitle: {
     fontFamily: 'JakartaBold',
-    fontSize: 14,
+    fontSize: 13,
     color: '#0B1528',
   },
-  rideDate: {
+  assistSub: {
     fontFamily: 'JakartaMedium',
     fontSize: 11,
     color: '#858585',
-    marginTop: 2,
+    marginTop: 1,
   },
-  statusBadge: {
+  listContainer: {
+    gap: 12,
+  },
+  emptyState: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
+  },
+  emptyStateTitle: {
+    fontFamily: 'JakartaBold',
+    fontSize: 16,
+    color: '#0B1528',
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  emptyStateSubtitle: {
+    fontFamily: 'JakartaMedium',
+    fontSize: 12,
+    color: '#858585',
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  emptyStateCTA: {
+    marginTop: 16,
+    backgroundColor: '#3122D2',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 14,
+  },
+  emptyStateCTAText: {
+    fontFamily: 'JakartaBold',
+    fontSize: 13,
+    color: '#FFFFFF',
+  },
+  tripCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+    marginBottom: 12,
+  },
+  tripHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  tripIdContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
+    gap: 6,
   },
-  statusCompletedBadge: {
-    backgroundColor: '#F0FFF4',
-    borderWidth: 1,
-    borderColor: '#C6F6D5',
-  },
-  statusCanceledBadge: {
-    backgroundColor: '#FFF5F5',
-    borderWidth: 1,
-    borderColor: '#FED7D7',
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  statusText: {
+  tripIdText: {
     fontFamily: 'JakartaBold',
-    fontSize: 10,
+    fontSize: 13,
+    color: '#0B1528',
+  },
+  tripTimeText: {
+    fontFamily: 'JakartaMedium',
+    fontSize: 11,
+    color: '#858585',
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  completedBadge: {
+    backgroundColor: '#F0FFF4',
+  },
+  canceledBadge: {
+    backgroundColor: '#FFF5F5',
+  },
+  statusBadgeText: {
+    fontFamily: 'JakartaBold',
+    fontSize: 9,
+    letterSpacing: 0.5,
+  },
+  completedText: {
+    color: '#0CC25F',
+  },
+  canceledText: {
+    color: '#EF4444',
   },
   routeTimeline: {
-    marginBottom: 12,
+    marginVertical: 8,
   },
   timelineRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
   },
   timelineIcon: {
     width: 8,
@@ -987,71 +1045,67 @@ const styles = StyleSheet.create({
     backgroundColor: '#0CC25F',
   },
   destDot: {
-    backgroundColor: '#F56565',
+    backgroundColor: '#EF4444',
   },
   timelineConnector: {
-    width: 2,
-    height: 12,
-    backgroundColor: '#CED1DD',
-    marginLeft: 3,
+    width: 1.5,
+    height: 14,
+    backgroundColor: '#D1D5DB',
+    marginLeft: 3.25,
     marginVertical: 2,
   },
   addressText: {
-    flex: 1,
     fontFamily: 'JakartaMedium',
     fontSize: 12,
-    color: '#333333',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    backgroundColor: '#F6F8FA',
-    borderRadius: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  statItem: {
+    color: '#4B5563',
     flex: 1,
+  },
+  metricsQuad: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 14,
+    padding: 10,
+    marginVertical: 10,
+  },
+  metricQuadItem: {
     alignItems: 'center',
   },
-  statLabel: {
+  quadLabel: {
     fontFamily: 'JakartaMedium',
-    fontSize: 9,
+    fontSize: 10,
     color: '#858585',
     marginBottom: 2,
   },
-  statFare: {
+  quadValue: {
     fontFamily: 'JakartaBold',
     fontSize: 12,
-    color: '#0286FF',
+    color: '#0B1528',
   },
-  statValue: {
+  quadValueHighlight: {
     fontFamily: 'JakartaBold',
-    fontSize: 11,
-    color: '#333333',
+    fontSize: 12,
+    color: '#3122D2',
   },
-  statDivider: {
-    width: 1,
-    height: 18,
-    backgroundColor: '#CED1DD',
+  quadValueSuccess: {
+    fontFamily: 'JakartaBold',
+    fontSize: 12,
+    color: '#0CC25F',
   },
-  driverSnippet: {
+  driverStrip: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
-    marginBottom: 10,
+    borderTopColor: '#F3F4F6',
     gap: 10,
   },
   driverAvatar: {
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: '#EEEEEE',
   },
-  driverMeta: {
+  driverInfo: {
     flex: 1,
   },
   driverName: {
@@ -1070,120 +1124,108 @@ const styles = StyleSheet.create({
     gap: 3,
     backgroundColor: '#FFFBEB',
     paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
   ratingText: {
     fontFamily: 'JakartaBold',
-    fontSize: 11,
-    color: '#B46E2A',
+    fontSize: 10,
+    color: '#D97706',
   },
   cardFooter: {
     flexDirection: 'row',
     gap: 10,
-    paddingTop: 4,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
   },
   rebookButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#EBF4FF',
-    paddingVertical: 8,
-    borderRadius: 10,
     gap: 6,
+    backgroundColor: '#EEF2FF',
+    paddingVertical: 9,
+    borderRadius: 12,
   },
   rebookButtonText: {
     fontFamily: 'JakartaBold',
     fontSize: 11,
-    color: '#0286FF',
+    color: '#3122D2',
   },
   supportButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F8F8F8',
-    paddingVertical: 8,
-    borderRadius: 10,
     gap: 6,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#EEEEEE',
+    paddingVertical: 9,
+    borderRadius: 12,
   },
   supportButtonText: {
-    fontFamily: 'JakartaBold',
+    fontFamily: 'JakartaMedium',
     fontSize: 11,
-    color: '#666666',
+    color: '#4B5563',
   },
   scheduledCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 14,
+    borderRadius: 20,
+    padding: 16,
     borderWidth: 1,
-    borderColor: '#C3D9FF',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#0286FF',
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.08,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+    borderColor: '#EEEEEE',
+    marginBottom: 12,
   },
   scheduledCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   scheduledTimePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EBF4FF',
-    paddingHorizontal: 8,
+    gap: 5,
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 8,
-    gap: 4,
+    borderRadius: 10,
   },
   scheduledTimeText: {
     fontFamily: 'JakartaBold',
-    fontSize: 10,
-    color: '#0286FF',
+    fontSize: 11,
+    color: '#3122D2',
   },
   scheduledTimeDot: {
-    color: '#0286FF',
-    fontSize: 10,
+    color: '#3122D2',
   },
   confirmedBadge: {
     backgroundColor: '#F0FFF4',
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 3,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#C6F6D5',
   },
   confirmedBadgeText: {
     fontFamily: 'JakartaBold',
     fontSize: 10,
-    color: '#2F855A',
+    color: '#0CC25F',
   },
   scheduledTitle: {
     fontFamily: 'JakartaBold',
     fontSize: 14,
     color: '#0B1528',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   scheduledFooterMeta: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
     paddingTop: 10,
-    marginTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
   },
   metaVehicleLabel: {
     fontFamily: 'JakartaMedium',
@@ -1193,7 +1235,7 @@ const styles = StyleSheet.create({
   metaFareEstimate: {
     fontFamily: 'JakartaBold',
     fontSize: 13,
-    color: '#0286FF',
+    color: '#3122D2',
   },
   scheduledActionsRow: {
     flexDirection: 'row',
@@ -1201,115 +1243,120 @@ const styles = StyleSheet.create({
   },
   cancelScheduledBtn: {
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: '#FFF5F5',
-    borderWidth: 1,
-    borderColor: '#FED7D7',
+    paddingVertical: 7,
+    borderRadius: 10,
+    backgroundColor: '#FEE2E2',
   },
-  cancelScheduledBtnText: {
+  cancelScheduledText: {
     fontFamily: 'JakartaBold',
     fontSize: 11,
-    color: '#E53E3E',
+    color: '#EF4444',
   },
-  editScheduledBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: '#0286FF',
+  viewRouteBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 10,
+    backgroundColor: '#3122D2',
   },
-  editScheduledBtnText: {
+  viewRouteText: {
     fontFamily: 'JakartaBold',
     fontSize: 11,
     color: '#FFFFFF',
   },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 36,
-    paddingHorizontal: 20,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: '#EEEEEE',
-  },
-  emptyStateTitle: {
-    fontFamily: 'JakartaBold',
-    fontSize: 16,
-    color: '#0B1528',
-    marginTop: 12,
-  },
-  emptyStateSubtitle: {
-    fontFamily: 'JakartaMedium',
-    fontSize: 12,
-    color: '#858585',
-    textAlign: 'center',
-    marginTop: 6,
-    lineHeight: 18,
-  },
-  emptyStateCTA: {
-    marginTop: 16,
-    backgroundColor: '#0286FF',
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 12,
-  },
-  emptyStateCTAText: {
-    fontFamily: 'JakartaBold',
-    fontSize: 12,
-    color: '#FFFFFF',
-  },
-  modalOverlay: {
+  modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
-  modalContent: {
+  scheduleModalSheet: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 20,
-    paddingBottom: 36,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 24,
   },
-  modalHandle: {
+  modalSheetTitle: {
+    fontFamily: 'JakartaBold',
+    fontSize: 16,
+    color: '#0B1528',
+    marginBottom: 16,
+  },
+  scheduleForm: {
+    gap: 10,
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontFamily: 'JakartaBold',
+    fontSize: 11,
+    color: '#4B5563',
+  },
+  textInput: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
+    fontFamily: 'JakartaMedium',
+    fontSize: 13,
+    color: '#0B1528',
+  },
+  scheduleActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  scheduleCancelBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 14,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+  },
+  scheduleCancelBtnText: {
+    fontFamily: 'JakartaBold',
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  scheduleSubmitBtn: {
+    flex: 2,
+    paddingVertical: 12,
+    borderRadius: 14,
+    backgroundColor: '#3122D2',
+    alignItems: 'center',
+  },
+  scheduleSubmitBtnText: {
+    fontFamily: 'JakartaBold',
+    fontSize: 13,
+    color: '#FFFFFF',
+  },
+  modalSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 24,
+  },
+  dragHandle: {
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#D9D9D9',
+    backgroundColor: '#D1D5DB',
     alignSelf: 'center',
     marginBottom: 16,
   },
-  modalHeaderTitle: {
-    fontFamily: 'JakartaBold',
-    fontSize: 18,
-    color: '#0B1528',
-  },
-  modalHeaderSubtitle: {
+  modalSheetSubtitle: {
     fontFamily: 'JakartaMedium',
     fontSize: 12,
     color: '#858585',
-    marginTop: 2,
     marginBottom: 18,
   },
-  supportOptionsList: {
-    gap: 12,
-    marginBottom: 20,
-  },
-  supportOptionItem: {
+  supportOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    backgroundColor: '#F8F8F8',
-    borderRadius: 14,
-    gap: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+    gap: 14,
   },
-  supportOptionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  supportOptionTextGroup: {
+  supportOptionTextContainer: {
     flex: 1,
   },
   supportOptionTitle: {
@@ -1324,63 +1371,15 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   modalCloseButton: {
-    backgroundColor: '#EEEEEE',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 14,
     paddingVertical: 12,
-    borderRadius: 12,
     alignItems: 'center',
+    marginTop: 18,
   },
   modalCloseButtonText: {
     fontFamily: 'JakartaBold',
     fontSize: 13,
-    color: '#333333',
-  },
-  scheduleForm: {
-    gap: 12,
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontFamily: 'JakartaBold',
-    fontSize: 12,
-    color: '#333333',
-    marginBottom: -4,
-  },
-  textInput: {
-    backgroundColor: '#F8F8F8',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontFamily: 'JakartaMedium',
-    fontSize: 13,
-    color: '#0B1528',
-    borderWidth: 1,
-    borderColor: '#EEEEEE',
-  },
-  scheduleActions: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  scheduleCancelBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: '#EEEEEE',
-    alignItems: 'center',
-  },
-  scheduleCancelBtnText: {
-    fontFamily: 'JakartaBold',
-    fontSize: 13,
-    color: '#666666',
-  },
-  scheduleSubmitBtn: {
-    flex: 2,
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: '#0286FF',
-    alignItems: 'center',
-  },
-  scheduleSubmitBtnText: {
-    fontFamily: 'JakartaBold',
-    fontSize: 13,
-    color: '#FFFFFF',
+    color: '#4B5563',
   },
 });
