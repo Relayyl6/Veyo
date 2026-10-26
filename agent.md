@@ -101,32 +101,77 @@ The application has 5 core tabs defined in `app/(root)/(tabs)/_layout.tsx`:
 
 ---
 
-## 6. State Management Conventions
+## 6. Multi-Role Architecture & Domain Services Pipeline
+
+The application features a unified backend and client-side architecture supporting three primary user personas:
+1. **Customer / Passenger** (`role: 'customer'`): Explores mobility services, books rides, orders food.
+2. **Driver Partner** (`role: 'driver'`): Driver profile (`driver_profiles`), vehicle metadata, GPS radar, ride requests.
+3. **Merchant / Vendor Partner** (`role: 'vendor_admin'`): Vendor entity (`vendors`), menu items (`menu_items`), incoming food orders.
+
+### 6.1 Backend API Endpoints (`app/(api)`)
+| Route | Method | Purpose | Key Parameters |
+| :--- | :--- | :--- | :--- |
+| `/(api)/user` | `POST`, `GET` | Upsert user account, fetch user by `clerkId` or `userId` | `clerkId`, `email`, `role`, `firstName`, `lastName` |
+| `/(api)/driver` | `POST`, `GET`, `PATCH` | Register driver profile, fetch online drivers, update GPS | `licenseNumber`, `vehicleType`, `vehicleMake`, `licensePlate` |
+| `/(api)/vendor` | `POST`, `GET` | Register vendor, list by category/query, get vendor details | `businessName`, `businessCategory`, `address`, `phone` |
+| `/(api)/menu` | `GET`, `POST` | Get menu items for vendor, add new food item | `vendorId`, `name`, `price`, `category`, `isAvailable` |
+| `/(api)/ride` | `POST`, `GET`, `PATCH` | Dispatch ride request, query user rides, update status | `originAddress`, `destinationAddress`, `coordinates`, `fare` |
+| `/(api)/order` | `POST`, `GET`, `PATCH` | Place food order with order items, query orders, update status | `vendorId`, `items: [{ menuItemId, quantity, price }]` |
+| `/(api)/seed` | `POST` | Seeds Neon DB with base users, drivers, vendors, menu items | N/A (runs against `DATABASE_URL`) |
+
+### 6.2 Domain Services Layer (`services/`)
+Any future screen or subagent should use these typed domain services (which feature automatic offline / mock fallbacks to `constants/data.ts`):
+- **`services/authService.ts`**:
+  - `registerUserAccount(params)`
+  - `registerDriverProfile(params)`
+  - `registerVendorProfile(params)`
+  - `fetchFullUserProfile(clerkId)`
+- **`services/driverService.ts`**:
+  - `getOnlineDrivers()`
+  - `getDriverProfile({ driverId, userId })`
+  - `updateDriverLocation(params)`
+- **`services/vendorService.ts`**:
+  - `getVendorsList({ category, query })`
+  - `getVendorWithMenu(vendorId)`
+  - `getMenuItemsForVendor(vendorId, category)`
+  - `createNewMenuItem(params)`
+- **`services/rideService.ts`**:
+  - `requestRide(params)`
+  - `fetchUserRides({ userId, clerkId })`
+  - `updateRideStatus(rideId, status, extra)`
+- **`services/orderService.ts`**:
+  - `placeFoodOrder(params)`
+  - `fetchUserOrders({ userId, clerkId })`
+  - `updateOrderStatus(orderId, status, driverId)`
+
+---
+
+## 7. State Management Conventions
 
 ### Location Store (`useLocationStore` in `@/store/store`)
 - Holds `userLatitude`, `userLongitude`, `userAddress`.
 - Holds `destinationLatitude`, `destinationLongitude`, `destinationAddress`.
-- Usage for rebooking:
-  ```tsx
-  const { setDestinationLocation } = useLocationStore();
-  setDestinationLocation({
-    latitude: ride.destination_latitude,
-    longitude: ride.destination_longitude,
-    address: ride.destination_address,
-  });
-  router.push('/(utils)/book-ride');
-  ```
 
-### Driver Store (`useDriverStore` in `@/store/store`)
-- Holds `drivers: AppMarker[]` and `selectedDriver: number | null`.
-- Used to highlight selected driver vehicles on maps.
+### User & Session Store (`useUserStore` in `@/store/store`)
+- Holds authenticated `user: User | null`, `role: 'customer' | 'driver' | 'vendor_admin'`.
+- Holds `driverProfile: DriverProfile | null` for drivers.
+- Holds `vendorProfile: Vendor | null` for merchants.
+- `setUserSession(user, driverProfile?, vendorProfile?)`
 
-### Data Resolvers (`lib/dataResolvers.ts`)
-- Use `getEnrichedRide(rideId)` to automatically resolve customer and driver details (full name, rating, vehicle make/model, avatar) from `constants/data.ts`.
+### Food Cart Store (`useCartStore` in `@/store/store`)
+- Holds `vendorId`, `vendorName`, `items: CartItem[]`.
+- `addItem(item, vendor, instructions?)`, `removeItem(itemId)`, `updateQuantity(itemId, quantity)`.
+- `getSubtotal()`, `getItemCount()`, `clearCart()`.
+
+### Vendor & Catalogue Store (`useVendorStore` in `@/store/store`)
+- Holds `vendors: Vendor[]`, `activeVendor`, `selectedCategory`, `searchQuery`.
+
+### Ride Store (`useRideStore` in `@/store/store`)
+- Holds `activeRide: Ride | null`, `recentRides: Ride[]`, `updateRideStatus(status)`.
 
 ---
 
-## 7. Quality & Verification Checklist for AI Agents
+## 8. Quality & Verification Checklist for AI Agents
 
 Before submitting changes or completing a task, verify the following:
 - [ ] No direct imports of `react-native-maps` in cross-platform/web bundles.

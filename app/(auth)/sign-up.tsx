@@ -1,45 +1,93 @@
-// Add Animated to your existing react-native imports
-import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View, Pressable, TextInput, Alert, Animated } from 'react-native'
-import React, { useEffect, useRef, useState } from 'react'
-// import {  } from 'react-native-keyboard-controller';
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { icons, images } from '@/constants/utils'
-import InputField from '@/components/InputField'
-import CustomButton from '@/components/CustomButton'
-import { Link, useRouter } from 'expo-router'
-import OAuth from '@/components/OAuth'
-import { useSignUp, useAuth, useClerk  } from '@clerk/expo'
-import type { Href } from 'expo-router'
-import { generateSecurePassword } from '@/lib/utils'
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  Pressable,
+  TextInput,
+  Alert,
+  TouchableOpacity,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons, FontAwesome5, MaterialIcons, Feather } from '@expo/vector-icons';
+import { icons, images } from '@/constants/utils';
+import InputField from '@/components/InputField';
+import CustomButton from '@/components/CustomButton';
+import { Link, useRouter, type Href } from 'expo-router';
+import OAuth from '@/components/OAuth';
+import { useSignUp, useClerk } from '@clerk/expo';
+import { generateSecurePassword } from '@/lib/utils';
 import Modal from 'react-native-modal';
-import { SuccessAnimation } from '@/components/Check'
-import { fetchAPI } from '@/lib/fetch'
+import { SuccessAnimation } from '@/components/Check';
+import { registerUserAccount, registerDriverProfile, registerVendorProfile } from '@/services/authService';
+import { useUserStore } from '@/store/store';
+
+type SignupRole = 'customer' | 'driver' | 'vendor_admin';
 
 const SignUp = () => {
+  const router = useRouter();
+  const { signUp, errors, fetchStatus } = useSignUp();
+  const { setActive } = useClerk();
+  const { setUserSession } = useUserStore();
+
+  // 1. Role State
+  const [selectedRole, setSelectedRole] = useState<SignupRole>('customer');
+
+  // 2. Base Form
   const [form, setForm] = useState({
     name: '',
     email: '',
-    password: ''
-  })
-  const [secure, setSecure] = useState(true)
-  const [code, setCode] = useState('')
-  const [fieldErrors, setFieldErrors] = useState({
-    name: '',
-    email: '',
-    password: ''
-  })
-  const [showVerification, setShowVerification] = useState(false)
+    password: '',
+    phone: '',
+  });
+
+  // 3. Driver Role Form
+  const [driverForm, setDriverForm] = useState({
+    vehicleType: 'standard' as 'standard' | 'luxury' | 'suv' | 'taxi' | 'auto',
+    vehicleMake: '',
+    vehicleModel: '',
+    vehicleYear: '2023',
+    vehicleColor: 'Silver',
+    licensePlate: '',
+    licenseNumber: '',
+  });
+
+  // 4. Vendor Role Form
+  const [vendorForm, setVendorForm] = useState({
+    businessName: '',
+    businessCategory: 'fast_food' as
+      | 'italian'
+      | 'japanese'
+      | 'american'
+      | 'chinese'
+      | 'mexican'
+      | 'indian'
+      | 'thai'
+      | 'fast_food'
+      | 'bakery'
+      | 'cafe',
+    address: '',
+    phone: '',
+    description: '',
+  });
+
+  const [secure, setSecure] = useState(true);
+  const [code, setCode] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [showVerification, setShowVerification] = useState(false);
   const [canResend, setCanResend] = useState(true);
   const [timer, setTimer] = useState(0);
-  const [codeErr, setCodeErr] = useState("");
-  const [isVerifying, setIsVerifying] = useState(false)
-  const [isVerified, setIsVerified] = useState(false)
+  const [codeErr, setCodeErr] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
 
-  const { signUp, errors, fetchStatus } = useSignUp()
-  const { setActive } = useClerk()
-  const router = useRouter()
+  const inputRefs = useRef<(TextInput | null)[]>([]);
 
-  useEffect(() => handleStartOver, [])
+  useEffect(() => handleStartOver, []);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -55,69 +103,91 @@ const SignUp = () => {
 
   const handleResendCode = async () => {
     if (!canResend) return;
-    
+
     setCanResend(false);
     setTimer(30);
-    
+
     try {
       await signUp?.verifications.sendEmailCode();
-      // Optional: Show success message
     } catch (error) {
-      // Handle error
       setCanResend(true);
       setTimer(0);
       Alert.alert('Error', 'Failed to resend code. Please try again.');
     }
   };
 
-  const formattedUsername = form.name
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '_')
-    .replace(/[^a-z0-9_-]/g, '') 
-    + '_' + Math.random().toString(36).substring(2, 6)
+  const formattedUsername =
+    form.name
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, '_')
+      .replace(/[^a-z0-9_-]/g, '') +
+    '_' +
+    Math.random().toString(36).substring(2, 6);
 
   const validateFields = () => {
-    const errors = {
-      name: '',
-      email: '',
-      password: ''
-    }
-    let isValid = true
+    const errs: Record<string, string> = {};
+    let isValid = true;
 
     if (!form.name.trim()) {
-      errors.name = 'Name is required'
-      isValid = false
+      errs.name = 'Full name is required';
+      isValid = false;
     }
 
     if (!form.email.trim()) {
-      errors.email = 'Email is required'
-      isValid = false
+      errs.email = 'Email address is required';
+      isValid = false;
     } else if (!/\S+@\S+\.\S+/.test(form.email)) {
-      errors.email = 'Please enter a valid email'
-      isValid = false
+      errs.email = 'Please enter a valid email';
+      isValid = false;
     }
 
     if (!form.password) {
-      errors.password = 'Password is required'
-      isValid = false
+      errs.password = 'Password is required';
+      isValid = false;
     } else if (form.password.length < 8) {
-      errors.password = 'Password must be at least 8 characters'
-      isValid = false
+      errs.password = 'Password must be at least 8 characters';
+      isValid = false;
     }
 
-    setFieldErrors(errors)
-    return isValid
-  }
+    // Role-specific validations
+    if (selectedRole === 'driver') {
+      if (!driverForm.vehicleMake.trim() || !driverForm.vehicleModel.trim()) {
+        errs.vehicle = 'Vehicle Make and Model are required';
+        isValid = false;
+      }
+      if (!driverForm.licensePlate.trim()) {
+        errs.licensePlate = 'License plate is required';
+        isValid = false;
+      }
+      if (!driverForm.licenseNumber.trim()) {
+        errs.licenseNumber = "Driver's license number is required";
+        isValid = false;
+      }
+    } else if (selectedRole === 'vendor_admin') {
+      if (!vendorForm.businessName.trim()) {
+        errs.businessName = 'Business or restaurant name is required';
+        isValid = false;
+      }
+      if (!vendorForm.address.trim()) {
+        errs.vendorAddress = 'Store address is required';
+        isValid = false;
+      }
+      if (!vendorForm.phone.trim()) {
+        errs.vendorPhone = 'Business contact phone is required';
+        isValid = false;
+      }
+    }
+
+    setFieldErrors(errs);
+    return isValid;
+  };
 
   const onSignUpPress = async () => {
-    if (fetchStatus === 'fetching') return
+    if (fetchStatus === 'fetching') return;
+    setFieldErrors({});
 
-    // Clear previous errors
-    setFieldErrors({ name: '', email: '', password: '' })
-
-    // Validate fields
-    if (!validateFields()) return
+    if (!validateFields()) return;
 
     try {
       const { error } = await signUp.create({
@@ -126,53 +196,47 @@ const SignUp = () => {
         username: formattedUsername,
         firstName: form.name.split(' ')[0],
         lastName: form.name.split(' ').slice(1).join(' ') || undefined,
-      })
+      });
 
       if (error) {
-        console.error('Sign-up creation error:', JSON.stringify(error, null, 2))
-        return
+        console.error('Sign-up creation error:', JSON.stringify(error, null, 2));
+        return;
       }
 
-      // 2. Send the verification code
-      const { error: verifyError } = await signUp.verifications.sendEmailCode()
-      
+      // Send verification code
+      const { error: verifyError } = await signUp.verifications.sendEmailCode();
       if (verifyError) {
-        console.error('Send verification error:', JSON.stringify(verifyError, null, 2))
-        return
+        console.error('Send verification error:', JSON.stringify(verifyError, null, 2));
+        return;
       }
 
-      // Show verification screen after successfully sending code
-      setShowVerification(true)
+      setShowVerification(true);
     } catch (err: any) {
-      // Handle Clerk-specific errors
       if (err.errors) {
         err.errors.forEach((error: any) => {
           if (error.meta?.paramName === 'email_address') {
-            setFieldErrors(prev => ({ ...prev, email: error.message }))
+            setFieldErrors((prev) => ({ ...prev, email: error.message }));
           } else if (error.meta?.paramName === 'password') {
-            setFieldErrors(prev => ({ ...prev, password: error.message }))
+            setFieldErrors((prev) => ({ ...prev, password: error.message }));
           }
-        })
+        });
       }
-      console.error(JSON.stringify(err, null, 2))
+      console.error(JSON.stringify(err, null, 2));
     }
-  }
+  };
 
   const handleCodeChange = (index: number, text: string) => {
-    // Clear error when user starts typing
-    if (codeErr) setCodeErr("")
-  
+    if (codeErr) setCodeErr('');
+
     const newCodeArray = code.split('');
     newCodeArray[index] = text.slice(-1);
     const updatedCode = newCodeArray.join('');
     setCode(updatedCode);
-    
-    // Auto-focus next box
+
     if (text && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
-    
-    // Auto-verify when all 6 digits are entered
+
     if (updatedCode.length === 6) {
       setTimeout(() => {
         handleVerify(updatedCode);
@@ -187,99 +251,122 @@ const SignUp = () => {
   };
 
   const handleVerify = async (finalCode?: string) => {
-    if (fetchStatus === 'fetching') return
-
+    if (fetchStatus === 'fetching') return;
     const codeToSubmit = typeof finalCode === 'string' ? finalCode : code;
 
     try {
-
-      const { error: verifyError } = await signUp.verifications.verifyEmailCode({ code: codeToSubmit })
+      const { error: verifyError } = await signUp.verifications.verifyEmailCode({
+        code: codeToSubmit,
+      });
 
       if (verifyError) {
         const apiErr = verifyError as any;
-        const errorMessage = apiErr.errors?.[0]?.longMessage 
-                          || apiErr.errors?.[0]?.message 
-                          || verifyError.message 
-                          || 'Invalid verification code.';
-                          
+        const errorMessage =
+          apiErr.errors?.[0]?.longMessage ||
+          apiErr.errors?.[0]?.message ||
+          verifyError.message ||
+          'Invalid verification code.';
+
         setCodeErr(errorMessage);
         setCode('');
         inputRefs.current[0]?.focus();
-        return; 
+        return;
       }
 
       if (signUp.status === 'complete') {
-        console.log('Attempting to finalize...')
-
         setIsVerified(true);
-        await fetchAPI('/(api)/user', { 
-          method: "POST",
-          body: JSON.stringify({
-            clerkId: signUp.createdUserId,
-            email: form.email,
-            firstName: signUp.firstName || form.name.split(' ')[0],
-            lastName: signUp.lastName || form.name.split(' ').slice(1).join(' ') || undefined,
-            avatarUrl: `https://ui-avatars.com/api/?name=${signUp.firstName}+${signUp.lastName}&background=2563EB&color=fff`,
-            role: 'customer', // or whatever your default is
-          })
-         })
-        
+
+        // 1. Provision base user in backend
+        const createdUser = await registerUserAccount({
+          clerkId: signUp.createdUserId!,
+          email: form.email,
+          firstName: signUp.firstName || form.name.split(' ')[0],
+          lastName: signUp.lastName || form.name.split(' ').slice(1).join(' ') || undefined,
+          phone: form.phone || vendorForm.phone || undefined,
+          avatarUrl: `https://ui-avatars.com/api/?name=${signUp.firstName}+${signUp.lastName}&background=0286FF&color=fff`,
+          role: selectedRole,
+        });
+
+        let driverProfile = null;
+        let vendorProfile = null;
+
+        // 2. Provision role profile if driver or vendor
+        if (selectedRole === 'driver') {
+          driverProfile = await registerDriverProfile({
+            userId: createdUser?.id,
+            clerkId: signUp.createdUserId!,
+            licenseNumber: driverForm.licenseNumber,
+            vehicleType: driverForm.vehicleType,
+            vehicleMake: driverForm.vehicleMake,
+            vehicleModel: driverForm.vehicleModel,
+            vehicleYear: Number(driverForm.vehicleYear) || 2023,
+            vehicleColor: driverForm.vehicleColor,
+            licensePlate: driverForm.licensePlate,
+          });
+        } else if (selectedRole === 'vendor_admin') {
+          vendorProfile = await registerVendorProfile({
+            ownerId: createdUser?.id,
+            clerkId: signUp.createdUserId!,
+            businessName: vendorForm.businessName,
+            businessCategory: vendorForm.businessCategory,
+            address: vendorForm.address,
+            phone: vendorForm.phone,
+            description: vendorForm.description,
+          });
+        }
+
+        // 3. Update Zustand Store with full session
+        if (createdUser) {
+          setUserSession(createdUser, driverProfile, vendorProfile);
+        }
+
         setTimeout(async () => {
           try {
             const finalizeResult = await signUp.finalize({
               navigate: ({ decorateUrl }) => {
-                 router.push(decorateUrl('/(root)/(tabs)/home') as Href);
-              }
+                router.push(decorateUrl('/(root)/(tabs)/home') as Href);
+              },
             });
-            
+
             if (finalizeResult?.error) {
               console.error('Finalize error:', finalizeResult.error);
-              setCodeErr('Failed to finalize session. Please try logging in.');
-              setIsVerified(false); // Send them back to the form if it fails
+              setCodeErr('Failed to finalize session. Please log in.');
+              setIsVerified(false);
             }
           } catch (e) {
-             console.error('Finalize catch block:', e);
-             setIsVerified(false);
+            console.error('Finalize catch block:', e);
+            setIsVerified(false);
           }
-        }, 4000);
-
+        }, 3000);
       } else {
-        // We verified the email, but Clerk still needs more info!
-        console.log('Missing fields:', signUp.missingFields)
-        setCodeErr('Email verified, but account is missing information (like username or phone).');
+        setCodeErr('Email verified, but account needs additional setup.');
       }
-
     } catch (err: any) {
-      console.error('Caught error:', err)
-      setCodeErr('An unexpected error occurred.');
+      console.error('Caught error during verify:', err);
+      setCodeErr('An unexpected verification error occurred.');
     }
-  }
+  };
 
   const handleStartOver = () => {
-    signUp?.reset()
-    setShowVerification(false)
-    setCode('')
-    setFieldErrors({ name: '', email: '', password: '' })
-  }
+    signUp?.reset();
+    setShowVerification(false);
+    setCode('');
+    setFieldErrors({});
+  };
 
   const handleGeneratePassword = () => {
-    const newPassword = generateSecurePassword(12)
-    setForm({ ...form, password: newPassword })
-    setSecure(false) // Show the password so user can see what was generated
-  }
+    const newPassword = generateSecurePassword(12);
+    setForm({ ...form, password: newPassword });
+    setSecure(false);
+  };
 
-  // Combine your local validation errors with Clerk's API errors
-  const emailError = fieldErrors.email || errors.fields.emailAddress?.message
-  const passwordError = fieldErrors.password || errors.fields.password?.message
-  const codeError = errors.fields.code?.message
+  const emailError = fieldErrors.email || errors.fields.emailAddress?.message;
+  const passwordError = fieldErrors.password || errors.fields.password?.message;
 
-  const inputRefs = useRef<(TextInput | null)[]>([]);
-   
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={{ flex: 1, backgroundColor: 'white' }}
-      // keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 50}
     >
       <ScrollView
         style={{ flex: 1 }}
@@ -287,284 +374,557 @@ const SignUp = () => {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-      <View className='flex-1 bg-white'>
-        <View className='relative w-full h-[250px]'>
-          <Image
-            source={images.signUpCar}
-            className='z-0 w-full h-[250px]'
-          />
-          <Text className='text-2xl font-JakartaSemiBold text-black absolute bottom-5 left-5'>
-            Create Your Account
-          </Text>
-        </View>
-
-        <View className='p-5'>
-          <InputField
-            label="Name"
-            placeholder="John Doe"
-            icon={icons.person}
-            value={form.name}
-            onChangeText={(value: string) => {
-              setForm({ ...form, name: value })
-              // Clear error when user starts typing
-              if (fieldErrors.name) {
-                setFieldErrors({ ...fieldErrors, name: '' })
-              }
-            }}
-            error={fieldErrors.name}
-          />
-
-          <InputField
-            label="Email"
-            placeholder="johndoe@example.com"
-            icon={icons.email}
-            value={form.email}
-            onChangeText={(value: string) => {
-              setForm({ ...form, email: value })
-              if (fieldErrors.email) {
-                setFieldErrors({ ...fieldErrors, email: '' })
-              }
-            }}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            error={emailError}
-          />
-
-          <InputField
-            label="Password"
-            placeholder="Min. 8 characters"
-            icon={icons.lock}
-            value={form.password}
-            secure={secure}
-            setSecure={setSecure}
-            onChangeText={(value: string) => {
-              setForm({ ...form, password: value })
-              if (fieldErrors.password) {
-                setFieldErrors({ ...fieldErrors, password: '' })
-              }
-            }}
-            error={passwordError}
-            handle={handleGeneratePassword}
-          />
-
-          <CustomButton
-            title={fetchStatus === 'fetching' ? "Loading..." : "Sign Up"}
-            onPress={onSignUpPress}
-            className='mt-6'
-          />
-
-          <OAuth />
-
-          <Link href="/sign-in" className='flex flex-row text-center text-lg text-general-200 mt-10 justify-center'>
-            <Text>Already have an account?</Text>
-            <Text className="text-primary-500"> Log In</Text>
-          </Link>
-        </View>
-
-        <Modal isVisible={showVerification}>
-          <View className="bg-white rounded-[20px] p-6 shadow-lg mx-auto">
-            {
-            isVerified ? (
-              <SuccessAnimation />
-            ) : (
-              <>
-                <Text style={styles.title}>Enter the 6-digit code</Text>
-          
-                <Text style={styles.subtitle}>
-                  We sent a code to <Text style={styles.emailHighlight}>{form.email}</Text>
-                </Text>
-
-                <View style={styles.codeInputContainer}>
-                  {[0, 1, 2, 3, 4, 5].map((index) => (
-                    <TextInput
-                      key={index}
-                      style={[
-                        styles.codeBox,
-                        code.length > index && styles.codeBoxFilled
-                      ]}
-                      placeholder={'123456'[index]} 
-                      value={code[index] || ''}
-                      onChangeText={(text) => handleCodeChange(index, text)}
-                      onKeyPress={({ nativeEvent }) => handleKeyPress(index, nativeEvent)}
-                      keyboardType="numeric"
-                      maxLength={1}
-                      ref={(el) => { inputRefs.current[index] = el }}
-                      placeholderTextColor="#CCCCCC"
-                    />
-                  ))}
-                </View>
-                {/* Inline error message */}
-                {codeErr ? (
-                    <Text style={styles.errorText}>
-                      {codeErr}
-                    </Text>
-                  ) : null}
-                <Text style={styles.helpText} className='flex text-center'>
-                  If you don't see the email in your inbox, check your spam folder. 
-                  If it's not there, the email address may not be confirmed, 
-                  or it may not match an existing account.
-                </Text>
-                <Pressable
-                  style={[styles.button, fetchStatus === 'fetching' && styles.buttonDisabled]}
-                  onPress={() => handleVerify()}
-                  disabled={fetchStatus === 'fetching'}
-                  className='mx-auto'
-                >
-                  <Text style={styles.buttonText}>
-                    {fetchStatus === 'fetching' ? 'Verifying...' : 'Verify Email'}
-                  </Text>
-                </Pressable>
-                <Pressable
-                  style={styles.resendLink}
-                  onPress={handleResendCode}
-                  disabled={!canResend || fetchStatus === 'fetching'}
-                >
-                  <Text style={[
-                    styles.resendLinkText,
-                    (!canResend || fetchStatus === 'fetching') && { color: '#CCCCCC' }
-                  ]}>
-                    {!canResend ? `Resend code in ${timer}s` : 'Resend code'}
-                  </Text>
-                </Pressable>
-                <Pressable
-                  style={styles.startOverLink}
-                  onPress={handleStartOver}
-                >
-                  <Text style={styles.startOverLinkText}>Start over</Text>
-                </Pressable>
-              </>
-            )}
+        <View className="flex-1 bg-white">
+          {/* Header Banner */}
+          <View className="relative w-full h-[220px]">
+            <Image source={images.signUpCar} className="z-0 w-full h-[220px]" />
+            <Text className="text-2xl font-JakartaBold text-black absolute bottom-5 left-5">
+              Join Veyo
+            </Text>
           </View>
-        </Modal>
-      </View>
+
+          <View className="p-5">
+            {/* 1. ROLE SELECTION CARDS */}
+            <Text className="text-sm font-JakartaBold text-neutral-800 mb-2">
+              Select Account Type
+            </Text>
+            <View className="flex-row gap-2.5 mb-5">
+              {/* Customer */}
+              <TouchableOpacity
+                style={[
+                  styles.roleCard,
+                  selectedRole === 'customer' && styles.roleCardActive,
+                ]}
+                activeOpacity={0.8}
+                onPress={() => setSelectedRole('customer')}
+              >
+                <View
+                  style={[
+                    styles.roleIconCircle,
+                    selectedRole === 'customer' && styles.roleIconCircleActive,
+                  ]}
+                >
+                  <FontAwesome5
+                    name="user"
+                    size={15}
+                    color={selectedRole === 'customer' ? '#FFFFFF' : '#0286FF'}
+                  />
+                </View>
+                <Text
+                  style={[
+                    styles.roleTitle,
+                    selectedRole === 'customer' && styles.roleTitleActive,
+                  ]}
+                >
+                  Passenger
+                </Text>
+                <Text style={styles.roleDesc}>Rides & Dining</Text>
+              </TouchableOpacity>
+
+              {/* Driver */}
+              <TouchableOpacity
+                style={[
+                  styles.roleCard,
+                  selectedRole === 'driver' && styles.roleCardActive,
+                ]}
+                activeOpacity={0.8}
+                onPress={() => setSelectedRole('driver')}
+              >
+                <View
+                  style={[
+                    styles.roleIconCircle,
+                    selectedRole === 'driver' && styles.roleIconCircleActive,
+                  ]}
+                >
+                  <FontAwesome5
+                    name="car"
+                    size={15}
+                    color={selectedRole === 'driver' ? '#FFFFFF' : '#3122D2'}
+                  />
+                </View>
+                <Text
+                  style={[
+                    styles.roleTitle,
+                    selectedRole === 'driver' && styles.roleTitleActive,
+                  ]}
+                >
+                  Driver
+                </Text>
+                <Text style={styles.roleDesc}>Drive & Earn</Text>
+              </TouchableOpacity>
+
+              {/* Vendor */}
+              <TouchableOpacity
+                style={[
+                  styles.roleCard,
+                  selectedRole === 'vendor_admin' && styles.roleCardActive,
+                ]}
+                activeOpacity={0.8}
+                onPress={() => setSelectedRole('vendor_admin')}
+              >
+                <View
+                  style={[
+                    styles.roleIconCircle,
+                    selectedRole === 'vendor_admin' && styles.roleIconCircleActive,
+                  ]}
+                >
+                  <Ionicons
+                    name="restaurant"
+                    size={16}
+                    color={selectedRole === 'vendor_admin' ? '#FFFFFF' : '#0CC25F'}
+                  />
+                </View>
+                <Text
+                  style={[
+                    styles.roleTitle,
+                    selectedRole === 'vendor_admin' && styles.roleTitleActive,
+                  ]}
+                >
+                  Merchant
+                </Text>
+                <Text style={styles.roleDesc}>Food & Store</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* 2. BASE CREDENTIALS */}
+            <InputField
+              label="Full Name"
+              placeholder="e.g. John Doe"
+              icon={icons.person}
+              value={form.name}
+              onChangeText={(val: string) => {
+                setForm({ ...form, name: val });
+                if (fieldErrors.name) setFieldErrors({ ...fieldErrors, name: '' });
+              }}
+              error={fieldErrors.name}
+            />
+
+            <InputField
+              label="Email Address"
+              placeholder="name@example.com"
+              icon={icons.email}
+              value={form.email}
+              onChangeText={(val: string) => {
+                setForm({ ...form, email: val });
+                if (fieldErrors.email) setFieldErrors({ ...fieldErrors, email: '' });
+              }}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              error={emailError}
+            />
+
+            <InputField
+              label="Password"
+              placeholder="Min. 8 characters"
+              icon={icons.lock}
+              value={form.password}
+              secure={secure}
+              setSecure={setSecure}
+              onChangeText={(val: string) => {
+                setForm({ ...form, password: val });
+                if (fieldErrors.password) setFieldErrors({ ...fieldErrors, password: '' });
+              }}
+              error={passwordError}
+              handle={handleGeneratePassword}
+            />
+
+            {/* 3. DYNAMIC DRIVER ONBOARDING FIELDS */}
+            {selectedRole === 'driver' && (
+              <View style={styles.roleSpecificSection}>
+                <View style={styles.sectionHeaderRow}>
+                  <Ionicons name="car-sport" size={18} color="#3122D2" />
+                  <Text style={styles.sectionHeaderText}>Driver Partner Details</Text>
+                </View>
+
+                {/* Vehicle Type Picker */}
+                <Text style={styles.inputSubLabel}>Vehicle Category</Text>
+                <View style={styles.pillRow}>
+                  {(['standard', 'comfort', 'suv', 'luxury'] as const).map((vt) => {
+                    const isPicked = driverForm.vehicleType === (vt === 'comfort' ? 'standard' : vt);
+                    return (
+                      <TouchableOpacity
+                        key={vt}
+                        style={[styles.typePill, isPicked && styles.typePillActive]}
+                        onPress={() =>
+                          setDriverForm({
+                            ...driverForm,
+                            vehicleType: (vt === 'comfort' ? 'standard' : vt) as any,
+                          })
+                        }
+                      >
+                        <Text style={[styles.typePillText, isPicked && styles.typePillTextActive]}>
+                          {vt.toUpperCase()}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                <InputField
+                  label="Vehicle Make & Model"
+                  placeholder="e.g. Toyota Camry"
+                  value={driverForm.vehicleMake}
+                  onChangeText={(val: string) =>
+                    setDriverForm({
+                      ...driverForm,
+                      vehicleMake: val.split(' ')[0] || val,
+                      vehicleModel: val.split(' ').slice(1).join(' ') || 'Sedan',
+                    })
+                  }
+                  error={fieldErrors.vehicle}
+                />
+
+                <InputField
+                  label="License Plate Number"
+                  placeholder="e.g. LAG-234-XY"
+                  value={driverForm.licensePlate}
+                  onChangeText={(val: string) =>
+                    setDriverForm({ ...driverForm, licensePlate: val.toUpperCase() })
+                  }
+                  autoCapitalize="characters"
+                  error={fieldErrors.licensePlate}
+                />
+
+                <InputField
+                  label="Driver's License Number"
+                  placeholder="e.g. DL-123456789"
+                  value={driverForm.licenseNumber}
+                  onChangeText={(val: string) =>
+                    setDriverForm({ ...driverForm, licenseNumber: val.toUpperCase() })
+                  }
+                  autoCapitalize="characters"
+                  error={fieldErrors.licenseNumber}
+                />
+              </View>
+            )}
+
+            {/* 4. DYNAMIC VENDOR ONBOARDING FIELDS */}
+            {selectedRole === 'vendor_admin' && (
+              <View style={styles.roleSpecificSection}>
+                <View style={styles.sectionHeaderRow}>
+                  <Ionicons name="storefront" size={18} color="#0CC25F" />
+                  <Text style={styles.sectionHeaderText}>Merchant / Restaurant Details</Text>
+                </View>
+
+                {/* Category Picker */}
+                <Text style={styles.inputSubLabel}>Cuisine / Store Type</Text>
+                <View style={styles.pillRow}>
+                  {(['fast_food', 'italian', 'bakery', 'cafe', 'japanese', 'american'] as const).map(
+                    (cat) => {
+                      const isPicked = vendorForm.businessCategory === cat;
+                      return (
+                        <TouchableOpacity
+                          key={cat}
+                          style={[styles.typePill, isPicked && styles.typePillActive]}
+                          onPress={() => setVendorForm({ ...vendorForm, businessCategory: cat })}
+                        >
+                          <Text style={[styles.typePillText, isPicked && styles.typePillTextActive]}>
+                            {cat.replace('_', ' ').toUpperCase()}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    }
+                  )}
+                </View>
+
+                <InputField
+                  label="Business / Restaurant Name"
+                  placeholder="e.g. Pizza Paradise"
+                  value={vendorForm.businessName}
+                  onChangeText={(val: string) =>
+                    setVendorForm({ ...vendorForm, businessName: val })
+                  }
+                  error={fieldErrors.businessName}
+                />
+
+                <InputField
+                  label="Store Address"
+                  placeholder="e.g. 14 Marina St, Lagos"
+                  value={vendorForm.address}
+                  onChangeText={(val: string) =>
+                    setVendorForm({ ...vendorForm, address: val })
+                  }
+                  error={fieldErrors.vendorAddress}
+                />
+
+                <InputField
+                  label="Business Contact Phone"
+                  placeholder="e.g. +234 801 234 5678"
+                  value={vendorForm.phone}
+                  onChangeText={(val: string) => setVendorForm({ ...vendorForm, phone: val })}
+                  keyboardType="phone-pad"
+                  error={fieldErrors.vendorPhone}
+                />
+              </View>
+            )}
+
+            {/* Submit Action */}
+            <CustomButton
+              title={fetchStatus === 'fetching' ? 'Registering...' : `Sign Up as ${selectedRole === 'driver' ? 'Driver' : selectedRole === 'vendor_admin' ? 'Merchant' : 'User'}`}
+              onPress={onSignUpPress}
+              className="mt-6"
+            />
+
+            <OAuth />
+
+            <Link
+              href="/sign-in"
+              className="flex flex-row text-center text-lg text-general-200 mt-8 justify-center"
+            >
+              <Text>Already have an account?</Text>
+              <Text className="text-primary-500"> Log In</Text>
+            </Link>
+          </View>
+
+          {/* 5. 6-DIGIT EMAIL VERIFICATION MODAL */}
+          <Modal isVisible={showVerification}>
+            <View className="bg-white rounded-[20px] p-6 shadow-lg mx-auto w-full max-w-[360px]">
+              {isVerified ? (
+                <SuccessAnimation />
+              ) : (
+                <>
+                  <Text style={styles.modalTitle}>Verify Email Code</Text>
+                  <Text style={styles.modalSubtitle}>
+                    We sent a 6-digit confirmation code to{' '}
+                    <Text style={styles.emailHighlight}>{form.email}</Text>
+                  </Text>
+
+                  <View style={styles.codeInputContainer}>
+                    {[0, 1, 2, 3, 4, 5].map((index) => (
+                      <TextInput
+                        key={index}
+                        style={[
+                          styles.codeBox,
+                          code.length > index && styles.codeBoxFilled,
+                        ]}
+                        placeholder={'123456'[index]}
+                        value={code[index] || ''}
+                        onChangeText={(text) => handleCodeChange(index, text)}
+                        onKeyPress={({ nativeEvent }) => handleKeyPress(index, nativeEvent)}
+                        keyboardType="numeric"
+                        maxLength={1}
+                        ref={(el) => {
+                          inputRefs.current[index] = el;
+                        }}
+                        placeholderTextColor="#CCCCCC"
+                      />
+                    ))}
+                  </View>
+
+                  {codeErr ? <Text style={styles.errorText}>{codeErr}</Text> : null}
+
+                  <Pressable
+                    style={[
+                      styles.verifyButton,
+                      fetchStatus === 'fetching' && styles.buttonDisabled,
+                    ]}
+                    onPress={() => handleVerify()}
+                    disabled={fetchStatus === 'fetching'}
+                  >
+                    <Text style={styles.verifyButtonText}>
+                      {fetchStatus === 'fetching' ? 'Verifying...' : 'Verify & Continue'}
+                    </Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={styles.resendLink}
+                    onPress={handleResendCode}
+                    disabled={!canResend || fetchStatus === 'fetching'}
+                  >
+                    <Text
+                      style={[
+                        styles.resendLinkText,
+                        (!canResend || fetchStatus === 'fetching') && { color: '#CCCCCC' },
+                      ]}
+                    >
+                      {!canResend ? `Resend code in ${timer}s` : 'Resend code'}
+                    </Text>
+                  </Pressable>
+
+                  <Pressable style={styles.startOverLink} onPress={handleStartOver}>
+                    <Text style={styles.startOverLinkText}>Start over</Text>
+                  </Pressable>
+                </>
+              )}
+            </View>
+          </Modal>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
-  )
-}
+  );
+};
 
-export default SignUp
+export default SignUp;
 
 const styles = StyleSheet.create({
-  container: {
+  roleCard: {
     flex: 1,
-    backgroundColor: 'white',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 14,
+    backgroundColor: '#F8F8F8',
+    borderWidth: 1.5,
+    borderColor: '#EEEEEE',
+    alignItems: 'center',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+  roleCardActive: {
+    backgroundColor: '#EBF4FF',
+    borderColor: '#0286FF',
+  },
+  roleIconCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  roleIconCircleActive: {
+    backgroundColor: '#0286FF',
+  },
+  roleTitle: {
+    fontFamily: 'JakartaBold',
+    fontSize: 12,
+    color: '#333333',
+  },
+  roleTitleActive: {
+    color: '#0286FF',
+  },
+  roleDesc: {
+    fontFamily: 'JakartaMedium',
+    fontSize: 9,
+    color: '#858585',
+    marginTop: 2,
+  },
+  roleSpecificSection: {
+    backgroundColor: '#F5F8FF',
+    padding: 14,
+    borderRadius: 16,
+    marginVertical: 10,
+    borderWidth: 1,
+    borderColor: '#C3D9FF',
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     marginBottom: 10,
-    color: '#1a1a1a',
-    letterSpacing: -0.3,
   },
-  subtitler: {
-    fontSize: 16,
+  sectionHeaderText: {
+    fontFamily: 'JakartaBold',
+    fontSize: 14,
+    color: '#0B1528',
+  },
+  inputSubLabel: {
+    fontFamily: 'JakartaBold',
+    fontSize: 11,
     color: '#666666',
-    marginBottom: 30,
+    marginBottom: 6,
+  },
+  pillRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 10,
+  },
+  typePill: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
+  },
+  typePillActive: {
+    backgroundColor: '#0286FF',
+    borderColor: '#0286FF',
+  },
+  typePillText: {
+    fontFamily: 'JakartaBold',
+    fontSize: 10,
+    color: '#666666',
+  },
+  typePillTextActive: {
+    color: '#FFFFFF',
+  },
+  modalTitle: {
+    fontFamily: 'JakartaBold',
+    fontSize: 18,
+    color: '#0B1528',
     textAlign: 'center',
   },
-  input: {
-    width: '100%',
-    padding: 15,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 25,
-    fontSize: 16,
-    marginBottom: 20,
-  },
-  button: {
-    width: '100%',
-    backgroundColor: '#000',
-    padding: 15,
-    borderRadius: 25,
-    alignItems: 'center',
-    marginBottom: 5,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  secondaryButton: {
-    padding: 15,
-  },
-  secondaryButtonText: {
-    color: '#666',
-    fontSize: 14,
-  },
-  verificationContainer: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 60,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '600',
-    color: '#1a1a1a',
-    marginBottom: 12,
-    letterSpacing: -0.3,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666666',
-    marginBottom: 32,
-    lineHeight: 22,
+  modalSubtitle: {
+    fontFamily: 'JakartaMedium',
+    fontSize: 12,
+    color: '#858585',
+    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: 16,
   },
   emailHighlight: {
-    color: '#1a1a1a',
-    fontWeight: '500',
+    fontFamily: 'JakartaBold',
+    color: '#0286FF',
   },
   codeInputContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 20,
-    gap: 2
+    marginBottom: 14,
   },
   codeBox: {
-    flex: 1, // MAGIC FIX: This tells each box to shrink/grow equally to fit the screen!
-    // aspectRatio: 1, // Keeps the boxes perfectly square
+    width: 44,
+    height: 48,
+    borderRadius: 10,
     borderWidth: 1.5,
-    borderColor: '#E5E5E5',
-    borderRadius: 12,
+    borderColor: '#CED1DD',
     textAlign: 'center',
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#1a1a1a',
-    backgroundColor: '#FAFAFA',
+    fontSize: 18,
+    fontFamily: 'JakartaBold',
+    color: '#0B1528',
+    backgroundColor: '#F8F8F8',
   },
   codeBoxFilled: {
-    borderColor: '#007AFF',
+    borderColor: '#0286FF',
     backgroundColor: '#FFFFFF',
   },
   errorText: {
-    color: '#d32f2f',
-    fontSize: 13,
-    marginBottom: 16,
+    color: '#F56565',
+    fontFamily: 'JakartaMedium',
+    fontSize: 11,
+    textAlign: 'center',
+    marginBottom: 10,
   },
-  helpText: {
-    fontSize: 13,
-    color: '#888888',
-    lineHeight: 18,
-    marginBottom: 24,
-    marginTop: 8,
+  verifyButton: {
+    backgroundColor: '#0286FF',
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 6,
   },
   buttonDisabled: {
-    opacity: 0.7,
+    opacity: 0.6,
+  },
+  verifyButtonText: {
+    fontFamily: 'JakartaBold',
+    fontSize: 13,
+    color: '#FFFFFF',
   },
   resendLink: {
     alignItems: 'center',
-    paddingVertical: 8,
+    marginTop: 12,
   },
   resendLinkText: {
-    color: '#007AFF',
-    fontSize: 15,
-    fontWeight: '500',
+    fontFamily: 'JakartaBold',
+    fontSize: 12,
+    color: '#0286FF',
   },
   startOverLink: {
     alignItems: 'center',
-    paddingVertical: 8,
+    marginTop: 10,
   },
   startOverLinkText: {
-    color: '#888888',
-    fontSize: 15,
+    fontFamily: 'JakartaMedium',
+    fontSize: 11,
+    color: '#858585',
   },
-})
+});

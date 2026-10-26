@@ -142,7 +142,21 @@ Slides up smoothly with top drag handle (`width: 40`, `height: 4`, `#D9D9D9`):
 
 ---
 
-## 6. Motion & Feedback Guidelines
+### 5.6 Multi-Role Onboarding Cards (`app/(auth)/sign-up.tsx`)
+The sign-up screen supports tripartite role registration:
+- **Role Selection Cards**: Three elevated selector cards for `Passenger` (`customer`), `Driver Partner` (`driver`), and `Merchant` (`vendor_admin`).
+  - Container: `#F8F8F8` background, 1.5px border `#EEEEEE`, `borderRadius: 14`.
+  - Active State: Soft blue tint `#EBF4FF`, 1.5px border `#0286FF`.
+  - Icon: Centered circle avatar ($34 \times 34\text{ pt}$) with filled `#0286FF` on active.
+- **Dynamic Profile Fields**:
+  - **Driver Partner**: Vehicle category pills (`Standard`, `Comfort`, `SUV`, `Luxury`), Vehicle Make & Model, License Plate number (auto-capitalized), Driver's License number.
+  - **Merchant / Vendor Partner**: Cuisine category pills (`Fast Food`, `Italian`, `Bakery`, `Cafe`, `Japanese`, `American`), Business / Restaurant Name, Store Address, Contact Phone.
+
+### 5.7 Food & Restaurant Catalog Patterns
+- **Vendor Discovery Card**: Cover image thumbnail with rating badge (★ 4.8), preparation time (`20 min`), delivery fee (`$2.99`), and cuisine category chip.
+- **Menu Item Card**: Food photo, item title, item description, dietary indicators (`Vegetarian` green leaf, `Gluten-Free` wheat-off), base price, and circular `+` button for instant cart addition.
+- **Floating Cart Pill**: Sticky bottom bar showing item count badge, restaurant name, and running subtotal with animated slide-up to checkout.
+
 
 - **Map Camera Movements**: Use `animateToRegion` with duration `600ms` for smooth recentering.
 - **Button Touches**: Use `activeOpacity={0.8}` or `activeOpacity={0.7}` on touchables for responsive tactile feedback.
