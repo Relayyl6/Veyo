@@ -1,14 +1,17 @@
-import { StyleSheet, Text, View } from 'react-native'
-import React from 'react'
-import { Stack } from 'expo-router'
+import { Stack } from 'expo-router';
+import React from 'react';
 
 const UtilLayout = () => {
   return (
-    <Stack>
-        <Stack.Screen name="search" options={{ headerShown: false }} />
-        <Stack.Screen name="map" options={{ headerShown: false }} />
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="search" />
+      <Stack.Screen name="map" />
+      <Stack.Screen name="book-ride" />
+      <Stack.Screen name="send-items" />
+      <Stack.Screen name="trip-details" />
+      <Stack.Screen name="item" />
     </Stack>
-  )
-}
+  );
+};
 
-export default UtilLayout
+export default UtilLayout;
