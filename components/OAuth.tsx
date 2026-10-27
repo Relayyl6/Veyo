@@ -1,6 +1,5 @@
-import { Image, StyleSheet, Text, View, Alert, Platform } from 'react-native';
+import { Image, StyleSheet, Text, View, Alert, Platform, TouchableOpacity } from 'react-native';
 import React from 'react';
-import CustomButton from './CustomButton';
 import { icons } from '@/constants/utils';
 import { useSignInWithGoogle } from '@clerk/expo/google';
 import { useRouter } from 'expo-router';
@@ -44,44 +43,39 @@ const OAuth = () => {
   const handleAppleSignIn = async () => {};
 
   return (
-    <View className="mt-3">
-      <View className="flex flex-row justify-center items-center gap-x-3 mb-2.5">
-        <View className="h-px flex-1 bg-neutral-200" />
-        <Text className="text-xs font-JakartaMedium text-neutral-400">Or Continue With</Text>
-        <View className="h-px flex-1 bg-neutral-200" />
+    <View style={styles.container}>
+      <View style={styles.dividerRow}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>Or Continue With</Text>
+        <View style={styles.dividerLine} />
       </View>
 
-      <View className="flex flex-row justify-center items-center gap-3">
-        <CustomButton
-          title="Google"
-          IconLeft={() => (
-            <Image
-              source={icons.google}
-              className="w-4 h-4"
-              resizeMode="contain"
-            />
-          )}
-          className="shadow-none px-5 py-2.5 border border-neutral-200 bg-white min-w-[120px]"
-          bgVariant="outline"
-          textVariant="primary"
-          textClassName="text-xs font-JakartaSemiBold text-neutral-700"
+      <View style={styles.buttonsRow}>
+        <TouchableOpacity
+          style={styles.oauthBtn}
+          activeOpacity={0.8}
           onPress={handleGoogleSignIn}
-        />
-        <CustomButton
-          title="Apple"
-          IconLeft={() => (
-            <Image
-              source={icons.apple}
-              className="w-4 h-4"
-              resizeMode="contain"
-            />
-          )}
-          className="shadow-none px-5 py-2.5 border border-neutral-200 bg-white min-w-[120px]"
-          bgVariant="outline"
-          textVariant="primary"
-          textClassName="text-xs font-JakartaSemiBold text-neutral-700"
+        >
+          <Image
+            source={icons.google}
+            style={styles.oauthIcon}
+            resizeMode="contain"
+          />
+          <Text style={styles.oauthText}>Google</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.oauthBtn}
+          activeOpacity={0.8}
           onPress={handleAppleSignIn}
-        />
+        >
+          <Image
+            source={icons.apple}
+            style={styles.oauthIcon}
+            resizeMode="contain"
+          />
+          <Text style={styles.oauthText}>Apple</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -89,4 +83,61 @@ const OAuth = () => {
 
 export default OAuth;
 
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+  container: {
+    marginTop: 12,
+    width: '100%',
+    alignItems: 'center',
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    marginBottom: 10,
+    gap: 10,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E5E7EB',
+  },
+  dividerText: {
+    fontFamily: 'JakartaMedium',
+    fontSize: 12,
+    color: '#9CA3AF',
+  },
+  buttonsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  oauthBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 24,
+    paddingVertical: 9,
+    paddingHorizontal: 18,
+    minWidth: 110,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  oauthIcon: {
+    width: 16,
+    height: 16,
+    marginRight: 8,
+  },
+  oauthText: {
+    fontFamily: 'JakartaSemiBold',
+    fontSize: 13,
+    color: '#1F2937',
+  },
+});

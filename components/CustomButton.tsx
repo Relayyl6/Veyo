@@ -100,19 +100,17 @@ const CustomButton = ({
       pulsarComposer.set(intensity, intensity);
     } else {
       if (Math.floor(newPosition) % 30 === 0) {
-        // THE MODERN WAY: Pass function name, then pass arguments as subsequent fields
         scheduleOnRN(Haptics.selectionAsync);
       }
     }
   })
     .onEnd((_gestureEvent) => {
-      if (isCompleted.value) return;   // ADD THIS LINE
+      if (isCompleted.value) return;
       if (pulsarComposer?.stop) pulsarComposer.stop();
 
       if (translateX.value > MAX_TRANSLATE * 0.8) {
         isCompleted.value = true;
 
-        // CHANGED: added the (finished) callback to withSpring
         translateX.value = withSpring(MAX_TRANSLATE, { damping: 15 }, (finished) => {
           if (finished) {
             translateX.value = withDelay(500, withSpring(0, { damping: 15, stiffness: 150 }));
@@ -157,12 +155,14 @@ const CustomButton = ({
 
   const { onLongPress, onPressIn, onPressOut, ...cleanProps } = props;
   const hasPadding = /p[xy]?-|p-\d/.test(className);
-  const paddingClass = hasPadding ? '' : 'py-3.5 px-6';
+  const paddingClass = hasPadding ? '' : 'py-3.5 px-8';
+  const hasAlignSelf = /self-/.test(className);
+  const alignClass = hasAlignSelf ? '' : 'self-center';
 
   return (
     <PressableHybrid 
       onPress={onPress} 
-      className={`rounded-full flex-row items-center justify-center shadow-sm shadow-neutral-400/50 ${getBgVariantStyle(bgVariant)} ${paddingClass} ${className}`} 
+      className={`rounded-full flex-row items-center justify-center shadow-sm shadow-neutral-400/50 ${getBgVariantStyle(bgVariant)} ${paddingClass} ${alignClass} ${className}`} 
       {...cleanProps}
     >
       {IconLeft && <IconLeft />}

@@ -899,10 +899,13 @@ const styles = StyleSheet.create({
   },
   verifyButton: {
     backgroundColor: '#0286FF',
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingVertical: 11,
+    paddingHorizontal: 28,
+    borderRadius: 24,
     alignItems: 'center',
-    marginTop: 6,
+    alignSelf: 'center',
+    minWidth: 180,
+    marginTop: 8,
   },
   buttonDisabled: {
     opacity: 0.6,
