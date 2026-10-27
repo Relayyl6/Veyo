@@ -1,4 +1,4 @@
-import { Image, StyleSheet, Text, View, Alert, Platform, TouchableOpacity } from 'react-native';
+import { Image, StyleSheet, Text, View, Alert, Platform } from 'react-native';
 import React from 'react';
 import CustomButton from './CustomButton';
 import { icons } from '@/constants/utils';
@@ -44,40 +44,42 @@ const OAuth = () => {
   const handleAppleSignIn = async () => {};
 
   return (
-    <View>
-      <View className="flex flex-row justify-center items-center mt-3 gap-x-3">
-        <View className="h-px flex-1 bg-general-100" />
-        <Text>Or Continue With</Text>
-        <View className="h-px flex-1 bg-general-100" />
+    <View className="mt-3">
+      <View className="flex flex-row justify-center items-center gap-x-3 mb-2.5">
+        <View className="h-px flex-1 bg-neutral-200" />
+        <Text className="text-xs font-JakartaMedium text-neutral-400">Or Continue With</Text>
+        <View className="h-px flex-1 bg-neutral-200" />
       </View>
 
-      <View className="flex flex-row w-fit mx-auto gap-3">
+      <View className="flex flex-row justify-center items-center gap-3">
         <CustomButton
-          title=" Google"
+          title="Google"
           IconLeft={() => (
             <Image
               source={icons.google}
-              className="w-5 h-5 mx-1"
+              className="w-4 h-4"
               resizeMode="contain"
             />
           )}
-          className="mt-3 shadow-none flex-1"
+          className="shadow-none px-5 py-2.5 border border-neutral-200 bg-white min-w-[120px]"
           bgVariant="outline"
           textVariant="primary"
+          textClassName="text-xs font-JakartaSemiBold text-neutral-700"
           onPress={handleGoogleSignIn}
         />
         <CustomButton
-          title=" Apple"
+          title="Apple"
           IconLeft={() => (
             <Image
               source={icons.apple}
-              className="w-7 h-7 mx-1"
+              className="w-4 h-4"
               resizeMode="contain"
             />
           )}
-          className="mt-3 shadow-none flex-1"
+          className="shadow-none px-5 py-2.5 border border-neutral-200 bg-white min-w-[120px]"
           bgVariant="outline"
           textVariant="primary"
+          textClassName="text-xs font-JakartaSemiBold text-neutral-700"
           onPress={handleAppleSignIn}
         />
       </View>

@@ -143,10 +143,10 @@ const SignIn = () => {
       <ScrollView className="flex-1 bg-white" showsVerticalScrollIndicator={false}>
         <View className="flex-1 bg-white">
           {/* Top Banner Image with Role Title */}
-          <View className="relative w-full h-[240px]">
+          <View className="relative w-full h-[170px]">
             <Image
               source={images.signUpCar}
-              className="z-0 w-full h-[240px]"
+              className="z-0 w-full h-[170px]"
               resizeMode="cover"
             />
             <View className="absolute bottom-5 left-5 right-5">
@@ -167,7 +167,7 @@ const SignIn = () => {
             </View>
           </View>
 
-          <View className="p-5">
+          <View className="px-5 pt-3 pb-6">
             {/* Persona / Role Selector Segmented Bar */}
             <View style={styles.roleSegmentBar}>
               {PORTAL_ROLES.map((r) => {
@@ -259,26 +259,29 @@ const SignIn = () => {
               error={passwordError}
             />
 
-            <CustomButton
-              title={
-                fetchStatus === 'fetching'
-                  ? 'Signing In...'
-                  : selectedRole === 'driver'
-                  ? 'Enter Driver Dashboard →'
-                  : selectedRole === 'vendor_admin'
-                  ? 'Open Merchant Portal →'
-                  : 'Sign In'
-              }
-              onPress={onSignInPress}
-              className="mt-6"
-              disabled={fetchStatus === 'fetching'}
-            />
+            <View className="items-center justify-center mt-4">
+              <CustomButton
+                title={
+                  fetchStatus === 'fetching'
+                    ? 'Signing In...'
+                    : selectedRole === 'driver'
+                    ? 'Enter Driver Dashboard →'
+                    : selectedRole === 'vendor_admin'
+                    ? 'Open Merchant Portal →'
+                    : 'Sign In'
+                }
+                onPress={onSignInPress}
+                className="self-center px-8 py-2.5 min-w-[180px]"
+                textClassName="text-sm font-JakartaBold"
+                disabled={fetchStatus === 'fetching'}
+              />
+            </View>
 
             {selectedRole === 'customer' && <OAuth />}
 
             <Link
               href="/sign-up"
-              className="flex flex-row text-center text-md font-JakartaMedium text-general-200 mt-8 justify-center"
+              className="flex flex-row text-center text-sm font-JakartaMedium text-general-200 mt-4 justify-center"
             >
               <Text>
                 {selectedRole === 'driver'

@@ -1,10 +1,8 @@
 import React from 'react';
 import { createAnimatedPressable } from 'pressto';
-// 1. IMPORT THE EXACT LIFECYCLE TYPE THE LIBRARY DEMANDS
 import type { CustomPressableProps, AnimatedPressableOptions } from 'pressto';
 import { cssInterop } from 'nativewind';
 import * as Haptics from 'expo-haptics';
-import { View } from "react-native"
 
 const PressableHybridBase = createAnimatedPressable((progress) => {
   'worklet';
@@ -16,33 +14,34 @@ const PressableHybridBase = createAnimatedPressable((progress) => {
 
 cssInterop(PressableHybridBase, { className: 'style' });
 
-// 2. USE ANY TEMPLATE FALLBACK HERE TO BYPASS THE ARGUMENT OVERLAP CONFLICT
+const PressableComponent = PressableHybridBase as React.ComponentType<any>;
+
 type PressableHybridProps = Omit<CustomPressableProps, 'onPress'> & {
   className?: string;
-  onPress?: (event: any) => void; // <-- Uses 'any' to cleanly bridge both CustomButton and pressto signatures
+  style?: any;
+  onPress?: (event: any) => void;
 };
 
 export const PressableHybrid: React.FC<PressableHybridProps> = ({
   onPress,
   children,
   className,
+  style,
   ...props
 }) => {
-  
   const handlePressWithHaptic = (options: AnimatedPressableOptions) => {
     Haptics.selectionAsync().catch(() => {});
     if (onPress) onPress(options);
   };
 
   return (
-    <View className={`overflow-hidden ${className ?? ''}`}>
-      <PressableHybridBase
-        {...props}
-        onPress={handlePressWithHaptic}
-        style={{ flex: 1 }}
-      >
-        {children}
-      </PressableHybridBase>
-    </View>
+    <PressableComponent
+      {...props}
+      onPress={handlePressWithHaptic}
+      className={`overflow-hidden ${className ?? ''}`}
+      style={style}
+    >
+      {children}
+    </PressableComponent>
   );
 };

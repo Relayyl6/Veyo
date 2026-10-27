@@ -45,7 +45,8 @@ const CustomButton = ({
   textVariant = 'default',
   IconLeft,
   IconRight,
-  className,
+  className = '',
+  textClassName = '',
   trackHeight = 56,
   thumbSize = 48,
   ...props
@@ -155,15 +156,17 @@ const CustomButton = ({
   }
 
   const { onLongPress, onPressIn, onPressOut, ...cleanProps } = props;
+  const hasPadding = /p[xy]?-|p-\d/.test(className);
+  const paddingClass = hasPadding ? '' : 'py-3.5 px-6';
 
   return (
     <PressableHybrid 
       onPress={onPress} 
-      className={`flex rounded-full flex-row items-center justify-center shadow-md shadow-neutral-400/70 p-4 ${getBgVariantStyle(bgVariant)} ${className}`} 
+      className={`rounded-full flex-row items-center justify-center shadow-sm shadow-neutral-400/50 ${getBgVariantStyle(bgVariant)} ${paddingClass} ${className}`} 
       {...cleanProps}
     >
       {IconLeft && <IconLeft />}
-      <Text className={`text-lg font-bold mx-2 ${getTextVariantStyle(textVariant)}`} numberOfLines={1}>
+      <Text className={`text-base font-JakartaBold mx-1.5 ${getTextVariantStyle(textVariant)} ${textClassName}`} numberOfLines={1}>
         {title}
       </Text>
       {IconRight && <IconRight />}

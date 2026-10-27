@@ -376,19 +376,19 @@ const SignUp = () => {
       >
         <View className="flex-1 bg-white">
           {/* Header Banner */}
-          <View className="relative w-full h-[220px]">
-            <Image source={images.signUpCar} className="z-0 w-full h-[220px]" />
-            <Text className="text-2xl font-JakartaBold text-black absolute bottom-5 left-5">
+          <View className="relative w-full h-[170px]">
+            <Image source={images.signUpCar} className="z-0 w-full h-[170px]" resizeMode="cover" />
+            <Text className="text-xl font-JakartaBold text-black absolute bottom-3 left-5">
               Join Veyo
             </Text>
           </View>
 
-          <View className="p-5">
+          <View className="px-5 pt-3 pb-6">
             {/* 1. ROLE SELECTION CARDS */}
-            <Text className="text-sm font-JakartaBold text-neutral-800 mb-2">
+            <Text className="text-xs font-JakartaBold text-neutral-700 mb-1.5">
               Select Account Type
             </Text>
-            <View className="flex-row gap-2.5 mb-5">
+            <View className="flex-row gap-2 mb-3">
               {/* Customer */}
               <TouchableOpacity
                 style={[
@@ -659,20 +659,23 @@ const SignUp = () => {
             )}
 
             {/* Submit Action */}
-            <CustomButton
-              title={fetchStatus === 'fetching' ? 'Registering...' : `Sign Up as ${selectedRole === 'driver' ? 'Driver' : selectedRole === 'vendor_admin' ? 'Merchant' : 'User'}`}
-              onPress={onSignUpPress}
-              className="mt-6"
-            />
+            <View className="items-center justify-center mt-4">
+              <CustomButton
+                title={fetchStatus === 'fetching' ? 'Registering...' : `Sign Up as ${selectedRole === 'driver' ? 'Driver' : selectedRole === 'vendor_admin' ? 'Merchant' : 'User'}`}
+                onPress={onSignUpPress}
+                className="self-center px-8 py-2.5 min-w-[200px]"
+                textClassName="text-sm font-JakartaBold"
+              />
+            </View>
 
             <OAuth />
 
             <Link
               href="/sign-in"
-              className="flex flex-row text-center text-lg text-general-200 mt-8 justify-center"
+              className="flex flex-row text-center text-sm font-JakartaMedium text-general-200 mt-4 justify-center"
             >
               <Text>Already have an account?</Text>
-              <Text className="text-primary-500"> Log In</Text>
+              <Text className="text-primary-500 font-JakartaBold"> Log In</Text>
             </Link>
           </View>
 
@@ -759,9 +762,9 @@ export default SignUp;
 const styles = StyleSheet.create({
   roleCard: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRadius: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    borderRadius: 12,
     backgroundColor: '#F8F8F8',
     borderWidth: 1.5,
     borderColor: '#EEEEEE',
@@ -772,20 +775,20 @@ const styles = StyleSheet.create({
     borderColor: '#0286FF',
   },
   roleIconCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 3,
   },
   roleIconCircleActive: {
     backgroundColor: '#0286FF',
   },
   roleTitle: {
     fontFamily: 'JakartaBold',
-    fontSize: 12,
+    fontSize: 11,
     color: '#333333',
   },
   roleTitleActive: {
@@ -793,9 +796,9 @@ const styles = StyleSheet.create({
   },
   roleDesc: {
     fontFamily: 'JakartaMedium',
-    fontSize: 9,
+    fontSize: 8.5,
     color: '#858585',
-    marginTop: 2,
+    marginTop: 1,
   },
   roleSpecificSection: {
     backgroundColor: '#F5F8FF',

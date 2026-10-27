@@ -63,6 +63,7 @@ export interface ButtonProps extends TouchableOpacityProps {
     className?: string;
     trackHeight?: number;
     thumbSize?: number;
+    textClassName?: string;
 }
 
 declare interface GoogleInputProps {
