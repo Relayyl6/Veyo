@@ -453,14 +453,14 @@ const SignUp = () => {
       >
         <View className="flex-1 bg-white">
           {/* Header Banner */}
-          <View className="relative w-full h-[170px]">
-            <Image source={images.signUpCar} className="z-0 w-full h-[170px]" resizeMode="cover" />
-            <Text className="text-xl font-JakartaBold text-black absolute bottom-3 left-5">
+          <View className="relative w-full h-[110px]">
+            <Image source={images.signUpCar} className="z-0 w-full h-[110px]" resizeMode="cover" />
+            <Text className="text-lg font-JakartaBold text-black absolute bottom-2 left-4">
               Join Veyo
             </Text>
           </View>
 
-          <View className="px-5 pt-3 pb-6">
+          <View className="px-4 pt-2 pb-4">
             {/* 1. ROLE SELECTION CARDS */}
             <Text className="text-xs font-JakartaBold text-neutral-700 mb-1.5">
               Select Account Type
@@ -493,9 +493,9 @@ const SignUp = () => {
                     selectedRole === 'customer' && styles.roleTitleActive,
                   ]}
                 >
-                  Passenger
+                  Customer
                 </Text>
-                <Text style={styles.roleDesc}>Rides & Dining</Text>
+                <Text style={styles.roleDesc}>Rides & Food</Text>
               </TouchableOpacity>
 
               {/* Driver */}
@@ -759,7 +759,7 @@ const SignUp = () => {
               <CustomButton
                 title={fetchStatus === 'fetching' ? 'Registering...' : `Sign Up as ${selectedRole === 'driver' ? 'Driver' : selectedRole === 'vendor_admin' ? 'Merchant' : 'User'}`}
                 onPress={onSignUpPress}
-                className="self-center px-8 py-2.5 min-w-[200px]"
+                className="self-center px-6 py-2 min-w-[170px]"
                 textClassName="text-sm font-JakartaBold"
               />
             </View>
@@ -858,9 +858,9 @@ export default SignUp;
 const styles = StyleSheet.create({
   roleCard: {
     flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 6,
-    borderRadius: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    borderRadius: 10,
     backgroundColor: '#F8F8F8',
     borderWidth: 1.5,
     borderColor: '#EEEEEE',
@@ -898,9 +898,9 @@ const styles = StyleSheet.create({
   },
   roleSpecificSection: {
     backgroundColor: '#F5F8FF',
-    padding: 14,
-    borderRadius: 16,
-    marginVertical: 10,
+    padding: 10,
+    borderRadius: 12,
+    marginVertical: 6,
     borderWidth: 1,
     borderColor: '#C3D9FF',
   },

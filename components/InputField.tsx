@@ -19,7 +19,7 @@ const InputField = ({
   ...props
 }: InputFieldProps & { placeholderTextColor?: string }) => {
   return (
-    <View className="my-1 w-full">
+    <View className="my-0.5 w-full">
       <Text className={`text-xs font-JakartaSemiBold mb-1 text-neutral-700 ${labelStyle}`}>
         {label}
       </Text>
@@ -32,7 +32,7 @@ const InputField = ({
         >
           {icon && <Image source={icon} className={`w-5 h-5 ml-3.5 ${iconStyle}`} resizeMode="contain" />}
           <TextInput
-            className={`rounded-full py-2.5 px-3 font-JakartaMedium flex-1 text-[14px] text-left text-neutral-900 ${inputStyle}`}
+            className={`rounded-full py-2 px-3 font-JakartaMedium flex-1 text-[13.5px] text-left text-neutral-900 ${inputStyle}`}
             placeholderTextColor={placeholderTextColor}
             secureTextEntry={secure}
             {...props}

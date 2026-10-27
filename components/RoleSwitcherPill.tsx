@@ -8,7 +8,7 @@ interface RoleSwitcherPillProps {
 }
 
 const ROLES: { id: AppUserRole; label: string; icon: string; iconType: 'ion' | 'fa5' }[] = [
-  { id: 'customer', label: 'Rider', icon: 'person', iconType: 'ion' },
+  { id: 'customer', label: 'Customer', icon: 'person', iconType: 'ion' },
   { id: 'driver', label: 'Driver', icon: 'car-sport', iconType: 'ion' },
   { id: 'vendor_admin', label: 'Merchant', icon: 'store', iconType: 'fa5' },
 ];
@@ -57,29 +57,29 @@ export default function RoleSwitcherPill({ style }: RoleSwitcherPillProps) {
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 10,
+    marginVertical: 6,
     alignItems: 'center',
   },
   track: {
     flexDirection: 'row',
     backgroundColor: '#EBF4FF',
-    padding: 4,
-    borderRadius: 24,
+    padding: 3,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: '#C3D9FF',
     shadowColor: '#0286FF',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1.5 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
     elevation: 2,
   },
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    minHeight: 40,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    minHeight: 32,
   },
   pillActive: {
     backgroundColor: '#0286FF',
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: 'JakartaBold',
-    fontSize: 12,
+    fontSize: 11,
     color: '#4B5563',
   },
   labelActive: {

@@ -1026,7 +1026,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingBottom: 40,
   },
   segmentedControl: {

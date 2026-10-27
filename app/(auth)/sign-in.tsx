@@ -22,7 +22,7 @@ import { useUserStore, AppUserRole } from '@/store/store';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 
 const PORTAL_ROLES: { id: AppUserRole; label: string; icon: string; iconType: 'ion' | 'fa5' }[] = [
-  { id: 'customer', label: 'Rider', icon: 'person', iconType: 'ion' },
+  { id: 'customer', label: 'Customer', icon: 'person', iconType: 'ion' },
   { id: 'driver', label: 'Driver', icon: 'car-sport', iconType: 'ion' },
   { id: 'vendor_admin', label: 'Merchant', icon: 'store', iconType: 'fa5' },
 ];
@@ -165,21 +165,21 @@ const SignIn = () => {
       <ScrollView className="flex-1 bg-white" showsVerticalScrollIndicator={false}>
         <View className="flex-1 bg-white">
           {/* Top Banner Image with Role Title */}
-          <View className="relative w-full h-[170px]">
+          <View className="relative w-full h-[110px]">
             <Image
               source={images.signUpCar}
-              className="z-0 w-full h-[170px]"
+              className="z-0 w-full h-[110px]"
               resizeMode="cover"
             />
-            <View className="absolute bottom-5 left-5 right-5">
-              <Text className="text-2xl font-JakartaBold text-white shadow-md">
+            <View className="absolute bottom-2.5 left-4 right-4">
+              <Text className="text-lg font-JakartaBold text-white shadow-md">
                 {selectedRole === 'driver'
                   ? 'Driver Partner Portal'
                   : selectedRole === 'vendor_admin'
                   ? 'Merchant Portal'
-                  : 'Welcome Back'}
+                  : 'Customer Portal'}
               </Text>
-              <Text className="text-xs font-JakartaMedium text-white/90 mt-1">
+              <Text className="text-[11px] font-JakartaMedium text-white/90 mt-0.5">
                 {selectedRole === 'driver'
                   ? 'Drive, deliver, and cash out on your schedule'
                   : selectedRole === 'vendor_admin'
@@ -189,7 +189,7 @@ const SignIn = () => {
             </View>
           </View>
 
-          <View className="px-5 pt-3 pb-6">
+          <View className="px-4 pt-2 pb-4">
             {/* Persona / Role Selector Segmented Bar */}
             <View style={styles.roleSegmentBar}>
               {PORTAL_ROLES.map((r) => {
@@ -317,10 +317,10 @@ const SignIn = () => {
                     ? 'Enter Driver Dashboard →'
                     : selectedRole === 'vendor_admin'
                     ? 'Open Merchant Portal →'
-                    : 'Sign In'
+                    : 'Sign In as Customer'
                 }
                 onPress={onSignInPress}
-                className="self-center px-8 py-2.5 min-w-[180px]"
+                className="self-center px-6 py-2 min-w-[160px]"
                 textClassName="text-sm font-JakartaBold"
                 disabled={fetchStatus === 'fetching'}
               />
@@ -361,17 +361,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#F3F4F6',
     borderRadius: 14,
-    padding: 3,
-    marginBottom: 16,
+    padding: 2.5,
+    marginBottom: 8,
   },
   roleTab: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 11,
-    gap: 6,
+    paddingVertical: 6,
+    borderRadius: 10,
+    gap: 5,
   },
   roleTabActive: {
     backgroundColor: '#0286FF',

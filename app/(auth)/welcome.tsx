@@ -13,13 +13,13 @@ const Onboarding = () => {
 
   return (
     <SafeAreaView className="flex h-full items-center justify-between bg-white">
-      <Pressable onPress={() => router.replace('/(auth)/sign-up')} className="w-full flex-row justify-between items-end p-5">
+      <Pressable onPress={() => router.replace('/(auth)/sign-up')} className="w-full flex-row justify-between items-end px-4 py-3">
         <Image
           source={images.logohor}
           style={{ width: 76, height: 40, borderRadius: 11 }}
           resizeMode="stretch"
         />
-        <Text className="text-md font-JakartaBold bg-[#0286FF] text-white inset-0 px-4 py-3 leading-none text-center" style={{ borderRadius: 11 }}>
+        <Text className="text-sm font-JakartaBold bg-[#0286FF] text-white inset-0 px-3.5 py-2 leading-none text-center" style={{ borderRadius: 10 }}>
           skip
         </Text>
       </Pressable>
@@ -56,11 +56,11 @@ const Onboarding = () => {
         ))}
       </Swiper>
 
-      <View className="w-full items-center justify-center mb-8">
+      <View className="w-full items-center justify-center mb-5">
         <CustomButton
           title={isLastSlide ? "Get Started" : "Next"} 
-          className="self-center px-10 py-3 min-w-[200px]"
-          textClassName="text-base font-JakartaBold text-white"
+          className="self-center px-6 py-2.5 min-w-[160px]"
+          textClassName="text-sm font-JakartaBold text-white"
           onPress={() =>
             isLastSlide ? router.replace('/(auth)/sign-up') : swiperRef.current?.scrollBy(1)
           }

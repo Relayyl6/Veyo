@@ -85,7 +85,7 @@ export default OAuth;
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 12,
+    marginTop: 8,
     width: '100%',
     alignItems: 'center',
   },
@@ -94,8 +94,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-    marginBottom: 10,
-    gap: 10,
+    marginBottom: 6,
+    gap: 8,
   },
   dividerLine: {
     flex: 1,
@@ -120,10 +120,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    borderRadius: 24,
-    paddingVertical: 9,
-    paddingHorizontal: 18,
-    minWidth: 110,
+    borderRadius: 20,
+    paddingVertical: 6.5,
+    paddingHorizontal: 14,
+    minWidth: 95,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,

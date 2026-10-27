@@ -155,7 +155,7 @@ const CustomButton = ({
 
   const { onLongPress, onPressIn, onPressOut, ...cleanProps } = props;
   const hasPadding = /p[xy]?-|p-\d/.test(className);
-  const paddingClass = hasPadding ? '' : 'py-3.5 px-8';
+  const paddingClass = hasPadding ? '' : 'py-2.5 px-5';
   const hasAlignSelf = /self-/.test(className);
   const alignClass = hasAlignSelf ? '' : 'self-center';
 
@@ -166,7 +166,7 @@ const CustomButton = ({
       {...cleanProps}
     >
       {IconLeft && <IconLeft />}
-      <Text className={`text-base font-JakartaBold mx-1.5 ${getTextVariantStyle(textVariant)} ${textClassName}`} numberOfLines={1}>
+      <Text className={`text-sm font-JakartaBold mx-1.5 ${getTextVariantStyle(textVariant)} ${textClassName}`} numberOfLines={1}>
         {title}
       </Text>
       {IconRight && <IconRight />}

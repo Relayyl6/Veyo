@@ -109,10 +109,10 @@ export default function WalletScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingTop: insets.top + 70,
-          paddingBottom: insets.bottom + 90,
-          paddingHorizontal: 16,
-          gap: 16,
+          paddingTop: insets.top + 58,
+          paddingBottom: insets.bottom + 85,
+          paddingHorizontal: 12,
+          gap: 12,
         }}
       >
         {/* Role Switcher */}

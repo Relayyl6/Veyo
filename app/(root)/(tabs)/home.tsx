@@ -132,10 +132,10 @@ export default function HomeScreen() {
         style={styles.scroll}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingTop: insets.top + 70,
-          paddingBottom: insets.bottom + 90, // Tab bar clearance
-          paddingHorizontal: 16,
-          gap: 16,
+          paddingTop: insets.top + 58,
+          paddingBottom: insets.bottom + 85, // Tab bar clearance
+          paddingHorizontal: 12,
+          gap: 12,
         }}
       >
         {/* Role Switcher Pill */}
