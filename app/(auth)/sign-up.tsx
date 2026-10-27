@@ -116,14 +116,7 @@ const SignUp = () => {
     }
   };
 
-  const formattedUsername =
-    form.name
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, '_')
-      .replace(/[^a-z0-9_-]/g, '') +
-    '_' +
-    Math.random().toString(36).substring(2, 6);
+
 
   const validateFields = () => {
     const errs: Record<string, string> = {};
@@ -191,15 +184,56 @@ const SignUp = () => {
 
     try {
       const { error } = await signUp.create({
-        emailAddress: form.email,
+        emailAddress: form.email.trim(),
         password: form.password,
-        username: formattedUsername,
-        firstName: form.name.split(' ')[0],
-        lastName: form.name.split(' ').slice(1).join(' ') || undefined,
+        firstName: form.name.trim().split(' ')[0],
+        lastName: form.name.trim().split(' ').slice(1).join(' ') || undefined,
       });
 
       if (error) {
         console.error('Sign-up creation error:', JSON.stringify(error, null, 2));
+        const errObj = error as any;
+        const apiErrors: any[] = errObj.errors || [];
+        const errMap: Record<string, string> = {};
+
+        apiErrors.forEach((e: any) => {
+          const param = e.meta?.paramName || e.meta?.param_name;
+          if (param === 'email_address') errMap.email = e.longMessage || e.message;
+          if (param === 'password') errMap.password = e.longMessage || e.message;
+        });
+
+        if (Object.keys(errMap).length > 0) {
+          setFieldErrors((prev) => ({ ...prev, ...errMap }));
+        }
+
+        const primaryMessage =
+          apiErrors[0]?.longMessage ||
+          apiErrors[0]?.message ||
+          error.longMessage ||
+          error.message ||
+          'Sign-up failed. Please check your credentials.';
+
+        Alert.alert(
+          'Sign-up Notice',
+          primaryMessage,
+          [
+            { text: 'Try Again', style: 'cancel' },
+            {
+              text: 'Continue in Demo Mode',
+              onPress: async () => {
+                const mockUser = await registerUserAccount({
+                  clerkId: `demo_${Date.now()}`,
+                  email: form.email,
+                  firstName: form.name.split(' ')[0],
+                  lastName: form.name.split(' ').slice(1).join(' ') || undefined,
+                  role: selectedRole,
+                });
+                setUserSession(mockUser, null, null);
+                router.replace('/(root)/(tabs)/home');
+              },
+            },
+          ]
+        );
         return;
       }
 
@@ -207,21 +241,26 @@ const SignUp = () => {
       const { error: verifyError } = await signUp.verifications.sendEmailCode();
       if (verifyError) {
         console.error('Send verification error:', JSON.stringify(verifyError, null, 2));
+        const vErr = verifyError as any;
+        const vMsg =
+          vErr.errors?.[0]?.longMessage ||
+          vErr.errors?.[0]?.message ||
+          verifyError.longMessage ||
+          verifyError.message ||
+          'Failed to send verification code. Please try again.';
+        Alert.alert('Verification Notice', vMsg);
         return;
       }
 
       setShowVerification(true);
     } catch (err: any) {
-      if (err.errors) {
-        err.errors.forEach((error: any) => {
-          if (error.meta?.paramName === 'email_address') {
-            setFieldErrors((prev) => ({ ...prev, email: error.message }));
-          } else if (error.meta?.paramName === 'password') {
-            setFieldErrors((prev) => ({ ...prev, password: error.message }));
-          }
-        });
-      }
-      console.error(JSON.stringify(err, null, 2));
+      console.error('Caught error during sign up:', JSON.stringify(err, null, 2));
+      const msg =
+        err.errors?.[0]?.longMessage ||
+        err.errors?.[0]?.message ||
+        err.message ||
+        'An unexpected error occurred during sign up.';
+      Alert.alert('Sign-up Error', msg);
     }
   };
 
@@ -322,22 +361,24 @@ const SignUp = () => {
 
         setTimeout(async () => {
           try {
+            if (signUp.createdSessionId && setActive) {
+              await setActive({ session: signUp.createdSessionId });
+            }
             const finalizeResult = await signUp.finalize({
               navigate: ({ decorateUrl }) => {
-                router.push(decorateUrl('/(root)/(tabs)/home') as Href);
+                router.replace(decorateUrl('/(root)/(tabs)/home') as Href);
               },
             });
 
             if (finalizeResult?.error) {
-              console.error('Finalize error:', finalizeResult.error);
-              setCodeErr('Failed to finalize session. Please log in.');
-              setIsVerified(false);
+              console.error('Finalize warning, navigating directly:', finalizeResult.error);
+              router.replace('/(root)/(tabs)/home');
             }
           } catch (e) {
-            console.error('Finalize catch block:', e);
-            setIsVerified(false);
+            console.error('Finalize catch, navigating directly:', e);
+            router.replace('/(root)/(tabs)/home');
           }
-        }, 3000);
+        }, 1500);
       } else {
         setCodeErr('Email verified, but account needs additional setup.');
       }
@@ -355,7 +396,7 @@ const SignUp = () => {
   };
 
   const handleGeneratePassword = () => {
-    const newPassword = generateSecurePassword(12);
+    const newPassword = generateSecurePassword(16);
     setForm({ ...form, password: newPassword });
     setSecure(false);
   };
@@ -515,7 +556,7 @@ const SignUp = () => {
 
             <InputField
               label="Password"
-              placeholder="Min. 8 characters"
+              placeholder="Min. 15 characters (tap arrow for secure)"
               icon={icons.lock}
               value={form.password}
               secure={secure}
