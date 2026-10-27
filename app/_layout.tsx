@@ -48,7 +48,7 @@ export default function RootLayout() {
   const publishableKey =
     process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ||
     (Constants.expoConfig?.extra?.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY as string) ||
-    'pk_test_c3Ryb25nLXZlcnZldC05MC5jbGVyay5hY2NvdW50cy5kZXYk';
+    'pk_test_Y29ycmVjdC1jb2xsaWUtNDg2Ni5jbGVyay5hY2NvdW50cy5kZXYk';
 
   if (!publishableKey) {
     throw new Error('Add your Clerk Publishable Key to the .env file');
