@@ -78,7 +78,7 @@ const AIPredictionList = () => {
   };
 
   // 3. Extract your UI into a render function
-  const renderCard = ({ item }) => (
+  const renderCard = ({ item }: { item: any }) => (
     <View className="w-[300px] h-56 rounded-3xl overflow-hidden mr-4 relative bg-neutral-800">
       {/* Background Image */}
       <Image 

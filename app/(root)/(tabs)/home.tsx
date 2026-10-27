@@ -200,9 +200,10 @@ export default function HomeScreen() {
           <>
             {/* Where to Input Component */}
             <WhereToInput
-              pickupAddress={userAddress || 'Victoria Island, Lagos'}
-              destinationAddress={destinationAddress || 'Where to?'}
-              onSearchPress={() => router.push('/(utils)/search?mode=Map')}
+              originText={userAddress || 'Victoria Island, Lagos'}
+              destinationText={destinationAddress || 'Where to?'}
+              onOriginPress={() => router.push('/(utils)/search?mode=Map')}
+              onDestinationPress={() => router.push('/(utils)/search?mode=Map')}
             />
 
             {/* Quick Action Grid (Book a Ride & Send Items) */}
@@ -241,12 +242,12 @@ export default function HomeScreen() {
         </View>
 
         <PackageTrackerCard
-          trackingNumber="VEYO-29384-NG"
-          estimatedDelivery="Today • 4:15 PM"
-          origin="Victoria Island"
-          destination="Lekki Phase 1"
-          carrierName="Veyo Express Courier"
-          onTrackPress={() => setTrackingModalVisible(true)}
+          packageId="ID: VEYO-29384-NG"
+          statusText="EN ROUTE"
+          pickupLocation="Pickup: Victoria Island"
+          etaText="Est. 4:15 PM"
+          progressPercent={70}
+          onPress={() => setTrackingModalVisible(true)}
         />
 
         {/* Veyo Intelligence Section */}

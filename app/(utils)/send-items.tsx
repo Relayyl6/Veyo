@@ -123,16 +123,10 @@ export default function SendItemsScreen() {
 
         {/* 3. Pickup & Dropoff Address Card */}
         <WhereToInput
-          pickupAddress={pickup}
-          destinationAddress={dropoff}
-          onPickupChange={setPickup}
-          onDestinationChange={setDropoff}
-          onSwapLocations={() => {
-            const temp = pickup;
-            setPickup(dropoff);
-            setDropoff(temp);
-          }}
-          onSearchPress={() => router.push('/(utils)/search?mode=Map')}
+          originText={pickup}
+          destinationText={dropoff}
+          onOriginPress={() => router.push('/(utils)/search?mode=Map')}
+          onDestinationPress={() => router.push('/(utils)/search?mode=Map')}
         />
 
         {/* 4. Parcel Size Selection */}
@@ -213,12 +207,12 @@ export default function SendItemsScreen() {
         </View>
 
         <PackageTrackerCard
-          trackingNumber={activeTrackingId}
-          estimatedDelivery="Today • 4:15 PM"
-          origin="Victoria Island"
-          destination="Lekki Phase 1"
-          carrierName="Veyo Express Courier"
-          onTrackPress={() => setTrackingModalVisible(true)}
+          packageId={`ID: ${activeTrackingId}`}
+          statusText="EN ROUTE"
+          pickupLocation="Pickup: Victoria Island"
+          etaText="Est. 4:15 PM"
+          progressPercent={65}
+          onPress={() => setTrackingModalVisible(true)}
         />
       </ScrollView>
 

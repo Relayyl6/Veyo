@@ -39,7 +39,7 @@ export const PressableHybrid: React.FC<PressableHybridProps> = ({
       <PressableHybridBase
         {...props}
         onPress={handlePressWithHaptic}
-        className="flex-1"
+        style={{ flex: 1 }}
       >
         {children}
       </PressableHybridBase>

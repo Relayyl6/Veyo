@@ -64,7 +64,7 @@ const BOOKING_OPTIONS: RideOption[] = [
     subtitle: 'Luxury chauffeured transport',
     price: '$35.00',
     badge: 'TOP RATED',
-    iconType: 'luxury',
+    iconType: 'black',
   },
 ];
 
@@ -89,11 +89,12 @@ export default function BookRideScreen() {
   const [chatModalVisible, setChatModalVisible] = useState(false);
 
   const handleShortcutSelect = (shortcut: ShortcutItem) => {
-    setDestText(shortcut.title);
+    const targetAddr = shortcut.address || shortcut.name;
+    setDestText(targetAddr);
     setDestinationLocation({
-      latitude: shortcut.latitude || 6.4474,
-      longitude: shortcut.longitude || 3.4723,
-      address: shortcut.title,
+      latitude: 6.4474,
+      longitude: 3.4723,
+      address: targetAddr,
     });
   };
 
@@ -161,20 +162,14 @@ export default function BookRideScreen() {
 
         {/* 3. Where To Dual Input Component */}
         <WhereToInput
-          pickupAddress={pickupText}
-          destinationAddress={destText}
-          onPickupChange={setPickupText}
-          onDestinationChange={setDestText}
-          onSwapLocations={() => {
-            const temp = pickupText;
-            setPickupText(destText);
-            setDestText(temp);
-          }}
-          onSearchPress={() => router.push('/(utils)/search?mode=Map')}
+          originText={pickupText}
+          destinationText={destText}
+          onOriginPress={() => router.push('/(utils)/search?mode=Map')}
+          onDestinationPress={() => router.push('/(utils)/search?mode=Map')}
         />
 
         {/* 4. Destination Shortcuts */}
-        <DestinationShortcuts onSelectShortcut={handleShortcutSelect} />
+        <DestinationShortcuts onShortcutPress={handleShortcutSelect} />
 
         {/* 5. Vehicle Tier Selection List */}
         <View style={styles.sectionHeaderRow}>

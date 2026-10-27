@@ -49,7 +49,7 @@ const AdCarousel = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   // Track which item is currently in view to update the pagination dots
-  const onViewRef = useRef(({ viewableItems }) => {
+  const onViewRef = useRef(({ viewableItems }: { viewableItems: any[] }) => {
     if (viewableItems.length > 0) {
       setCurrentIndex(viewableItems[0].index || 0);
     }

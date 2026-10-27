@@ -2,7 +2,7 @@ import { discoveryData } from "@/constants/item"
 import React from 'react';
 import { View, Text, Image, Dimensions, Platform, Animated } from 'react-native';
 import { PressableHybrid } from '@/components/CustomPressable';
-import { Extrapolation, interpolate, useAnimatedStyle } from "react-native-reanimated";
+import { Extrapolation, interpolate, useAnimatedStyle, SharedValue } from "react-native-reanimated";
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width - 40; // Full width minus 20px padding on each side
@@ -15,7 +15,7 @@ type CardItem = typeof discoveryData[number];
 function CarouselCard({ item, index, scrollAnim, total }: {
   item: CardItem;
   index: number;
-  scrollAnim: Animated.SharedValue<number>;
+  scrollAnim: SharedValue<number>;
   total: number;
 }) {
   const animatedStyle = useAnimatedStyle(() => {
