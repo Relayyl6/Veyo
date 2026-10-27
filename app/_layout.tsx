@@ -12,6 +12,8 @@ import { PressablesConfig } from 'pressto';
 import * as Haptics from 'expo-haptics';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import Constants from 'expo-constants';
+
 export {
   // Catch any errors thrown by the Layout component.
   ErrorBoundary,
@@ -43,10 +45,13 @@ export default function RootLayout() {
     return null
   }
 
-  const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!
+  const publishableKey =
+    process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ||
+    (Constants.expoConfig?.extra?.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY as string) ||
+    'pk_test_c3Ryb25nLXZlcnZldC05MC5jbGVyay5hY2NvdW50cy5kZXYk';
 
   if (!publishableKey) {
-    throw new Error('Add your Clerk Publishable Key to the .env file')
+    throw new Error('Add your Clerk Publishable Key to the .env file');
   }
 
   if (!splashAnimationFinished) {
