@@ -79,7 +79,7 @@ const AIPredictionList = () => {
 
   // 3. Extract your UI into a render function
   const renderCard = ({ item }: { item: any }) => (
-    <View className="w-[300px] h-56 rounded-3xl overflow-hidden mr-4 relative bg-neutral-800">
+    <View className="w-[230px] h-36 rounded-2xl overflow-hidden mr-3 relative bg-neutral-800">
       {/* Background Image */}
       <Image 
         source={{ uri: item.image }} 
@@ -87,24 +87,24 @@ const AIPredictionList = () => {
         resizeMode="cover"
       />
       {/* Dark Gradient Overlay */}
-      <View className="absolute bottom-0 w-full h-1/3 bg-black/60 flex justify-end p-4">
+      <View className="absolute bottom-0 w-full h-[42%] bg-black/65 flex justify-end p-2.5">
         
         {/* Tag */}
-        <View className="bg-orange-600 self-start px-2 py-0.5 rounded-md mb-2">
-          <Text className="text-white text-[10px] font-bold tracking-wider">{item.tag}</Text>
+        <View className="bg-orange-600 self-start px-1.5 py-0.5 rounded mb-1">
+          <Text className="text-white text-[8.5px] font-bold tracking-wider">{item.tag}</Text>
         </View>
 
         <View className="flex-row items-end justify-between">
-          <View>
+          <View className="flex-1 mr-2">
             {/* Title */}
-            <Text className="text-white text-xl font-bold mb-1">{item.title}</Text>
+            <Text className="text-white text-[13px] font-bold leading-tight" numberOfLines={1}>{item.title}</Text>
             {/* Subtitle */}
-            <Text className="text-gray-300 text-xs">{item.subtitle}</Text>
+            <Text className="text-gray-300 text-[9.5px] leading-tight" numberOfLines={1}>{item.subtitle}</Text>
           </View>
 
           {/* Cart Button */}
-          <TouchableOpacity className="bg-white/20 p-3 rounded-2xl w-12 h-12 items-center justify-center border border-white/10">
-            <Ionicons name="cart" size={20} color="white" />
+          <TouchableOpacity className="bg-white/20 p-1.5 rounded-xl w-7 h-7 items-center justify-center border border-white/10">
+            <Ionicons name="cart" size={14} color="white" />
           </TouchableOpacity>
         </View>
       </View>
@@ -112,7 +112,7 @@ const AIPredictionList = () => {
   );
 
   return (
-    <View className="mb-4">
+    <View className="mb-2">
       <FlatList 
         data={listData}
         renderItem={renderCard}
@@ -121,7 +121,7 @@ const AIPredictionList = () => {
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingVertical: 4 }}
-        snapToInterval={316} // 300px card width + 16px right margin
+        snapToInterval={242}
         decelerationRate="fast"
         snapToAlignment="start"
         disableIntervalMomentum={true}
@@ -201,22 +201,22 @@ const TrafficAlertCard = () => {
 
 export const WeatherCard = () => {
   return (
-    <TouchableOpacity activeOpacity={0.9} className="bg-[#f2f4ff] rounded-3xl p-4 flex-row items-center justify-between mb-4">
+    <TouchableOpacity activeOpacity={0.9} className="bg-[#f2f4ff] rounded-2xl p-2.5 flex-row items-center justify-between mb-2">
       <View className="flex-row items-center">
         {/* Weather Icon Circle */}
-        <View className="bg-[#e4eaf9] w-12 h-12 rounded-full items-center justify-center mr-3">
-          <Ionicons name="partly-sunny-outline" size={24} color="#3b82f6" />
+        <View className="bg-[#e4eaf9] w-9 h-9 rounded-full items-center justify-center mr-2.5">
+          <Ionicons name="partly-sunny-outline" size={18} color="#3b82f6" />
         </View>
 
         {/* Text Details */}
         <View>
-          <Text className="text-neutral-800 text-sm font-semibold mb-0.5">Cloudy 29°C</Text>
-          <Text className="text-neutral-500 text-xs">Perfect for a walk</Text>
+          <Text className="text-neutral-800 text-xs font-semibold mb-0.5">Cloudy 29°C</Text>
+          <Text className="text-neutral-500 text-[10.5px]">Perfect for a walk</Text>
         </View>
       </View>
 
       {/* Chevron */}
-      <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
+      <Ionicons name="chevron-forward" size={14} color="#9ca3af" />
     </TouchableOpacity>
   );
 };
@@ -226,7 +226,7 @@ export const WeatherCard = () => {
 // ==========================================
 export default function VeyoInsightsScreen() {
   return (
-    <View className="flex-1 bg-neutral-50 px-4 pt-4">
+    <View className="mb-1">
       <AIPredictionList />
       <WeatherCard />
       <TrafficAlertCard />

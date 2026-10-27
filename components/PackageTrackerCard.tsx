@@ -66,19 +66,19 @@ export default function PackageTrackerCard({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#0F172A',
-    borderRadius: 24,
-    padding: 18,
+    borderRadius: 16,
+    padding: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 10,
   },
   title: {
     fontFamily: 'JakartaBold',
@@ -101,14 +101,14 @@ const styles = StyleSheet.create({
   },
   shipmentCard: {
     backgroundColor: '#1E293B',
-    borderRadius: 16,
-    padding: 14,
+    borderRadius: 12,
+    padding: 10,
   },
   shipmentMetaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   packageIdText: {
     fontFamily: 'JakartaBold',

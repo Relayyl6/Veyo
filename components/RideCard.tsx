@@ -92,18 +92,18 @@ const RideCard = ({
 
   return (
     // Only changed this wrapper class to remove outer margins (p-4 remains)
-    <View className="bg-white rounded-2xl shadow-lg shadow-neutral-200 p-4">
+    <View className="bg-white rounded-xl shadow-md shadow-neutral-200 p-2.5">
       <View className="flex flex-row items-start relative">
         {/* 1. LOADING STATE */}
         {loading ? (
-          <View className="w-[110px] h-[110px] rounded-xl mr-3 bg-neutral-100 flex items-center justify-center border border-neutral-200">
+          <View className="w-[85px] h-[85px] rounded-lg mr-2.5 bg-neutral-100 flex items-center justify-center border border-neutral-200">
             <ActivityIndicator size="small" color="#d4d4d4" />
           </View>
         ) 
 
         // {/* 2. ERROR STATE (Error is true, but fallback map hasn't loaded yet) */}
         : error && !finalMapUrl ? (
-          <View className="w-[110px] h-[110px] rounded-xl mr-3 bg-red-50 flex items-center justify-center border border-red-100 p-2 text-center">
+          <View className="w-[85px] h-[85px] rounded-lg mr-2.5 bg-red-50 flex items-center justify-center border border-red-100 p-2 text-center">
             <Ionicons name="alert-circle-outline" size={24} color="#ef4444" />
             <Text className="text-red-400 font-JakartaMedium mt-1 text-[10px] text-center">
               Map unavailable
@@ -113,7 +113,7 @@ const RideCard = ({
 
         // {/* 3. EMPTY STATE (No loading, no error, but still no URL available) */}
         : !finalMapUrl ? (
-          <View className="w-[110px] h-[110px] rounded-xl mr-3 bg-white flex items-center justify-center shadow-sm shadow-neutral-200 border border-neutral-100 p-2">
+          <View className="w-[85px] h-[85px] rounded-lg mr-2.5 bg-white flex items-center justify-center shadow-sm shadow-neutral-200 border border-neutral-100 p-2">
             <Ionicons name="map-outline" size={24} color="#d4d4d4" />
             <Text className="text-neutral-400 font-JakartaMedium mt-1 text-[10px] text-center">
               No map found
@@ -125,7 +125,7 @@ const RideCard = ({
         : (
           <Image
             source={{ uri: finalMapUrl }}
-            className="w-[110px] h-[110px] rounded-xl mr-3 bg-neutral-100"
+            className="w-[85px] h-[85px] rounded-lg mr-2.5 bg-neutral-100"
             resizeMode="cover"
           />
         )}

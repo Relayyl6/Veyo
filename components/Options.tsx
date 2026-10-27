@@ -39,7 +39,7 @@ const layoutStates = [
         imageUrl: 'https://freepngimg.com/thumb/vehicle/69037-scooter-two-wheeler-kick-vehicle-free-download-png-hd.png',
         bgClass: 'bg-[#FCD34D]',
         textWrapperClass: 'z-10',
-        imageClass: { position: 'absolute', bottom: -8, right: -4, width: 110, height: 110 },
+        imageClass: { position: 'absolute', bottom: -4, right: -4, width: 75, height: 75 },
         imageOrder: 'after',
       },
       {
@@ -49,7 +49,7 @@ const layoutStates = [
         bgClass: 'bg-[#86EFAC]',
         textWrapperClass: 'z-10 items-end w-full',
         textAlignClass: 'text-right',
-        imageClass: { position: 'absolute', bottom: -6, left: -16, width: 120, height: 120 },
+        imageClass: { position: 'absolute', bottom: -4, left: -10, width: 75, height: 75 },
         imageOrder: 'before',
       },
       {
@@ -67,7 +67,7 @@ const layoutStates = [
         imageUrl: 'https://freepngimg.com/thumb/vehicle/93770-renegade-tire-jeep-automotive-2018-exterior.png',
         bgClass: 'bg-[#BFDBFE]',
         textWrapperClass: 'z-10',
-        imageClass: { position: 'absolute', bottom: -20, right: -16, width: 150, height: 150, borderRadius: 75 },
+        imageClass: { position: 'absolute', bottom: -8, right: -8, width: 85, height: 85, borderRadius: 42.5 },
         imageOrder: 'after',
       },
       {
@@ -86,7 +86,7 @@ const layoutStates = [
         bgClass: 'bg-[#E9D5FF]',
         textWrapperClass: 'z-10 items-end w-full',
         textAlignClass: 'text-right',
-        imageClass: { position: 'absolute', bottom: -12, left: -12, width: 140, height: 140 },
+        imageClass: { position: 'absolute', bottom: -6, left: -6, width: 85, height: 85 },
         imageOrder: 'before',
       },
     ],
@@ -160,15 +160,14 @@ const AnimatedCard = ({ item, targetWidth, phase, stateKey, morphDelay }: CardPr
   useEffect(() => {
     if (phase === 'typing_out') {
       Animated.timing(textFade, {
-        toValue: 0,
-        duration: 300,
+        toValue: 0.4,
+        duration: 250,
         useNativeDriver: true,
       }).start();
-    } else if (phase === 'idle' || phase === 'typing_in') {
+    } else {
       Animated.timing(textFade, {
         toValue: 1,
-        duration: 500,
-        delay: phase === 'typing_in' ? 300 : 0,
+        duration: 350,
         useNativeDriver: true,
       }).start();
     }
@@ -181,31 +180,31 @@ const AnimatedCard = ({ item, targetWidth, phase, stateKey, morphDelay }: CardPr
       style={{
         width: animWidth,
         height: '100%',
-        borderRadius: 28,
+        borderRadius: 16,
         overflow: 'hidden',
         backgroundColor: isSquare ? '#ffffff' : undefined,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 8,
-        elevation: 3,
+        shadowOffset: { width: 0, height: 1.5 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
       }}
     >
       <PressableHybrid
         className={
           !isSquare 
-            ? `${item.bgClass} flex-1 p-5 overflow-hidden relative` 
-            : 'flex-1 items-center justify-center p-4'
+            ? `${item.bgClass} flex-1 p-2.5 overflow-hidden relative` 
+            : 'flex-1 items-center justify-center p-2'
         }
         onPress={() => console.log("Pressed!")}
       >
         {/* ── SQUARE ── */}
         {isSquare && (
           <>
-            <Ionicons name={item.iconName as any} size={32} color={item.iconColor} />
+            <Ionicons name={item.iconName as any} size={22} color={item.iconColor} />
             <Animated.Text
               style={{ opacity: textFade }}
-              className="mt-2 text-[14px] font-JakartaBold text-black text-center leading-tight"
+              className="mt-1 text-[11px] font-JakartaBold text-black text-center leading-tight"
             >
               {item.title}
             </Animated.Text>
@@ -225,12 +224,12 @@ const AnimatedCard = ({ item, targetWidth, phase, stateKey, morphDelay }: CardPr
 
             <Animated.View style={{ opacity: textFade }} className={item.textWrapperClass}>
               <Text
-                className={`text-xl font-JakartaBold text-black ${item.textAlignClass || 'text-left'}`}
+                className={`text-[13.5px] font-JakartaBold text-black leading-tight ${item.textAlignClass || 'text-left'}`}
               >
                 {item.title}
               </Text>
               <Text
-                className={`text-xs font-Jakarta text-black opacity-60 mt-0.5 ${item.textAlignClass || 'text-left'}`}
+                className={`text-[9.5px] font-Jakarta text-black opacity-70 mt-0.5 leading-snug ${item.textAlignClass || 'text-left'}`}
               >
                 {item.subtitle}
               </Text>
@@ -316,9 +315,9 @@ const ServiceGrid = () => {
   const morphDelays = [0, 80, 80, 0]; // row 1 top-left first, row 2 bottom-right last
 
   return (
-    <View className="px-4 mt-2 mb-4">
+    <View className="my-1">
       {/* ROW 1 */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', height: 144, marginBottom: 16 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', height: 86, marginBottom: 8 }}>
         {[0, 1].map(i => {
           const item = currentGrid[i];
           return (
@@ -335,7 +334,7 @@ const ServiceGrid = () => {
       </View>
 
       {/* ROW 2 */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', height: 144 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', height: 86 }}>
         {[2, 3].map(i => {
           const item = currentGrid[i];
           return (

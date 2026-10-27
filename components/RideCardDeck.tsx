@@ -68,7 +68,7 @@ export default function RideCardDeck({ rides }: { rides: any[] }) {
   // Empty State: No rides at all, or swiped through the whole list
   if (!rides || rides.length === 0 || currentIndex >= rides.length) {
     return (
-      <View className="mx-4 mt-2 mb-8 bg-white rounded-2xl p-8 flex items-center justify-center shadow-sm shadow-neutral-200 border border-neutral-100 relative">
+      <View className="my-2 bg-white rounded-xl p-4 flex items-center justify-center shadow-sm shadow-neutral-200 border border-neutral-100 relative">
         
         {/* If they swiped past the last card, let them go back */}
         {currentIndex > 0 && (
@@ -97,7 +97,7 @@ export default function RideCardDeck({ rides }: { rides: any[] }) {
   }
 
   return (
-    <View className="mx-4 mt-10 mb-12 relative">
+    <View className="my-2 relative">
       {currentIndex > 0 && (
         <TouchableOpacity
           onPress={handlePrev}
@@ -127,7 +127,7 @@ export default function RideCardDeck({ rides }: { rides: any[] }) {
             opacity: anim.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }),
             transform: [
               // Starts 25px lower, moves to 0
-              { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [25, 0] }) },
+              { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) },
               // Starts smaller to create the stacked look, expands to 1
               { scale: anim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) },
             ],
@@ -140,14 +140,14 @@ export default function RideCardDeck({ rides }: { rides: any[] }) {
             <Animated.View
               style={{
                 position: 'absolute',
-                bottom: -15,
+                bottom: -10,
                 alignSelf: 'center',
                 opacity: anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 0, 0] }), // Fades out when clicked
               }}
-              className="bg-neutral-800 flex-row items-center justify-center px-4 py-1.5 rounded-full shadow-md"
+              className="bg-neutral-800 flex-row items-center justify-center px-3 py-1 rounded-full shadow-md"
             >
-              <Text className="text-white text-[10px] font-bold mr-1">Next</Text>
-              <Ionicons name="chevron-down" size={12} color="white" />
+              <Text className="text-white text-[9.5px] font-bold mr-1">Next</Text>
+              <Ionicons name="chevron-down" size={11} color="white" />
             </Animated.View>
           </TouchableOpacity>
         </Animated.View>

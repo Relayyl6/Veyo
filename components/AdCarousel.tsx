@@ -3,7 +3,7 @@ import { View, Text, Image, FlatList, TouchableOpacity, Dimensions } from 'react
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = width * 0.85;
+const CARD_WIDTH = width * 0.86;
 
 // Using realistic transparent PNGs to mimic the high-quality 3D/real look
 const advertData = [
@@ -58,7 +58,7 @@ const AdCarousel = () => {
   const viewConfigRef = useRef({ viewAreaCoveragePercentThreshold: 50 });
 
   return (
-    <View className="mt-4 mb-6">
+    <View className="my-1.5">
       <FlatList
         data={advertData}
         keyExtractor={(item) => item.id}
@@ -70,26 +70,26 @@ const AdCarousel = () => {
         onViewableItemsChanged={onViewRef.current}
         viewabilityConfig={viewConfigRef.current}
         renderItem={({ item }) => (
-              <View style={{ width: CARD_WIDTH, height: 160 }} className="mr-4 rounded-3xl overflow-hidden shadow-lg">
+              <View style={{ width: CARD_WIDTH, height: 118 }} className="mr-3 rounded-2xl overflow-hidden shadow-sm">
                 
                 {/* Linear Gradient acting as the background */}
                 <LinearGradient
                   colors={['#2a2a2a', '#000000']} 
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
-                  style={{ flex: 1, flexDirection: 'row', padding: 20 }}
+                  style={{ flex: 1, flexDirection: 'row', padding: 12 }}
                 >
                   
                   {/* Left Content */}
-                  <View className="flex-1 z-10 justify-center pb-2">
-                    <Text className="text-4xl font-JakartaBold font-bold text-white mb-1 tracking-tight">
+                  <View className="flex-1 z-10 justify-center">
+                    <Text className="text-xl font-JakartaBold font-bold text-white mb-0.5 tracking-tight">
                       {item.title}
                     </Text>
-                    <Text className="text-sm font-Jakarta text-white opacity-80 mb-4">
+                    <Text className="text-[11px] font-Jakarta text-white opacity-80 mb-2">
                       {item.subtitle}
                     </Text>
-                    <TouchableOpacity activeOpacity={0.8} className={`${item.ctaBgClass} px-5 py-2.5 rounded-xl self-start`}>
-                      <Text className="font-JakartaSemiBold font-semibold text-xs text-white">
+                    <TouchableOpacity activeOpacity={0.8} className={`${item.ctaBgClass} px-3.5 py-1.5 rounded-lg self-start`}>
+                      <Text className="font-JakartaSemiBold font-semibold text-[10.5px] text-white">
                         {item.ctaText}
                       </Text>
                     </TouchableOpacity>
@@ -101,10 +101,10 @@ const AdCarousel = () => {
                     resizeMode="contain"
                     style={{
                       position: 'absolute',
-                      right: -20,
-                      top: 5,
-                      width: 170,
-                      height: 170,
+                      right: -10,
+                      top: -4,
+                      width: 125,
+                      height: 125,
                       zIndex: 5,
                     }}
                   />
@@ -114,16 +114,16 @@ const AdCarousel = () => {
       />
 
       {/* Pagination Indicators (Dots) */}
-      <View className="flex-row justify-center items-center mt-5 space-x-2">
+      <View className="flex-row justify-center items-center mt-2 space-x-1.5">
         {advertData.map((_, index) => (
           <View
             key={index}
-            className={`h-2 rounded-full transition-all duration-300 ${
+            className={`h-1.5 rounded-full transition-all duration-300 ${
               currentIndex === index 
-                ? 'w-6 bg-[#f04f23]' // Active dot (matches the red/orange button theme)
-                : 'w-2 bg-neutral-300' // Inactive dots
+                ? 'w-5 bg-[#f04f23]'
+                : 'w-1.5 bg-neutral-300'
             }`}
-            style={{ marginHorizontal: 3 }} // Fallback spacing if NativeWind space-x-2 is finicky
+            style={{ marginHorizontal: 2.5 }}
           />
         ))}
       </View>

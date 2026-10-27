@@ -52,8 +52,8 @@ const styles = StyleSheet.create({
   card: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 16,
+    borderRadius: 16,
+    padding: 11,
     borderWidth: 1,
     borderColor: '#EEEEEE',
     shadowColor: '#000',
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   rideIconBg: {
     backgroundColor: '#EEF2FF',
