@@ -1,7 +1,7 @@
 import { Image, Keyboard, Pressable, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
 import React from 'react';
 import { InputFieldProps } from '@/types/type';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { Ionicons } from '@expo/vector-icons';
 
 const InputField = ({
   labelStyle,
@@ -38,12 +38,23 @@ const InputField = ({
             {...props}
           />
           {label === 'Password' && (
-            <View className="pr-4 gap-4 flex flex-row items-center">
-              <Pressable onPress={handle} hitSlop={8}>
-                <FontAwesome name="arrow-circle-o-right" color="#64748B" size={18} />
-              </Pressable>
-              <Pressable onPress={() => setSecure?.(!secure)} hitSlop={8}>
-                <FontAwesome name={secure ? 'eye-slash' : 'eye'} color="#64748B" size={18} />
+            <View className="pr-3 gap-2 flex flex-row items-center">
+              {handle && (
+                <Pressable
+                  onPress={handle}
+                  hitSlop={8}
+                  className="flex-row items-center bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200 active:bg-blue-100"
+                >
+                  <Ionicons name="sparkles" color="#0286FF" size={13} style={{ marginRight: 3 }} />
+                  <Text className="text-[11px] font-JakartaBold text-[#0286FF]">Generate</Text>
+                </Pressable>
+              )}
+              <Pressable onPress={() => setSecure?.(!secure)} hitSlop={8} className="p-1">
+                <Ionicons
+                  name={secure ? 'eye-off-outline' : 'eye-outline'}
+                  color="#64748B"
+                  size={19}
+                />
               </Pressable>
             </View>
           )}

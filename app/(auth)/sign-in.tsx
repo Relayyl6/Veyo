@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { saveCredentials, getSavedCredentials, type SavedCredentials } from '@/lib/storage';
+import React, { useState, useEffect } from 'react';
 import {
   Image,
   KeyboardAvoidingView,
@@ -33,10 +34,26 @@ const SignIn = () => {
 
   const [selectedRole, setSelectedRole] = useState<AppUserRole>('customer');
 
+  const [savedCreds, setSavedCreds] = useState<SavedCredentials | null>(null);
   const [form, setForm] = useState({
     email: '',
     password: '',
   });
+
+  useEffect(() => {
+    getSavedCredentials().then((creds) => {
+      if (creds) {
+        setSavedCreds(creds);
+        // Pre-populate if currently blank and role is customer
+        if (creds.password && selectedRole === 'customer') {
+          setForm((prev) => ({
+            email: prev.email || creds.email,
+            password: prev.password || creds.password,
+          }));
+        }
+      }
+    });
+  }, []);
 
   const [fieldErrors, setFieldErrors] = useState({
     email: '',
@@ -111,6 +128,11 @@ const SignIn = () => {
 
       if (signIn.status === 'complete') {
         setRole(selectedRole);
+        await saveCredentials({
+          email: form.email,
+          password: form.password,
+          role: selectedRole,
+        });
         await signIn.finalize({
           navigate: ({ session, decorateUrl }) => {
             if (session?.currentTask) {
@@ -245,11 +267,19 @@ const SignIn = () => {
 
             <InputField
               label="Password"
-              placeholder="Min. 8 characters"
+              placeholder="16-character secure password"
               icon={icons.lock}
               value={form.password}
               secure={secure}
               setSecure={setSecure}
+              handle={savedCreds?.password ? () => {
+                setForm((prev) => ({
+                  ...prev,
+                  email: prev.email || savedCreds.email,
+                  password: savedCreds.password,
+                }));
+                setSecure(false);
+              } : undefined}
               onChangeText={(value: string) => {
                 setForm({ ...form, password: value });
                 if (fieldErrors.password) {
@@ -258,6 +288,25 @@ const SignIn = () => {
               }}
               error={passwordError}
             />
+            {savedCreds?.password && form.password !== savedCreds.password && (
+              <TouchableOpacity
+                onPress={() => {
+                  setForm((prev) => ({
+                    ...prev,
+                    email: prev.email || savedCreds.email,
+                    password: savedCreds.password,
+                  }));
+                  setSecure(false);
+                }}
+                className="flex-row items-center self-end mb-2 mt-1"
+                hitSlop={8}
+              >
+                <Ionicons name="key" size={13} color="#0286FF" style={{ marginRight: 4 }} />
+                <Text className="text-[11.5px] font-JakartaBold text-[#0286FF]">
+                  Autofill saved password ({savedCreds.password.substring(0, 4)}••••••••)
+                </Text>
+              </TouchableOpacity>
+            )}
 
             <View className="items-center justify-center mt-4">
               <CustomButton

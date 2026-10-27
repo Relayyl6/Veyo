@@ -1,3 +1,4 @@
+import { saveCredentials, getSavedCredentials, type SavedCredentials } from '@/lib/storage';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Image,
@@ -36,6 +37,7 @@ const SignUp = () => {
 
   // 1. Role State
   const [selectedRole, setSelectedRole] = useState<SignupRole>('customer');
+  const [savedCreds, setSavedCreds] = useState<SavedCredentials | null>(null);
 
   // 2. Base Form
   const [form, setForm] = useState({
@@ -87,7 +89,12 @@ const SignUp = () => {
 
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
-  useEffect(() => handleStartOver, []);
+  useEffect(() => {
+    handleStartOver();
+    getSavedCredentials().then((creds) => {
+      if (creds) setSavedCreds(creds);
+    });
+  }, []);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
@@ -357,6 +364,12 @@ const SignUp = () => {
         // 3. Update Zustand Store with full session
         if (createdUser) {
           setUserSession(createdUser, driverProfile, vendorProfile);
+          await saveCredentials({
+            email: form.email,
+            password: form.password,
+            name: form.name,
+            role: selectedRole,
+          });
         }
 
         setTimeout(async () => {
@@ -395,10 +408,33 @@ const SignUp = () => {
     setFieldErrors({});
   };
 
-  const handleGeneratePassword = () => {
+  const handleGeneratePassword = async () => {
     const newPassword = generateSecurePassword(16);
-    setForm({ ...form, password: newPassword });
+    setForm((prev) => ({ ...prev, password: newPassword }));
     setSecure(false);
+    if (fieldErrors.password) {
+      setFieldErrors((prev) => ({ ...prev, password: '' }));
+    }
+
+    await saveCredentials({
+      email: form.email,
+      password: newPassword,
+      name: form.name,
+      role: selectedRole,
+    });
+    setSavedCreds({
+      email: form.email,
+      password: newPassword,
+      name: form.name,
+      role: selectedRole,
+      savedAt: new Date().toISOString(),
+    });
+
+    Alert.alert(
+      '🔑 16-Character Password Generated',
+      `Your secure password:\n\n${newPassword}\n\n✓ Saved to this phone's storage.\nYou don't need to remember it — it will automatically be available next time you log in!`,
+      [{ text: 'Got it!' }]
+    );
   };
 
   const emailError = fieldErrors.email || errors.fields.emailAddress?.message;
@@ -556,7 +592,7 @@ const SignUp = () => {
 
             <InputField
               label="Password"
-              placeholder="Min. 15 characters (tap arrow for secure)"
+              placeholder="16-character secure password"
               icon={icons.lock}
               value={form.password}
               secure={secure}
@@ -568,6 +604,25 @@ const SignUp = () => {
               error={passwordError}
               handle={handleGeneratePassword}
             />
+            {savedCreds?.password && form.password !== savedCreds.password && (
+              <TouchableOpacity
+                onPress={() => {
+                  setForm((prev) => ({
+                    ...prev,
+                    email: prev.email || savedCreds.email,
+                    password: savedCreds.password,
+                  }));
+                  setSecure(false);
+                }}
+                className="flex-row items-center self-end mb-2 mt-1"
+                hitSlop={8}
+              >
+                <Ionicons name="key" size={13} color="#0286FF" style={{ marginRight: 4 }} />
+                <Text className="text-[11.5px] font-JakartaBold text-[#0286FF]">
+                  Use saved password ({savedCreds.password.substring(0, 4)}••••••••)
+                </Text>
+              </TouchableOpacity>
+            )}
 
             {/* 3. DYNAMIC DRIVER ONBOARDING FIELDS */}
             {selectedRole === 'driver' && (
