@@ -1196,7 +1196,7 @@ export default function VeyoMapScreen() {
             {activeDriver && (
               <View style={[styles.activeDriverRow, { borderColor }]}>
                 <View style={styles.driverAvatar}>
-                  <Text style={styles.driverAvatarText}>{activeDriver.name.charAt(0)}</Text>
+                  <Text style={styles.driverAvatarText}>{activeDriver?.name?.charAt(0) || 'D'}</Text>
                 </View>
                 <View style={{ flex: 1, marginLeft: 10 }}>
                   <Text style={[styles.activeDriverName, { color: textColor }]}>

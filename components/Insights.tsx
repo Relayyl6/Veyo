@@ -15,8 +15,10 @@ import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { dbContent, AiPredictionRecord } from '@/lib/db';
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
+if (Platform.OS === 'android' && typeof UIManager?.setLayoutAnimationEnabledExperimental === 'function') {
+  try {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+  } catch {}
 }
 
 const DEFAULT_PREDICTIONS: AiPredictionRecord[] = [

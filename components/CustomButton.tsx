@@ -7,13 +7,13 @@ import Animated, {
   interpolate,
   Extrapolation,
   withDelay,
+  runOnJS,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { PressableHybrid } from '@/components/CustomPressable'; 
 import { ButtonProps } from '@/types/type';
-import { scheduleOnRN } from 'react-native-worklets';
 
 const getBgVariantStyle = (variant: string) => {
   switch (variant) {
@@ -94,7 +94,7 @@ const CustomButton = ({
       translateX.value = newPosition;
 
       if (Math.floor(newPosition) % 30 === 0) {
-        scheduleOnRN(triggerSelectionHaptic);
+        runOnJS(triggerSelectionHaptic)();
       }
     })
     .onEnd((_gestureEvent) => {
@@ -110,9 +110,9 @@ const CustomButton = ({
           }
         });
 
-        scheduleOnRN(triggerSuccessHaptic);
+        runOnJS(triggerSuccessHaptic)();
         if (onPress) {
-          scheduleOnRN(onPress, _gestureEvent as any);
+          runOnJS(onPress)(_gestureEvent as any);
         }
       } else {
         translateX.value = withSpring(0, { damping: 15, stiffness: 150 });

@@ -197,7 +197,7 @@ export default function VendorDashboardHub({ onSignOut }: VendorDashboardHubProp
     setEditingDish(dish);
     setDishName(dish.name);
     setDishCategory(dish.category);
-    setDishPrice(dish.price.toFixed(2));
+    setDishPrice(Number(dish.price || 0).toFixed(2));
     setDishPrepTime(dish.prepTime.toString());
     setDishDescription(dish.description || '');
     setDishImageUrl(dish.imageUrl);
@@ -408,7 +408,7 @@ export default function VendorDashboardHub({ onSignOut }: VendorDashboardHubProp
                 <Text style={styles.orderCustomer}>{order.customerName}</Text>
               </View>
               <View style={styles.orderTimeCol}>
-                <Text style={styles.orderPrice}>${order.total.toFixed(2)}</Text>
+                <Text style={styles.orderPrice}>${Number(order.total || 0).toFixed(2)}</Text>
                 <Text style={styles.orderTimeAgo}>{order.timeAgo}</Text>
               </View>
             </View>
@@ -493,7 +493,7 @@ export default function VendorDashboardHub({ onSignOut }: VendorDashboardHubProp
             <Text style={styles.dishCategory}>
               {dish.category} • {dish.prepTime} mins
             </Text>
-            <Text style={styles.dishPrice}>${dish.price.toFixed(2)}</Text>
+            <Text style={styles.dishPrice}>${Number(dish.price || 0).toFixed(2)}</Text>
           </View>
 
           {/* Actions */}

@@ -9,8 +9,20 @@ import Animated, {
   Extrapolation
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { Presets, useRealtimeComposer } from 'react-native-pulsar';
+import * as Haptics from 'expo-haptics';
 import { FontAwesome5 } from '@expo/vector-icons';
+
+const triggerHeavyHaptic = () => {
+  try {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+  } catch {}
+};
+
+const triggerImpactHaptic = () => {
+  try {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+  } catch {}
+};
 
 interface FullWidthSliderProps {
   onComplete: () => void;
@@ -30,7 +42,6 @@ const ReanimatedSlider = ({ onComplete, text = "Swipe to Confirm" }: FullWidthSl
 
   const translateX = useSharedValue(0);
   const isCompleted = useSharedValue(false);
-  const { set, stop } = useRealtimeComposer();
 
   const pan = Gesture.Pan()
     // Prevent interaction if already completed or if width hasn't measured yet
@@ -40,15 +51,11 @@ const ReanimatedSlider = ({ onComplete, text = "Swipe to Confirm" }: FullWidthSl
       const newPosition = Math.max(0, Math.min(event.translationX, MAX_TRANSLATE));
       translateX.value = newPosition;
 
-      // 3. Dynamic Haptics: Map position to a 0.0 -> 1.0 intensity scale
-      const intensity = newPosition / MAX_TRANSLATE;
-      
-      // Update hardware vibration (Pulsar handles this cleanly on the UI thread)
-      set(intensity, intensity);
+      if (Math.floor(newPosition) % 35 === 0) {
+        runOnJS(triggerImpactHaptic)();
+      }
     })
     .onEnd(() => {
-      stop();
-
       // 4. Threshold Logic: If swiped past 80% of the total width
       if (translateX.value > MAX_TRANSLATE * 0.8) {
         isCompleted.value = true;
@@ -56,8 +63,8 @@ const ReanimatedSlider = ({ onComplete, text = "Swipe to Confirm" }: FullWidthSl
         // Snap to the very end
         translateX.value = withSpring(MAX_TRANSLATE, { damping: 15 });
         
-        // Play the heavy completion clunk and trigger the function
-        runOnJS(Presets.lock)();
+        // Trigger haptic and callback
+        runOnJS(triggerHeavyHaptic)();
         runOnJS(onComplete)();
       } else {
         // Let go too early? Spring back to the start

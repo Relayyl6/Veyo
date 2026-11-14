@@ -212,7 +212,7 @@ export default function VendorStorefrontModal({
                   <Text style={styles.cardTitle} numberOfLines={1}>
                     {item.name}
                   </Text>
-                  <Text style={styles.cardPrice}>${item.price.toFixed(2)}</Text>
+                  <Text style={styles.cardPrice}>${Number(item.price || 0).toFixed(2)}</Text>
                 </View>
               </TouchableOpacity>
             ))}

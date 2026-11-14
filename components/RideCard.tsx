@@ -46,13 +46,16 @@ const RideCard = ({
       })
     : '—';
 
-  const formattedFare = total_fare != null ? `$${total_fare.toFixed(2)}` : '—';
+  const numFare = Number(total_fare);
+  const formattedFare = !isNaN(numFare) && total_fare != null ? `$${numFare.toFixed(2)}` : '—';
 
-  const statusLabel =
-    ride_status?.charAt(0).toUpperCase() + ride_status?.slice(1).toLowerCase();
+  const statusLabel = ride_status
+    ? ride_status.charAt(0).toUpperCase() + ride_status.slice(1).toLowerCase()
+    : 'Completed';
 
-  const paymentLabel =
-    payment_status?.charAt(0).toUpperCase() + payment_status?.slice(1).toLowerCase();
+  const paymentLabel = payment_status
+    ? payment_status.charAt(0).toUpperCase() + payment_status.slice(1).toLowerCase()
+    : 'Paid';
 
   const originMarker =
     origin_longitude && origin_latitude
@@ -176,7 +179,7 @@ const RideCard = ({
             <View style={styles.ratingRow}>
               <Ionicons name="star" size={11} color="#FBBF24" />
               <Text style={styles.ratingText}>
-                {driver_rating?.toFixed(1) ?? '5.0'}
+                {Number(driver_rating ?? 5.0).toFixed(1)}
               </Text>
             </View>
           </View>
