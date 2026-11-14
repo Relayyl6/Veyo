@@ -142,7 +142,7 @@ export const TrafficDigestCard = () => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const toggleExpand = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    try { LayoutAnimation?.configureNext?.(LayoutAnimation.Presets.easeInEaseOut); } catch {}
     setIsExpanded(!isExpanded);
   };
 

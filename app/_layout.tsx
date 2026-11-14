@@ -1,6 +1,8 @@
 import '../global.css';
 import 'expo-dev-client';
-import { Stack, SplashScreen } from 'expo-router';
+import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import * as Updates from 'expo-updates';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { useFonts } from 'expo-font';
@@ -15,9 +17,9 @@ export {
   ErrorBoundary,
 } from 'expo-router';
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
+// Prevent the native splash screen from auto-hiding before asset loading is complete.
 try {
-  SplashScreen.preventAutoHideAsync().catch(() => {});
+  SplashScreen?.preventAutoHideAsync?.().catch?.(() => {});
 } catch (e) {}
 
 export default function RootLayout() {
@@ -36,10 +38,27 @@ export default function RootLayout() {
   useEffect(() => {
     if (loaded || fontError) {
       try {
-        SplashScreen.hideAsync().catch(() => {});
+        SplashScreen?.hideAsync?.().catch?.(() => {});
       } catch (e) {}
     }
   }, [loaded, fontError]);
+
+  // Proactive OTA check for published EAS updates
+  useEffect(() => {
+    async function checkLatestUpdate() {
+      if (__DEV__) return;
+      try {
+        const check = await Updates.checkForUpdateAsync();
+        if (check.isAvailable) {
+          await Updates.fetchUpdateAsync();
+          await Updates.reloadAsync();
+        }
+      } catch (e) {
+        // Silently continue if offline
+      }
+    }
+    checkLatestUpdate();
+  }, []);
 
   if (!loaded && !fontError) {
     return null;

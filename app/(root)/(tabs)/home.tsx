@@ -82,7 +82,7 @@ export default function HomeScreen() {
           setUserLocation({
             latitude: lastKnown.coords.latitude,
             longitude: lastKnown.coords.longitude,
-            address: `${addressResult[0].name || 'Current'}, ${addressResult[0].region || 'Lagos'}`,
+            address: `${addressResult?.[0]?.name || 'Current'}, ${addressResult?.[0]?.region || 'Lagos'}`,
           });
         }
 
@@ -98,7 +98,7 @@ export default function HomeScreen() {
         setUserLocation({
           latitude: location.coords.latitude,
           longitude: location.coords.longitude,
-          address: `${addressResult[0].name || 'Current'}, ${addressResult[0].region || 'Lagos'}`,
+          address: `${addressResult?.[0]?.name || 'Current'}, ${addressResult?.[0]?.region || 'Lagos'}`,
         });
       } catch (error) {
         console.log('Error getting location:', error);

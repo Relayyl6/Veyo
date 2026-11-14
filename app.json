@@ -6,7 +6,9 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/47404736-c1af-4fb0-9349-f6465dcd0699"
+      "url": "https://u.expo.dev/47404736-c1af-4fb0-9349-f6465dcd0699",
+      "fallbackToCacheTimeout": 10000,
+      "checkAutomatically": "ON_LOAD"
     },
     "version": "1.0.0",
     "scheme": "veyo",
@@ -24,7 +26,9 @@
       "@clerk/expo",
       "expo-secure-store",
       "expo-web-browser",
-      ["./plugins/withOptionalARCore"]
+      [
+        "./plugins/withOptionalARCore"
+      ]
     ],
     "extra": {
       "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_Y29ycmVjdC1jb2xsaWUtNDg2Ni5jbGVyay5hY2NvdW50cy5kZXYk",
