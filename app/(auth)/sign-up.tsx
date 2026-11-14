@@ -375,18 +375,9 @@ const SignUp = () => {
             if (signUp.createdSessionId && setActive) {
               await setActive({ session: signUp.createdSessionId });
             }
-            const finalizeResult = await signUp.finalize({
-              navigate: ({ decorateUrl }) => {
-                router.replace(decorateUrl('/(root)/(tabs)/home') as Href);
-              },
-            });
-
-            if (finalizeResult?.error) {
-              console.error('Finalize warning, navigating directly:', finalizeResult.error);
-              router.replace('/(root)/(tabs)/home');
-            }
+            router.replace('/(root)/(tabs)/home');
           } catch (e) {
-            console.error('Finalize catch, navigating directly:', e);
+            console.error('Session catch, navigating directly:', e);
             router.replace('/(root)/(tabs)/home');
           }
         }, 1500);
@@ -400,7 +391,7 @@ const SignUp = () => {
   };
 
   const handleStartOver = () => {
-    signUp?.reset();
+    signUp?.reset?.();
     setShowVerification(false);
     setCode('');
     setFieldErrors({});

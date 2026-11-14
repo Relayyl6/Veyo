@@ -1,20 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  Image, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
   Dimensions,
   StyleSheet,
-  LayoutAnimation,
   FlatList,
   Platform,
   UIManager,
-  ActivityIndicator,
+  LayoutAnimation,
 } from 'react-native';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { RADIUS, SPACING } from '@/constants/designTokens';
 import { dbContent, AiPredictionRecord } from '@/lib/db';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -27,7 +25,7 @@ const DEFAULT_PREDICTIONS: AiPredictionRecord[] = [
     title: 'Shawarma order?',
     subtitle: 'Usually ordered at 8 PM',
     tag: 'AI PREDICTION',
-    image_url: 'https://images.unsplash.com/photo-1529006557810-274b9b2fc783?q=80&w=600&auto=format&fit=crop',
+    image_url: 'https://images.unsplash.com/photo-1529006557810-274b9b2fc783?q=80&w=800&auto=format&fit=crop',
     route: '/(root)/(tabs)/explore',
     display_order: 1,
   },
@@ -36,7 +34,7 @@ const DEFAULT_PREDICTIONS: AiPredictionRecord[] = [
     title: 'Late night pizza?',
     subtitle: 'Usually ordered at 11 PM',
     tag: 'AI PREDICTION',
-    image_url: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=600&auto=format&fit=crop',
+    image_url: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=800&auto=format&fit=crop',
     route: '/(root)/(tabs)/explore',
     display_order: 2,
   },
@@ -45,7 +43,7 @@ const DEFAULT_PREDICTIONS: AiPredictionRecord[] = [
     title: 'Morning coffee run?',
     subtitle: 'Usually ordered at 7:30 AM',
     tag: 'AI PREDICTION',
-    image_url: 'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=80&w=600&auto=format&fit=crop',
+    image_url: 'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=80&w=800&auto=format&fit=crop',
     route: '/(root)/(tabs)/explore',
     display_order: 3,
   },
@@ -57,18 +55,11 @@ export const AIPredictionList = () => {
 
   useEffect(() => {
     let isMounted = true;
-    async function loadPredictions() {
-      try {
-        const data = await dbContent.getAiPredictions();
-        if (isMounted && data && data.length > 0) {
-          setPredictions(data);
-        }
-      } catch (err) {
-        console.error('Failed to load AI predictions from database:', err);
+    dbContent.getAiPredictions().then((data) => {
+      if (isMounted && data && data.length > 0) {
+        setPredictions(data);
       }
-    }
-
-    loadPredictions();
+    });
     return () => {
       isMounted = false;
     };
@@ -76,53 +67,50 @@ export const AIPredictionList = () => {
 
   const renderCard = ({ item }: { item: AiPredictionRecord }) => (
     <TouchableOpacity
-      activeOpacity={0.88}
+      activeOpacity={0.9}
       onPress={() => router.push(item.route as any)}
-      style={styles.aiCard}
+      style={styles.cardContainer}
     >
       {/* Background Image */}
-      <Image 
-        source={{ uri: item.image_url }} 
-        style={styles.cardImage}
+      <Image
+        source={{ uri: item.image_url }}
+        style={styles.cardCoverImage}
         resizeMode="cover"
       />
-      {/* Gradient Dark Overlay */}
+
+      {/* Bottom Gradient / Dark Glass Overlay */}
       <View style={styles.cardOverlay}>
-        {/* Tag */}
         <View style={styles.tagBadge}>
-          <Text style={styles.tagText}>{item.tag}</Text>
+          <Text style={styles.tagText}>{item.tag || 'AI PREDICTION'}</Text>
         </View>
 
-        <View style={styles.cardFooter}>
-          <View style={styles.cardTextCol}>
-            <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
-            <Text style={styles.cardSubtitle} numberOfLines={1}>{item.subtitle}</Text>
+        <View style={styles.bottomRow}>
+          <View style={styles.textColumn}>
+            <Text style={styles.cardTitle}>{item.title}</Text>
+            <Text style={styles.cardSubtitle}>{item.subtitle}</Text>
           </View>
 
-          {/* Action Button */}
-          <View style={styles.cartBtn}>
-            <Ionicons name="cart" size={13} color="#FFFFFF" />
-          </View>
+          <TouchableOpacity
+            style={styles.cartButton}
+            onPress={() => router.push(item.route as any)}
+            activeOpacity={0.8}
+          >
+            <FontAwesome5 name="shopping-cart" size={15} color="#FFFFFF" />
+          </TouchableOpacity>
         </View>
       </View>
     </TouchableOpacity>
   );
 
-  if (predictions.length === 0) {
-    return null;
-  }
-
   return (
     <View style={styles.listWrapper}>
-      <FlatList 
+      <FlatList
         data={predictions}
-        renderItem={renderCard}
         keyExtractor={(item) => item.id}
+        renderItem={renderCard}
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 2 }}
-        snapToInterval={216}
-        decelerationRate="fast"
+        contentContainerStyle={{ paddingVertical: 4 }}
       />
     </View>
   );
@@ -133,47 +121,48 @@ export const WeatherCard = () => {
     <View style={styles.weatherCard}>
       <View style={styles.weatherLeft}>
         <View style={styles.weatherIconCircle}>
-          <Ionicons name="partly-sunny-outline" size={16} color="#0286FF" />
+          <Ionicons name="partly-sunny" size={24} color="#0286FF" />
         </View>
         <View>
           <Text style={styles.weatherTitle}>Cloudy 29°C</Text>
-          <Text style={styles.weatherSubtitle}>Perfect weather for travel</Text>
+          <Text style={styles.weatherSubtitle}>Perfect for a walk</Text>
         </View>
       </View>
 
-      <Ionicons name="chevron-forward" size={14} color="#9CA3AF" />
+      {/* Traffic Light Status Pill */}
+      <View style={styles.trafficLightPill}>
+        <FontAwesome5 name="traffic-light" size={18} color="#EF4444" />
+      </View>
     </View>
   );
 };
 
 export const TrafficDigestCard = () => {
-  const [isExpanded, setIsExpanded] = useState(false);
   const router = useRouter();
+  const [isExpanded, setIsExpanded] = useState(false);
 
-  const toggle = () => {
+  const toggleExpand = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setIsExpanded(!isExpanded);
   };
 
   return (
     <TouchableOpacity
-      activeOpacity={0.9}
-      onPress={toggle}
+      activeOpacity={0.88}
+      onPress={toggleExpand}
       style={styles.trafficBanner}
     >
       <View style={styles.trafficHeaderRow}>
         <View style={styles.trafficIconBox}>
-          <FontAwesome5 name="traffic-light" size={14} color="#DC2626" />
+          <FontAwesome5 name="car-crash" size={15} color="#DC2626" />
         </View>
-
         <View style={styles.trafficHeaderTextCol}>
-          <Text style={styles.trafficTitle}>Traffic Alert: Third Mainland Bridge</Text>
-          <Text style={styles.trafficSub}>Congestion reported • Heavy delay expected</Text>
+          <Text style={styles.trafficTitle}>Heavy Traffic on Third Mainland Bridge</Text>
+          <Text style={styles.trafficSub}>Accident reported 12 mins ago</Text>
         </View>
-
         <Ionicons
           name={isExpanded ? 'chevron-up' : 'chevron-down'}
-          size={14}
+          size={16}
           color="#6B7280"
         />
       </View>
@@ -195,9 +184,6 @@ export const TrafficDigestCard = () => {
   );
 };
 
-// ==========================================
-// MAIN SCREEN WRAPPER
-// ==========================================
 export default function VeyoInsightsScreen() {
   return (
     <View style={styles.container}>
@@ -211,21 +197,26 @@ export default function VeyoInsightsScreen() {
 const styles = StyleSheet.create({
   container: {
     marginVertical: 4,
-    gap: 8,
+    gap: 12,
   },
   listWrapper: {
-    marginBottom: 2,
+    marginBottom: 4,
   },
-  aiCard: {
-    width: 206,
-    height: 114,
-    borderRadius: RADIUS.cardCompact,
+  cardContainer: {
+    width: 295,
+    height: 200,
+    borderRadius: 24,
     overflow: 'hidden',
-    marginRight: 10,
+    marginRight: 14,
     position: 'relative',
     backgroundColor: '#1E293B',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  cardImage: {
+  cardCoverImage: {
     ...StyleSheet.absoluteFillObject,
     width: '100%',
     height: '100%',
@@ -235,59 +226,59 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: '56%',
-    backgroundColor: 'rgba(11, 21, 40, 0.72)',
+    height: '62%',
+    backgroundColor: 'rgba(10, 16, 28, 0.76)',
     justifyContent: 'flex-end',
-    padding: 8,
+    padding: 14,
   },
   tagBadge: {
     backgroundColor: '#EA580C',
     alignSelf: 'flex-start',
-    paddingHorizontal: 5,
-    paddingVertical: 1.5,
-    borderRadius: 4,
-    marginBottom: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginBottom: 6,
   },
   tagText: {
     color: '#FFFFFF',
-    fontSize: 8,
+    fontSize: 9.5,
     fontFamily: 'JakartaBold',
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
   },
-  cardFooter: {
+  bottomRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  cardTextCol: {
+  textColumn: {
     flex: 1,
-    marginRight: 6,
+    marginRight: 10,
   },
   cardTitle: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 20,
     fontFamily: 'JakartaBold',
-    lineHeight: 14,
+    lineHeight: 24,
   },
   cardSubtitle: {
     color: '#CBD5E1',
-    fontSize: 9,
+    fontSize: 12.5,
     fontFamily: 'JakartaMedium',
-    marginTop: 1,
+    marginTop: 2,
   },
-  cartBtn: {
+  cartButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.22)',
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
   },
   weatherCard: {
     backgroundColor: '#F0F7FF',
-    borderRadius: RADIUS.cardCompact,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
+    borderRadius: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -297,36 +288,50 @@ const styles = StyleSheet.create({
   weatherLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
   },
   weatherIconCircle: {
     backgroundColor: '#DBEAFE',
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
   },
   weatherTitle: {
-    fontSize: 11,
+    fontSize: 15,
     fontFamily: 'JakartaBold',
     color: '#0B1528',
   },
   weatherSubtitle: {
-    fontSize: 9.5,
+    fontSize: 12,
     fontFamily: 'JakartaMedium',
     color: '#64748B',
+    marginTop: 2,
+  },
+  trafficLightPill: {
+    backgroundColor: '#FFFFFF',
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1.5 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
   },
   trafficBanner: {
     backgroundColor: '#FFFFFF',
-    borderRadius: RADIUS.cardCompact,
-    padding: 10,
+    borderRadius: 18,
+    padding: 14,
     borderWidth: 1,
     borderColor: '#FEE2E2',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
-    shadowRadius: 2,
+    shadowRadius: 3,
     elevation: 1,
   },
   trafficHeaderRow: {
@@ -336,51 +341,51 @@ const styles = StyleSheet.create({
   },
   trafficIconBox: {
     backgroundColor: '#FEF2F2',
-    width: 28,
-    height: 28,
-    borderRadius: 8,
+    width: 34,
+    height: 34,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 8,
+    marginRight: 10,
   },
   trafficHeaderTextCol: {
     flex: 1,
-    marginRight: 6,
+    marginRight: 8,
   },
   trafficTitle: {
-    fontSize: 11.5,
+    fontSize: 13,
     fontFamily: 'JakartaBold',
     color: '#991B1B',
   },
   trafficSub: {
-    fontSize: 9.5,
+    fontSize: 11,
     fontFamily: 'JakartaMedium',
     color: '#6B7280',
-    marginTop: 1,
+    marginTop: 2,
   },
   trafficExpandedBody: {
-    marginTop: 8,
-    paddingTop: 8,
+    marginTop: 10,
+    paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: '#FEE2E2',
   },
   trafficDesc: {
-    fontSize: 10.5,
+    fontSize: 12,
     fontFamily: 'JakartaMedium',
     color: '#4B5563',
-    lineHeight: 15,
-    marginBottom: 8,
+    lineHeight: 17,
+    marginBottom: 10,
   },
   rerouteBtn: {
     backgroundColor: '#0286FF',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 10,
     alignItems: 'center',
   },
   rerouteBtnText: {
     color: '#FFFFFF',
     fontFamily: 'JakartaBold',
-    fontSize: 11,
+    fontSize: 12,
   },
 });

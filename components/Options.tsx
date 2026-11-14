@@ -1,316 +1,282 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
-  Text,
   Image,
   Animated,
   Dimensions,
+  Text,
   StyleSheet,
+  Platform,
+  UIManager,
 } from 'react-native';
-import { Ionicons, FontAwesome5, Feather } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { images } from '@/constants/utils';
 import { PressableHybrid } from './CustomPressable';
-import { RADIUS, SPACING } from '@/constants/designTokens';
-import { dbContent, ServiceOptionRecord } from '@/lib/db';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const GRID_PADDING = SPACING.screen * 2; // 32px (16 on each side)
-const GAP = 10;
+const GRID_PADDING = 32; // 16px each side
+const GAP = 12;
 const TOTAL = SCREEN_WIDTH - GRID_PADDING - GAP;
 
-// Width ratios: 32% square, 68% rectangle (accounting for gap)
+// Width ratios: 32% square, 68% rectangle
 const SQ_W = TOTAL * 0.32;
 const REC_W = TOTAL * 0.68;
 
-interface GridItem {
-  id: string;
-  type: 'square' | 'rectangle';
-  title: string;
-  subtitle?: string | null;
-  iconName?: string | null;
-  iconType?: 'ion' | 'fa5' | 'feather' | null;
-  iconColor?: string | null;
-  iconBg?: string | null;
-  bgColor?: string;
-  localImage?: any;
-  route: string;
-  imageOrder?: 'before' | 'after';
-  imageClass?: object;
-}
+// ─── DATA DEFINITIONS ────────────────────────────────────────────────────────
 
-const DEFAULT_FUNCTIONAL_GRID: GridItem[] = [
+const layoutStates = [
   {
-    id: 'srv-func-1',
-    type: 'square',
-    title: 'New Trip',
-    iconName: 'location',
-    iconType: 'ion',
-    iconColor: '#EA4335',
-    iconBg: '#FEE2E2',
-    bgColor: '#FFFFFF',
-    route: '/(utils)/book-ride',
+    id: 'functional',
+    grid: [
+      {
+        id: 'func-item-1',
+        type: 'square' as const,
+        title: 'New Trip',
+        iconName: 'location' as const,
+        iconColor: '#EA4335',
+        bgColor: '#FFFFFF',
+        route: '/(utils)/book-ride',
+      },
+      {
+        id: 'func-item-2',
+        type: 'rectangle' as const,
+        title: 'Scooter',
+        subtitle: 'One Order,\nTakes Minutes',
+        imageUrl: 'https://freepngimg.com/thumb/vehicle/69037-scooter-two-wheeler-kick-vehicle-free-download-png-hd.png',
+        bgColor: '#FCD34D',
+        textWrapperStyle: { zIndex: 10, alignItems: 'flex-start' as const },
+        textAlignStyle: { textAlign: 'left' as const },
+        imageStyle: { position: 'absolute' as const, bottom: -8, right: -4, width: 110, height: 110 },
+        imageOrder: 'after' as const,
+        route: '/(utils)/send-items',
+      },
+      {
+        id: 'func-item-3',
+        type: 'rectangle' as const,
+        title: 'Send & Schedule',
+        subtitle: 'Plan\nyour deliveries',
+        imageUrl: 'https://freepngimg.com/thumb/gift/8-gift-box-png-image.png',
+        bgColor: '#86EFAC',
+        textWrapperStyle: { zIndex: 10, alignItems: 'flex-end' as const, width: '100%' as const },
+        textAlignStyle: { textAlign: 'right' as const },
+        imageStyle: { position: 'absolute' as const, bottom: -6, left: -16, width: 120, height: 120 },
+        imageOrder: 'before' as const,
+        route: '/(utils)/send-items',
+      },
+      {
+        id: 'func-item-4',
+        type: 'square' as const,
+        title: 'Office',
+        iconName: 'briefcase' as const,
+        iconColor: '#064E3B',
+        bgColor: '#FFFFFF',
+        route: '/(utils)/book-ride',
+      },
+    ],
   },
   {
-    id: 'srv-func-2',
-    type: 'rectangle',
-    title: 'Swift Delivery',
-    subtitle: 'Takes minutes\nto your door',
-    iconName: 'motorcycle',
-    iconType: 'fa5',
-    iconColor: '#B45309',
-    iconBg: '#FDE68A',
-    bgColor: '#FEF3C7',
-    route: '/(utils)/send-items',
-    imageOrder: 'after',
-  },
-  {
-    id: 'srv-func-3',
-    type: 'rectangle',
-    title: 'Send Packages',
-    subtitle: 'Same-day on-demand\nlogistics',
-    iconName: 'package',
-    iconType: 'feather',
-    iconColor: '#047857',
-    iconBg: '#BBF7D0',
-    bgColor: '#DCFCE7',
-    route: '/(utils)/send-items',
-    imageOrder: 'before',
-  },
-  {
-    id: 'srv-func-4',
-    type: 'square',
-    title: 'Work / Office',
-    iconName: 'briefcase',
-    iconType: 'ion',
-    iconColor: '#0286FF',
-    iconBg: '#EBF4FF',
-    bgColor: '#FFFFFF',
-    route: '/(utils)/book-ride',
+    id: 'leisure',
+    grid: [
+      {
+        id: 'leis-item-1',
+        type: 'rectangle' as const,
+        title: 'Roadtrips',
+        subtitle: 'Rent SUVs\n& explore',
+        imageUrl: 'https://freepngimg.com/thumb/vehicle/93770-renegade-tire-jeep-automotive-2018-exterior.png',
+        bgColor: '#BFDBFE',
+        textWrapperStyle: { zIndex: 10, alignItems: 'flex-start' as const },
+        textAlignStyle: { textAlign: 'left' as const },
+        imageStyle: { position: 'absolute' as const, bottom: -20, right: -16, width: 150, height: 150, borderRadius: 75 },
+        imageOrder: 'after' as const,
+        route: '/(utils)/book-ride',
+      },
+      {
+        id: 'leis-item-2',
+        type: 'square' as const,
+        title: 'Dine In',
+        iconName: 'restaurant' as const,
+        iconColor: '#D97706',
+        bgColor: '#FFFFFF',
+        route: '/(root)/(tabs)/explore',
+      },
+      {
+        id: 'leis-item-3',
+        type: 'square' as const,
+        title: 'Grocery',
+        iconName: 'basket' as const,
+        iconColor: '#047857',
+        bgColor: '#FFFFFF',
+        route: '/(root)/(tabs)/explore',
+      },
+      {
+        id: 'leis-item-4',
+        type: 'rectangle' as const,
+        title: 'Nightlife',
+        subtitle: 'Discover events\naround you',
+        imageUrl: null,
+        localImage: images.drinks,
+        bgColor: '#E9D5FF',
+        textWrapperStyle: { zIndex: 10, alignItems: 'flex-end' as const, width: '100%' as const },
+        textAlignStyle: { textAlign: 'right' as const },
+        imageStyle: { position: 'absolute' as const, bottom: -12, left: -12, width: 140, height: 140 },
+        imageOrder: 'before' as const,
+        route: '/(root)/(tabs)/explore',
+      },
+    ],
   },
 ];
 
-const DEFAULT_LEISURE_GRID: GridItem[] = [
-  {
-    id: 'srv-leis-1',
-    type: 'rectangle',
-    title: 'Roadtrips',
-    subtitle: 'Rent SUVs\n& explore cities',
-    iconName: 'car-sport',
-    iconType: 'ion',
-    iconColor: '#0286FF',
-    iconBg: '#BAE6FD',
-    bgColor: '#E0F2FE',
-    route: '/(utils)/book-ride',
-    imageOrder: 'after',
-    localImage: images.signUpCar,
-    imageClass: { position: 'absolute', bottom: -6, right: -8, width: 80, height: 58 },
-  },
-  {
-    id: 'srv-leis-2',
-    type: 'square',
-    title: 'Dine In',
-    iconName: 'restaurant',
-    iconType: 'ion',
-    iconColor: '#D97706',
-    iconBg: '#FEF3C7',
-    bgColor: '#FFFFFF',
-    route: '/(root)/(tabs)/explore',
-  },
-  {
-    id: 'srv-leis-3',
-    type: 'square',
-    title: 'Grocery',
-    iconName: 'basket',
-    iconType: 'ion',
-    iconColor: '#047857',
-    iconBg: '#D1FAE5',
-    bgColor: '#FFFFFF',
-    route: '/(root)/(tabs)/explore',
-  },
-  {
-    id: 'srv-leis-4',
-    type: 'rectangle',
-    title: 'Nightlife',
-    subtitle: 'Discover events\naround you',
-    iconName: 'beer',
-    iconType: 'ion',
-    iconColor: '#7C3AED',
-    iconBg: '#E9D5FF',
-    bgColor: '#F3E8FF',
-    route: '/(root)/(tabs)/explore',
-    imageOrder: 'before',
-    localImage: images.drinks,
-    imageClass: { position: 'absolute', bottom: -6, left: -4, width: 72, height: 72 },
-  },
-];
-
-const DEFAULT_STATES = [
-  { id: 'functional', grid: DEFAULT_FUNCTIONAL_GRID },
-  { id: 'leisure', grid: DEFAULT_LEISURE_GRID },
-];
-
+type Phase = 'idle' | 'typing_out' | 'morphing' | 'typing_in';
 const MORPH_INTERVAL_MS = 10000;
 
-interface AnimatedCardProps {
-  item: GridItem;
+// ─── CARD COMPONENT ──────────────────────────────────────────────────────────
+
+interface CardProps {
+  item: any;
   targetWidth: number;
+  phase: Phase;
   morphDelay: number;
 }
 
-const AnimatedCard = ({ item, targetWidth, morphDelay }: AnimatedCardProps) => {
+const AnimatedCard = ({ item, targetWidth, phase, morphDelay }: CardProps) => {
   const router = useRouter();
   const animWidth = useRef(new Animated.Value(targetWidth)).current;
+  const imageOpacity = useRef(new Animated.Value(1)).current;
+  const textOpacity = useRef(new Animated.Value(1)).current;
+  const prevWidth = useRef(targetWidth);
 
+  // Staggered width spring animation
   useEffect(() => {
-    Animated.spring(animWidth, {
-      toValue: targetWidth,
-      delay: morphDelay,
-      useNativeDriver: false,
-      tension: 50,
-      friction: 8,
-    }).start();
+    const isExpanding = targetWidth > prevWidth.current;
+    const timer = setTimeout(() => {
+      Animated.spring(animWidth, {
+        toValue: targetWidth,
+        tension: isExpanding ? 50 : 65,
+        friction: isExpanding ? 8 : 10,
+        useNativeDriver: false,
+      }).start();
+      prevWidth.current = targetWidth;
+    }, morphDelay);
+
+    return () => clearTimeout(timer);
   }, [targetWidth, morphDelay]);
+
+  // Text & image fade transitions
+  useEffect(() => {
+    if (phase === 'typing_out') {
+      Animated.parallel([
+        Animated.timing(textOpacity, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.timing(imageOpacity, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else if (phase === 'typing_in') {
+      Animated.parallel([
+        Animated.timing(textOpacity, {
+          toValue: 1,
+          duration: 350,
+          useNativeDriver: true,
+        }),
+        Animated.timing(imageOpacity, {
+          toValue: 1,
+          duration: 350,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else if (phase === 'idle') {
+      textOpacity.setValue(1);
+      imageOpacity.setValue(1);
+    }
+  }, [phase]);
 
   const isSquare = item.type === 'square';
 
   return (
     <Animated.View
       style={[
-        styles.cardOuter,
+        styles.cardContainer,
         {
           width: animWidth,
-          borderRadius: RADIUS.cardCompact,
+          backgroundColor: item.bgColor || '#FFFFFF',
         },
       ]}
     >
       <PressableHybrid
-        style={[
-          styles.cardInner,
-          { backgroundColor: item.bgColor || '#FFFFFF' },
-        ]}
-        onPress={() => router.push(item.route as any)}
+        style={styles.cardPressable}
+        onPress={() => router.push(item.route)}
       >
-        {isSquare ? (
-          /* Square Layout */
+        {/* SQUARE CARD LAYOUT */}
+        {isSquare && (
           <View style={styles.squareContent}>
-            <View
-              style={[
-                styles.squareIconBox,
-                { backgroundColor: item.iconBg || '#F3F4F6' },
-              ]}
-            >
-              {item.iconType === 'fa5' ? (
-                <FontAwesome5 name={item.iconName as any} size={15} color={item.iconColor || '#333'} />
-              ) : item.iconType === 'feather' ? (
-                <Feather name={item.iconName as any} size={16} color={item.iconColor || '#333'} />
-              ) : (
-                <Ionicons name={(item.iconName as any) || 'ellipse'} size={18} color={item.iconColor || '#333'} />
-              )}
-            </View>
-            <Text
-              style={styles.squareTitle}
-              numberOfLines={1}
+            <Animated.View style={{ opacity: imageOpacity }}>
+              <Ionicons
+                name={item.iconName}
+                size={34}
+                color={item.iconColor}
+              />
+            </Animated.View>
+            <Animated.Text
+              style={[styles.squareTitle, { opacity: textOpacity }]}
+              numberOfLines={2}
             >
               {item.title}
-            </Text>
+            </Animated.Text>
           </View>
-        ) : (
-          /* Rectangle Layout */
+        )}
+
+        {/* RECTANGLE CARD LAYOUT */}
+        {!isSquare && (
           <View style={styles.rectContent}>
-            {/* Leading element if imageOrder === 'before' */}
             {item.imageOrder === 'before' && (
-              item.localImage ? (
-                <Image
-                  source={item.localImage}
-                  style={item.imageClass as any}
-                  resizeMode="contain"
-                />
-              ) : (
-                <View
-                  style={[
-                    styles.rectIconBox,
-                    { backgroundColor: item.iconBg || '#E0E7FF' },
-                  ]}
-                >
-                  {item.iconType === 'fa5' ? (
-                    <FontAwesome5 name={item.iconName as any} size={16} color={item.iconColor || '#0286FF'} />
-                  ) : item.iconType === 'ion' ? (
-                    <Ionicons name={item.iconName as any} size={18} color={item.iconColor || '#0286FF'} />
-                  ) : (
-                    <Feather name={(item.iconName as any) || 'package'} size={18} color={item.iconColor || '#0286FF'} />
-                  )}
-                </View>
-              )
+              <Animated.Image
+                source={item.localImage ? item.localImage : { uri: item.imageUrl }}
+                style={[item.imageStyle, { opacity: imageOpacity }]}
+                resizeMode="contain"
+              />
             )}
 
-            {/* Middle text column */}
-            <View
+            <Animated.View
               style={[
-                styles.rectTextCol,
-                item.imageOrder === 'before'
-                  ? { alignItems: 'flex-end', paddingLeft: 46 }
-                  : { alignItems: 'flex-start', paddingRight: 46 },
+                styles.rectTextContainer,
+                item.textWrapperStyle,
+                { opacity: textOpacity },
               ]}
             >
               <Text
                 style={[
                   styles.rectTitle,
-                  item.imageOrder === 'before' ? { textAlign: 'right' } : { textAlign: 'left' },
+                  item.textAlignStyle,
                 ]}
-                numberOfLines={1}
               >
                 {item.title}
               </Text>
-              {item.subtitle ? (
-                <Text
-                  style={[
-                    styles.rectSubtitle,
-                    item.imageOrder === 'before' ? { textAlign: 'right' } : { textAlign: 'left' },
-                  ]}
-                  numberOfLines={2}
-                >
-                  {item.subtitle}
-                </Text>
-              ) : null}
-            </View>
+              <Text
+                style={[
+                  styles.rectSubtitle,
+                  item.textAlignStyle,
+                ]}
+              >
+                {item.subtitle}
+              </Text>
+            </Animated.View>
 
-            {/* Trailing element if imageOrder === 'after' */}
             {item.imageOrder === 'after' && (
-              item.localImage ? (
-                <Image
-                  source={item.localImage}
-                  style={item.imageClass as any}
-                  resizeMode="contain"
-                />
-              ) : (
-                <View
-                  style={[
-                    styles.rectIconBox,
-                    { backgroundColor: item.iconBg || '#FEF3C7' },
-                  ]}
-                >
-                  {item.iconType === 'fa5' ? (
-                    <FontAwesome5
-                      name={(item.iconName as any) || 'motorcycle'}
-                      size={17}
-                      color={item.iconColor || '#B45309'}
-                    />
-                  ) : item.iconType === 'ion' ? (
-                    <Ionicons
-                      name={(item.iconName as any) || 'car-sport'}
-                      size={18}
-                      color={item.iconColor || '#0286FF'}
-                    />
-                  ) : (
-                    <Feather
-                      name={(item.iconName as any) || 'package'}
-                      size={17}
-                      color={item.iconColor || '#0286FF'}
-                    />
-                  )}
-                </View>
-              )
+              <Animated.Image
+                source={item.localImage ? item.localImage : { uri: item.imageUrl }}
+                style={[item.imageStyle, { opacity: imageOpacity }]}
+                resizeMode="contain"
+              />
             )}
           </View>
         )}
@@ -319,195 +285,155 @@ const AnimatedCard = ({ item, targetWidth, morphDelay }: AnimatedCardProps) => {
   );
 };
 
-const ServiceGrid = () => {
-  const [dbGrids, setDbGrids] = useState<{ id: string; grid: GridItem[] }[]>(DEFAULT_STATES);
+// ─── MAIN SERVICE GRID ───────────────────────────────────────────────────────
+
+export default function ServiceGrid() {
   const [stateIndex, setStateIndex] = useState(0);
+  const [phase, setPhase] = useState<Phase>('idle');
+  const phaseRef = useRef<Phase>('idle');
 
-  useEffect(() => {
-    let isMounted = true;
-    async function fetchServicesFromDb() {
-      try {
-        const rows: ServiceOptionRecord[] = await dbContent.getServiceOptions();
-        if (!isMounted || !rows || rows.length === 0) return;
+  const setPhaseSync = (p: Phase) => {
+    phaseRef.current = p;
+    setPhase(p);
+  };
 
-        const functionalRows = rows.filter((r) => r.state_id === 'functional');
-        const leisureRows = rows.filter((r) => r.state_id === 'leisure');
-
-        const mapToGridItem = (r: ServiceOptionRecord): GridItem => {
-          let localImg = undefined;
-          let imgClass = undefined;
-          if (r.id === 'srv-leis-1') {
-            localImg = images.signUpCar;
-            imgClass = { position: 'absolute', bottom: -6, right: -8, width: 80, height: 58 };
-          } else if (r.id === 'srv-leis-4') {
-            localImg = images.drinks;
-            imgClass = { position: 'absolute', bottom: -6, left: -4, width: 72, height: 72 };
-          }
-
-          return {
-            id: r.id,
-            type: r.item_type,
-            title: r.title,
-            subtitle: r.subtitle,
-            iconName: r.icon_name,
-            iconType: r.icon_type,
-            iconColor: r.icon_color,
-            iconBg: r.icon_bg,
-            bgColor: r.bg_color || '#FFFFFF',
-            route: r.route,
-            imageOrder: r.image_order || 'after',
-            localImage: localImg,
-            imageClass: imgClass,
-          };
-        };
-
-        const states = [
-          { id: 'functional', grid: functionalRows.map(mapToGridItem) },
-          { id: 'leisure', grid: leisureRows.map(mapToGridItem) },
-        ].filter((s) => s.grid.length >= 4);
-
-        if (states.length > 0 && isMounted) {
-          setDbGrids(states);
-        }
-      } catch (err) {
-        console.error('Failed to load service options from DB:', err);
-      }
-    }
-
-    fetchServicesFromDb();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const currentGrid = layoutStates[stateIndex].grid;
 
   const startTransition = useCallback(() => {
-    if (dbGrids.length > 1) {
-      setStateIndex((prev) => (prev + 1) % dbGrids.length);
-    }
-  }, [dbGrids.length]);
+    if (phaseRef.current !== 'idle') return;
+
+    const nextIdx = (stateIndex + 1) % layoutStates.length;
+    setPhaseSync('typing_out');
+
+    const FADE_OUT_MS = 280;
+    const MORPH_MS = 850;
+
+    setTimeout(() => {
+      setPhaseSync('morphing');
+      setStateIndex(nextIdx);
+
+      setTimeout(() => {
+        setPhaseSync('typing_in');
+
+        setTimeout(() => {
+          setPhaseSync('idle');
+        }, 500);
+      }, MORPH_MS);
+    }, FADE_OUT_MS);
+  }, [stateIndex]);
 
   useEffect(() => {
-    if (dbGrids.length <= 1) return;
-    const interval = setInterval(startTransition, MORPH_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [startTransition, dbGrids.length]);
-
-  const currentGrid = dbGrids[stateIndex]?.grid || dbGrids[0]?.grid;
-  if (!currentGrid || currentGrid.length < 4) return null;
+    const timer = setInterval(startTransition, MORPH_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, [startTransition]);
 
   const targetWidths = currentGrid.map((item) =>
     item.type === 'square' ? SQ_W : REC_W
   );
-  const morphDelays = [0, 60, 60, 0];
+
+  const morphDelays = [0, 80, 80, 0];
 
   return (
-    <View style={styles.gridContainer}>
+    <View style={styles.gridWrapper}>
       {/* ROW 1 */}
       <View style={styles.row}>
-        {[0, 1].map((i) => (
-          <AnimatedCard
-            key={currentGrid[i].id}
-            item={currentGrid[i]}
-            targetWidth={targetWidths[i]}
-            morphDelay={morphDelays[i]}
-          />
-        ))}
+        {[0, 1].map((i) => {
+          const item = currentGrid[i];
+          return (
+            <AnimatedCard
+              key={item.id}
+              item={item}
+              targetWidth={targetWidths[i]}
+              phase={phase}
+              morphDelay={morphDelays[i]}
+            />
+          );
+        })}
       </View>
 
       {/* ROW 2 */}
       <View style={styles.row}>
-        {[2, 3].map((i) => (
-          <AnimatedCard
-            key={currentGrid[i].id}
-            item={currentGrid[i]}
-            targetWidth={targetWidths[i]}
-            morphDelay={morphDelays[i]}
-          />
-        ))}
+        {[2, 3].map((i) => {
+          const item = currentGrid[i];
+          return (
+            <AnimatedCard
+              key={item.id}
+              item={item}
+              targetWidth={targetWidths[i]}
+              phase={phase}
+              morphDelay={morphDelays[i]}
+            />
+          );
+        })}
       </View>
     </View>
   );
-};
+}
 
-export default ServiceGrid;
+// ─── STYLES ──────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  gridContainer: {
+  gridWrapper: {
     marginVertical: 4,
-    gap: GAP,
   },
   row: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: GAP,
-    height: 86,
+    height: 144,
+    marginBottom: 14,
   },
-  cardOuter: {
-    height: '100%',
+  cardContainer: {
+    height: 144,
+    borderRadius: 24,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1.5 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.04)',
   },
-  cardInner: {
+  cardPressable: {
     flex: 1,
-    padding: 10,
+    padding: 16,
     justifyContent: 'center',
-    overflow: 'hidden',
     position: 'relative',
+    overflow: 'hidden',
   },
   squareContent: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  squareIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   squareTitle: {
-    marginTop: 4,
-    fontSize: 11,
+    fontSize: 14,
     fontFamily: 'JakartaBold',
     color: '#111827',
+    marginTop: 10,
     textAlign: 'center',
+    lineHeight: 18,
   },
   rectContent: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  rectIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
   },
-  rectTextCol: {
-    flex: 1,
+  rectTextContainer: {
     zIndex: 10,
-    justifyContent: 'center',
   },
   rectTitle: {
-    fontSize: 13,
+    fontSize: 21,
     fontFamily: 'JakartaBold',
-    color: '#0B1528',
-    lineHeight: 16,
+    color: '#000000',
+    letterSpacing: -0.4,
   },
   rectSubtitle: {
-    fontSize: 10,
+    fontSize: 12.5,
     fontFamily: 'JakartaMedium',
-    color: '#4B5563',
-    marginTop: 2,
-    lineHeight: 13,
+    color: 'rgba(0, 0, 0, 0.65)',
+    marginTop: 3,
+    lineHeight: 16,
   },
 });

@@ -1,83 +1,85 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, Image, FlatList, TouchableOpacity, Dimensions, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  Image,
+  FlatList,
+  TouchableOpacity,
+  Dimensions,
+  StyleSheet,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { RADIUS, SPACING } from '@/constants/designTokens';
 import { dbContent, AdvertRecord } from '@/lib/db';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_WIDTH = SCREEN_WIDTH - (SPACING.screen * 2);
+const CARD_WIDTH = SCREEN_WIDTH - 32;
 
 const DEFAULT_ADVERTS: AdvertRecord[] = [
   {
     id: 'adv-001',
-    title: '60% Off Meals',
-    subtitle: 'Weekend special deals from local chefs',
+    title: 'Midnight?',
+    subtitle: 'Hot pizza to your hostel',
     cta_text: 'Order Food',
     route: '/(root)/(tabs)/explore',
-    image_url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=600&auto=format&fit=crop',
-    gradient_start: '#1E1B4B',
-    gradient_end: '#0F172A',
-    cta_bg: '#F97316',
+    image_url: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=600&auto=format&fit=crop',
+    gradient_start: '#1A1A1A',
+    gradient_end: '#0A0A0A',
+    cta_bg: '#10B981',
     display_order: 1,
   },
   {
     id: 'adv-002',
-    title: 'First Ride Free',
-    subtitle: 'Comfort rides with top rated drivers',
-    cta_text: 'Book Ride',
-    route: '/(utils)/book-ride',
-    image_url: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?q=80&w=600&auto=format&fit=crop',
-    gradient_start: '#0B1528',
-    gradient_end: '#1E3A8A',
-    cta_bg: '#0286FF',
+    title: '60% Off',
+    subtitle: 'Weekend Special Deal',
+    cta_text: 'Order Now',
+    route: '/(root)/(tabs)/explore',
+    image_url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=600&auto=format&fit=crop',
+    gradient_start: '#1A1828',
+    gradient_end: '#0F0E1A',
+    cta_bg: '#F97316',
     display_order: 2,
   },
   {
     id: 'adv-003',
-    title: 'Midnight Cravings?',
-    subtitle: 'Hot pizza & shawarma delivered to your door',
-    cta_text: 'Order Now',
-    route: '/(root)/(tabs)/explore',
-    image_url: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=600&auto=format&fit=crop',
-    gradient_start: '#31111D',
-    gradient_end: '#1A0B10',
-    cta_bg: '#10B981',
+    title: 'Free Ride',
+    subtitle: 'On your first Veyo trip',
+    cta_text: 'Book Now',
+    route: '/(utils)/book-ride',
+    image_url: 'https://freepngimg.com/thumb/vehicle/93770-renegade-tire-jeep-automotive-2018-exterior.png',
+    gradient_start: '#111A2E',
+    gradient_end: '#0B1220',
+    cta_bg: '#0286FF',
     display_order: 3,
   },
 ];
 
-const AdCarousel = () => {
+export default function AdCarousel() {
   const router = useRouter();
   const [adverts, setAdverts] = useState<AdvertRecord[]>(DEFAULT_ADVERTS);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
-    async function loadAdvertsFromDb() {
-      try {
-        const data = await dbContent.getAdverts();
-        if (isMounted && data && data.length > 0) {
-          setAdverts(data);
-        }
-      } catch (err) {
-        console.error('Failed to load adverts from database:', err);
+    dbContent.getAdverts().then((data) => {
+      if (isMounted && data && data.length > 0) {
+        setAdverts(data);
       }
-    }
-
-    loadAdvertsFromDb();
+    });
     return () => {
       isMounted = false;
     };
   }, []);
 
-  const onViewRef = useRef(({ viewableItems }: { viewableItems: any[] }) => {
-    if (viewableItems.length > 0) {
-      setCurrentIndex(viewableItems[0].index || 0);
+  const onViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: any[] }) => {
+      if (viewableItems && viewableItems.length > 0) {
+        setCurrentIndex(viewableItems[0].index || 0);
+      }
     }
-  });
+  ).current;
 
-  const viewConfigRef = useRef({ viewAreaCoveragePercentThreshold: 50 });
+  const viewConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
 
   return (
     <View style={styles.container}>
@@ -86,22 +88,27 @@ const AdCarousel = () => {
         keyExtractor={(item) => item.id}
         horizontal
         showsHorizontalScrollIndicator={false}
-        snapToInterval={CARD_WIDTH + 10}
+        snapToInterval={CARD_WIDTH + 14}
         snapToAlignment="start"
         decelerationRate="fast"
-        onViewableItemsChanged={onViewRef.current}
-        viewabilityConfig={viewConfigRef.current}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewConfig}
+        contentContainerStyle={{ paddingHorizontal: 0 }}
         renderItem={({ item }) => {
-          const gradientColors = [item.gradient_start || '#0B1528', item.gradient_end || '#1E3A8A'] as [string, string];
+          const colors = [
+            item.gradient_start || '#1A1A1A',
+            item.gradient_end || '#0A0A0A',
+          ] as [string, string];
+
           return (
             <View style={[styles.card, { width: CARD_WIDTH }]}>
               <LinearGradient
-                colors={gradientColors}
+                colors={colors}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={styles.gradient}
+                style={styles.cardGradient}
               >
-                {/* Left Content */}
+                {/* Left Text & CTA */}
                 <View style={styles.textColumn}>
                   <Text style={styles.title} numberOfLines={1}>
                     {item.title}
@@ -112,17 +119,20 @@ const AdCarousel = () => {
                   <TouchableOpacity
                     activeOpacity={0.85}
                     onPress={() => router.push(item.route as any)}
-                    style={[styles.ctaBtn, { backgroundColor: item.cta_bg || '#0286FF' }]}
+                    style={[
+                      styles.ctaButton,
+                      { backgroundColor: item.cta_bg || '#10B981' },
+                    ]}
                   >
                     <Text style={styles.ctaText}>{item.cta_text}</Text>
                   </TouchableOpacity>
                 </View>
 
-                {/* Right Hero Image */}
+                {/* Right Hero Cutout Image */}
                 <Image
                   source={{ uri: item.image_url }}
                   style={styles.heroImage}
-                  resizeMode="cover"
+                  resizeMode="contain"
                 />
               </LinearGradient>
             </View>
@@ -130,15 +140,20 @@ const AdCarousel = () => {
         }}
       />
 
-      {/* Pagination Dots */}
+      {/* Pagination Indicators */}
       {adverts.length > 1 && (
-        <View style={styles.paginationDots}>
-          {adverts.map((_, idx) => (
+        <View style={styles.paginationRow}>
+          {adverts.map((item, idx) => (
             <View
               key={idx}
               style={[
-                styles.dot,
-                idx === currentIndex ? styles.dotActive : styles.dotInactive,
+                styles.dotBase,
+                idx === currentIndex
+                  ? [
+                      styles.dotActive,
+                      { backgroundColor: item.cta_bg || '#0286FF' },
+                    ]
+                  : styles.dotInactive,
               ]}
             />
           ))}
@@ -146,86 +161,91 @@ const AdCarousel = () => {
       )}
     </View>
   );
-};
-
-export default AdCarousel;
+}
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 2,
+    marginVertical: 4,
   },
   card: {
-    height: 118,
-    borderRadius: RADIUS.card,
+    height: 140,
+    borderRadius: 24,
     overflow: 'hidden',
-    marginRight: 10,
+    marginRight: 14,
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
     elevation: 3,
   },
-  gradient: {
+  cardGradient: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     position: 'relative',
+    overflow: 'hidden',
   },
   textColumn: {
-    flex: 1,
+    width: '58%',
     zIndex: 10,
     justifyContent: 'center',
-    paddingRight: 12,
   },
   title: {
-    fontSize: 16,
+    fontSize: 26,
     fontFamily: 'JakartaBold',
     color: '#FFFFFF',
-    letterSpacing: -0.3,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 11,
+    fontSize: 13,
     fontFamily: 'JakartaMedium',
     color: 'rgba(255, 255, 255, 0.85)',
-    marginTop: 3,
-    marginBottom: 8,
-    lineHeight: 15,
+    marginTop: 4,
+    marginBottom: 14,
+    lineHeight: 17,
   },
-  ctaBtn: {
+  ctaButton: {
     alignSelf: 'flex-start',
-    paddingVertical: 5,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 18,
+    borderRadius: 9999,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 2,
   },
   ctaText: {
     fontFamily: 'JakartaBold',
-    fontSize: 11,
+    fontSize: 13,
     color: '#FFFFFF',
   },
   heroImage: {
-    width: 88,
-    height: 88,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    position: 'absolute',
+    right: -16,
+    top: 6,
+    width: 160,
+    height: 140,
+    zIndex: 5,
   },
-  paginationDots: {
+  paginationRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 6,
-    gap: 5,
+    marginTop: 10,
+    gap: 6,
   },
-  dot: {
-    height: 3.5,
-    borderRadius: 2,
+  dotBase: {
+    height: 6,
+    borderRadius: 3,
   },
   dotActive: {
-    width: 14,
-    backgroundColor: '#0286FF',
+    width: 24,
   },
   dotInactive: {
-    width: 5,
+    width: 6,
     backgroundColor: '#D1D5DB',
   },
 });

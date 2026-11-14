@@ -14,11 +14,6 @@ import Svg, {
   Line,
   G,
 } from 'react-native-svg';
-import * as SplashScreen from 'expo-splash-screen';
-
-try {
-  SplashScreen.preventAutoHideAsync().catch(() => {});
-} catch (e) {}
 
 const { width: SW, height: SH } = Dimensions.get('window');
 const CX = SW / 2;
@@ -145,12 +140,7 @@ export default function AnimatedSplashScreen({ onComplete }: { onComplete: () =>
   const cardX = useRef(new Animated.Value(-20)).current;
 
   useEffect(() => {
-    async function init() {
-      try {
-        await SplashScreen.hideAsync();
-      } catch (e) {
-        // Safe catch if native splash already hidden
-      }
+    function init() {
       
       // Sequence timing chains mapping natural UI entry speeds
       Animated.timing(baseOpacity, { toValue: 1, duration: 550, useNativeDriver: true }).start(() => {

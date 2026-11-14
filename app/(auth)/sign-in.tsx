@@ -16,7 +16,7 @@ import InputField from '@/components/InputField';
 import CustomButton from '@/components/CustomButton';
 import { Link, useRouter, type Href } from 'expo-router';
 import OAuth from '@/components/OAuth';
-import { useSignIn } from '@clerk/expo';
+import { useSignIn, useClerk } from '@clerk/expo';
 import { useUserStore, AppUserRole } from '@/store/store';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 
@@ -28,6 +28,7 @@ const PORTAL_ROLES: { id: AppUserRole; label: string; icon: string; iconType: 'i
 
 const SignIn = () => {
   const { signIn, errors, fetchStatus } = useSignIn();
+  const { setActive } = useClerk();
   const router = useRouter();
   const setRole = useUserStore((state) => state.setRole);
 
@@ -132,16 +133,10 @@ const SignIn = () => {
           password: form.password,
           role: selectedRole,
         });
-        await signIn.finalize({
-          navigate: ({ session, decorateUrl }) => {
-            if (session?.currentTask) {
-              console.log('Pending session tasks:', session?.currentTask);
-              return;
-            }
-            const url = decorateUrl('/(root)/(tabs)/home');
-            router.push(url as Href);
-          },
-        });
+        if (signIn.createdSessionId && setActive) {
+          await setActive({ session: signIn.createdSessionId });
+        }
+        router.replace('/(root)/(tabs)/home');
       } else {
         setRole(selectedRole);
         router.replace('/(root)/(tabs)/home');
@@ -153,8 +148,8 @@ const SignIn = () => {
     }
   };
 
-  const emailError = fieldErrors.email || errors.fields.identifier?.message;
-  const passwordError = fieldErrors.password || errors.fields.password?.message;
+  const emailError = fieldErrors.email || errors?.fields?.identifier?.message;
+  const passwordError = fieldErrors.password || errors?.fields?.password?.message;
 
   return (
     <KeyboardAvoidingView

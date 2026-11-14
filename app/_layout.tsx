@@ -1,15 +1,12 @@
 import '../global.css';
 import 'expo-dev-client';
-import { Stack } from 'expo-router';
+import { Stack, SplashScreen } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { useFonts } from 'expo-font';
-import * as SplashScreen from 'expo-splash-screen';
 import AnimatedSplashScreen from '@/components/AnimatedSplashScreen';
 import { ClerkProvider } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
-import { PressablesConfig } from 'pressto';
-import * as Haptics from 'expo-haptics';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Constants from 'expo-constants';
 
@@ -17,6 +14,11 @@ export {
   // Catch any errors thrown by the Layout component.
   ErrorBoundary,
 } from 'expo-router';
+
+// Prevent the splash screen from auto-hiding before asset loading is complete.
+try {
+  SplashScreen.preventAutoHideAsync().catch(() => {});
+} catch (e) {}
 
 export default function RootLayout() {
   const [splashAnimationFinished, setSplashAnimationFinished] = useState(false);
@@ -63,33 +65,13 @@ export default function RootLayout() {
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <PressablesConfig 
-          animationType="spring"
-          animationConfig={{ 
-            damping: 30, 
-            stiffness: 200,
-            mass: 1,
-          }}
-          config={{ 
-            minScale: 0.95,      
-            activeOpacity: 0.6,
-          }}
-          globalHandlers={{
-            onPress: () => {
-              try {
-                Haptics.selectionAsync();
-              } catch (e) {}
-            }, 
-          }}
-        >
-          <StatusBar style="inverted" />
-          <Stack screenOptions={{ animation: 'ios_from_right' }}>
-            <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            <Stack.Screen name="(root)" options={{ headerShown: false }} />
-            <Stack.Screen name="(utils)" options={{ headerShown: false }} />
-          </Stack>
-        </PressablesConfig>
+        <StatusBar style="inverted" />
+        <Stack screenOptions={{ animation: 'ios_from_right' }}>
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          <Stack.Screen name="(root)" options={{ headerShown: false }} />
+          <Stack.Screen name="(utils)" options={{ headerShown: false }} />
+        </Stack>
       </GestureHandlerRootView>
     </ClerkProvider>
   );
