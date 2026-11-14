@@ -108,8 +108,8 @@ export default function BookRideScreen() {
           onPress: () => setChatModalVisible(true),
         },
         {
-          text: 'View on Map',
-          onPress: () => router.push('/(root)/(tabs)/trips'),
+          text: 'Live Map Radar',
+          onPress: () => router.push('/(utils)/map?mode=ride'),
         },
       ]
     );
@@ -148,6 +148,7 @@ export default function BookRideScreen() {
             showRecenterButton={true}
             showDriverCount={true}
             interactive={true}
+            onExpandPress={() => router.push('/(utils)/map?mode=ride')}
           />
 
           <View style={styles.trafficAlertOverlay}>

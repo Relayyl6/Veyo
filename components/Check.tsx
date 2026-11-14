@@ -3,13 +3,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Text, View } from 'react-native';
 import CustomButton from './CustomButton';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 export const NativeTypewriter = ({
   texts,
   typingSpeed = 50,
   pauseDelay = 1500,
   className,
-  // New optional props — all have defaults so existing usage won't break
   smartDiff = false,
   deletingSpeed,
   loop = true,
@@ -22,19 +22,12 @@ export const NativeTypewriter = ({
   typingSpeed?: number;
   pauseDelay?: number;
   className?: string;
-  /** Only delete & retype the suffix that differs between texts e.g. "Something" → "Someone" keeps "Some" */
   smartDiff?: boolean;
-  /** Override delete speed independently. Defaults to typingSpeed / 2 */
   deletingSpeed?: number;
-  /** Set false to stop after the last text instead of looping */
   loop?: boolean;
-  /** Delay in ms before typing starts */
   startDelay?: number;
-  /** Show a blinking cursor character */
   cursor?: boolean;
-  /** Character used as cursor. Defaults to | */
   cursorChar?: string;
-  /** Fires whenever the active text index advances */
   onTextChange?: (index: number, text: string) => void;
 }) => {
   const [currentText, setCurrentText] = useState('');
@@ -67,7 +60,6 @@ export const NativeTypewriter = ({
     const nextIndex = (textIndex + 1) % texts.length;
     const nextText = texts[nextIndex];
 
-    // How many leading characters are shared with the next text (smartDiff only)
     const commonLength = smartDiff
       ? (() => {
           let i = 0;
@@ -77,21 +69,17 @@ export const NativeTypewriter = ({
       : 0;
 
     if (!isDeleting && currentText.length < fullText.length) {
-      // Type next character
       timeout = setTimeout(() => {
         setCurrentText(fullText.slice(0, currentText.length + 1));
       }, typingSpeed);
     } else if (!isDeleting && currentText.length === fullText.length) {
-      // Pause — if loop is off and we're on the last text, do nothing
       if (!loop && textIndex === texts.length - 1) return;
       timeout = setTimeout(() => setIsDeleting(true), pauseDelay);
     } else if (isDeleting && currentText.length > commonLength) {
-      // Delete down to the common prefix (or fully if smartDiff is false)
       timeout = setTimeout(() => {
         setCurrentText(fullText.slice(0, currentText.length - 1));
       }, deletingSpeed ?? typingSpeed / 2);
     } else if (isDeleting && currentText.length <= commonLength) {
-      // Advance to next text
       setIsDeleting(false);
       const next = (textIndex + 1) % texts.length;
       setTextIndex(next);
@@ -112,46 +100,45 @@ export const NativeTypewriter = ({
   );
 };
 
-export const SuccessAnimation = () => {
-  const animValue = useRef(new Animated.Value(0)).current;
+export const SuccessAnimation = ({ onAction }: { onAction?: () => void }) => {
+  const scale = useRef(new Animated.Value(0.5)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.timing(animValue, {
-      toValue: 1,
-      duration: 2000,
-      useNativeDriver: true,
-    }).start();
+    Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 350,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scale, {
+        toValue: 1,
+        friction: 6,
+        tension: 80,
+        useNativeDriver: true,
+      }),
+    ]).start();
   }, []);
 
-  const scale = animValue.interpolate({
-    inputRange: [0, 0.3, 0.6, 0.75, 0.9, 1],
-    outputRange: [2, 1.3, 0.9, 1.1, 0.95, 1],
-  });
-
-  const rotate = animValue.interpolate({
-    inputRange: [0, 0.3, 0.6, 0.75, 0.9, 1],
-    outputRange: ['-200deg', '-90deg', '20deg', '-10deg', '5deg', '0deg'],
-  });
-
-  const opacity = animValue.interpolate({
-    inputRange: [0, 0.2, 1],
-    outputRange: [0, 1, 1],
-  });
-
   return (
-    <View className='bg-white p-8 rounded-2xl min-h-[300px]'>
-      <Animated.Image
-        source={images.check}
+    <View className="bg-white p-6 rounded-3xl min-h-[280px] items-center justify-center">
+      <Animated.View
         style={{
-          width: 110,
-          height: 110,
-          transform: [{ scale }, { rotate }],
+          transform: [{ scale }],
           opacity,
         }}
-        className="mx-auto my-5"
-      />
+        className="my-3 items-center justify-center"
+      >
+        {/* Soft glowing emerald halo ring */}
+        <View className="w-24 h-24 rounded-full bg-emerald-50 border-4 border-emerald-100 items-center justify-center shadow-lg shadow-emerald-500/20">
+          {/* Inner emerald check badge */}
+          <View className="w-16 h-16 rounded-full bg-emerald-500 items-center justify-center shadow-md shadow-emerald-600/40">
+            <Ionicons name="checkmark" size={38} color="#FFFFFF" />
+          </View>
+        </View>
+      </Animated.View>
 
-      <Text className="text-3xl font-JakartaBold text-center">
+      <Text className="text-2xl font-JakartaBold text-neutral-900 text-center mt-1">
         Verified
       </Text>
 
@@ -160,18 +147,22 @@ export const SuccessAnimation = () => {
           'You have successfully verified\nyour account.',
           'Please proceed to your home page',
         ]}
-        typingSpeed={50}
+        typingSpeed={40}
         pauseDelay={1500}
-        className="text-base text-gray-400 font-Jakarta text-center h-[50px]"
+        className="text-sm text-neutral-500 font-JakartaMedium text-center h-[44px] mt-1"
       />
 
       <CustomButton
         title="Browse Home"
         onPress={() => {
-          console.log("Button pressed")
-          router.push('/(root)/(tabs)/home')
+          if (onAction) {
+            onAction();
+          } else {
+            router.push('/(root)/(tabs)/home');
+          }
         }}
-        className='mt-5'
+        className="w-full py-3.5 mt-4"
+        textClassName="text-base font-JakartaBold text-white"
       />
     </View>
   );

@@ -1,10 +1,12 @@
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import React, { useRef, useState } from 'react';
+import { Image, Pressable, StyleSheet, Text, View, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Swiper from 'react-native-swiper';
 import { images, onboarding } from '@/constants/utils';
 import CustomButton from '@/components/CustomButton';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const Onboarding = () => {
   const swiperRef = useRef<any>(null);
@@ -12,55 +14,81 @@ const Onboarding = () => {
   const isLastSlide = activeIndex === onboarding.length - 1;
 
   return (
-    <SafeAreaView className="flex h-full items-center justify-between bg-white">
-      <Pressable onPress={() => router.replace('/(auth)/sign-up')} className="w-full flex-row justify-between items-end px-4 py-3">
+    <SafeAreaView className="flex-1 bg-white justify-between">
+      {/* Top Navigation Bar */}
+      <View className="w-full flex-row justify-between items-center px-6 py-3">
         <Image
           source={images.logohor}
-          style={{ width: 76, height: 40, borderRadius: 11 }}
-          resizeMode="stretch"
+          style={{ width: 88, height: 34 }}
+          resizeMode="contain"
         />
-        <Text className="text-sm font-JakartaBold bg-[#0286FF] text-white inset-0 px-3.5 py-2 leading-none text-center" style={{ borderRadius: 10 }}>
-          skip
-        </Text>
-      </Pressable>
+        <Pressable
+          onPress={() => router.replace('/(auth)/sign-up')}
+          className="bg-neutral-100 px-4 py-1.5 rounded-full active:bg-neutral-200"
+          hitSlop={12}
+        >
+          <Text className="text-xs font-JakartaBold text-neutral-600">
+            Skip
+          </Text>
+        </Pressable>
+      </View>
       
-      <Swiper
-        ref={swiperRef}
-        dot={<View className="w-[32px] h-[4px] mx-1 mt-4 bg-[#E2E8F0] rounded-full" />}
-        loop={false}
-        showsPagination
-        paginationStyle={{ bottom: -10 }}
-        activeDot={<View className="w-[32px] h-[4px] mx-1 mt-3 bg-[#0286FF] rounded-full" />}
-        onIndexChanged={(index) => setActiveIndex(index)}
-      >
-        {onboarding.map((item) => (
-          <View key={item.id} className="flex items-center justify-center py-5 w-full">
-            <View className="relative w-screen h-[400px] flex items-center">
-              <Image
-                source={item.image}
-                className="w-screen h-full scale-110 bg-white"
-                alt={item.title}
-                resizeMode="cover"
-              />
+      {/* 3 Storytelling Slides */}
+      <View className="flex-1 w-full">
+        <Swiper
+          ref={swiperRef}
+          dot={<View className="w-5 h-1.5 mx-1 bg-neutral-200 rounded-full" />}
+          activeDot={<View className="w-8 h-1.5 mx-1 bg-[#0286FF] rounded-full" />}
+          loop={false}
+          showsPagination
+          paginationStyle={{ bottom: 12 }}
+          onIndexChanged={(index) => setActiveIndex(index)}
+        >
+          {onboarding.map((item) => (
+            <View
+              key={item.id}
+              className="flex-1 items-center justify-between px-6 pt-1 pb-16 w-full"
+            >
+              {/* Illustration Container */}
+              <View
+                className="w-full flex-1 items-center justify-center"
+                style={{ maxHeight: SCREEN_HEIGHT * 0.44 }}
+              >
+                <Image
+                  source={item.image}
+                  style={{ width: '100%', height: '100%' }}
+                  resizeMode="contain"
+                  alt={item.title}
+                />
+              </View>
 
-              <View pointerEvents="box-none" className="absolute -bottom-48 w-full items-center justify-center px-5 z-10">
-                <Text className="text-black text-3xl font-bold text-center">
+              {/* Storytelling Text Container */}
+              <View className="items-center px-2 w-full mt-2">
+                {item.tag && (
+                  <View className="bg-blue-50 px-3 py-1 rounded-full border border-blue-100 mb-2.5">
+                    <Text className="text-[10.5px] font-JakartaBold text-[#0286FF] tracking-wider">
+                      {item.tag}
+                    </Text>
+                  </View>
+                )}
+                <Text className="text-2xl sm:text-[26px] font-JakartaBold text-neutral-900 text-center mb-2 leading-tight">
                   {item.title}
                 </Text>
-                <Text className="text-sm font-JakartaSemiBold text-center text-[#858585] mt-3 mx-5">
+                <Text className="text-sm font-JakartaMedium text-neutral-500 text-center leading-5 max-w-[330px]">
                   {item.description}
                 </Text>
               </View>
             </View>
-          </View>
-        ))}
-      </Swiper>
+          ))}
+        </Swiper>
+      </View>
 
-      <View className="w-full items-center justify-center mb-5">
+      {/* Bottom CTA Action Button */}
+      <View className="w-full px-6 pb-6 pt-2">
         <CustomButton
           title={isLastSlide ? "Get Started" : "Next"} 
-          className="self-center px-6 py-2.5 min-w-[160px]"
-          textClassName="text-sm font-JakartaBold text-white"
+          className="w-full py-3.5"
+          textClassName="text-base font-JakartaBold text-white"
           onPress={() =>
             isLastSlide ? router.replace('/(auth)/sign-up') : swiperRef.current?.scrollBy(1)
           }

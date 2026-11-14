@@ -19,7 +19,7 @@ const InputField = ({
   ...props
 }: InputFieldProps & { placeholderTextColor?: string }) => {
   return (
-    <View className="my-0.5 w-full">
+    <View className="my-1 w-full">
       <Text className={`text-xs font-JakartaSemiBold mb-1 text-neutral-700 ${labelStyle}`}>
         {label}
       </Text>
@@ -43,10 +43,10 @@ const InputField = ({
                 <Pressable
                   onPress={handle}
                   hitSlop={8}
-                  className="flex-row items-center bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200 active:bg-blue-100"
+                  accessibilityLabel="Generate secure password"
+                  className="w-7 h-7 rounded-full bg-blue-50 border border-blue-200 items-center justify-center active:bg-blue-100"
                 >
-                  <Ionicons name="sparkles" color="#0286FF" size={13} style={{ marginRight: 3 }} />
-                  <Text className="text-[11px] font-JakartaBold text-[#0286FF]">Generate</Text>
+                  <Ionicons name="sparkles" color="#0286FF" size={14} />
                 </Pressable>
               )}
               <Pressable onPress={() => setSecure?.(!secure)} hitSlop={8} className="p-1">

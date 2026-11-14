@@ -80,6 +80,10 @@ export default function SendItemsScreen() {
       `Courier courier assigned. Tracking code: ${generatedId}`,
       [
         {
+          text: 'Live Route on Map',
+          onPress: () => router.push('/(utils)/map?mode=delivery'),
+        },
+        {
           text: 'Live Track Shipment',
           onPress: () => setTrackingModalVisible(true),
         },
@@ -118,6 +122,7 @@ export default function SendItemsScreen() {
             showRecenterButton={true}
             showDriverCount={true}
             interactive={true}
+            onExpandPress={() => router.push('/(utils)/map?mode=delivery')}
           />
         </View>
 

@@ -9,9 +9,8 @@ import {
   Text,
   View,
   TouchableOpacity,
-  Alert,
+  Pressable,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { icons, images } from '@/constants/utils';
 import InputField from '@/components/InputField';
 import CustomButton from '@/components/CustomButton';
@@ -160,26 +159,43 @@ const SignIn = () => {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor: '#FFFFFF' }}
     >
-      <ScrollView className="flex-1 bg-white" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        className="flex-1 bg-white"
+        contentContainerStyle={{ flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         <View className="flex-1 bg-white">
-          {/* Top Banner Image with Role Title */}
-          <View className="relative w-full h-[110px]">
+          {/* Top Banner Image with Full Coverage & Role Title */}
+          <View className="relative w-full h-[160px]">
             <Image
               source={images.signUpCar}
-              className="z-0 w-full h-[110px]"
+              className="w-full h-full"
               resizeMode="cover"
             />
-            <View className="absolute bottom-2.5 left-4 right-4">
-              <Text className="text-lg font-JakartaBold text-white shadow-md">
+            {/* Dark gradient overlay for text readability */}
+            <View className="absolute inset-0 bg-black/45" />
+
+            {/* Back button */}
+            <Pressable
+              onPress={() => router.back()}
+              className="absolute top-12 left-5 w-9 h-9 rounded-full bg-white/25 items-center justify-center active:bg-white/40"
+              hitSlop={10}
+            >
+              <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+            </Pressable>
+
+            <View className="absolute bottom-4 left-6 right-6">
+              <Text className="text-xl font-JakartaBold text-white">
                 {selectedRole === 'driver'
                   ? 'Driver Partner Portal'
                   : selectedRole === 'vendor_admin'
                   ? 'Merchant Portal'
                   : 'Customer Portal'}
               </Text>
-              <Text className="text-[11px] font-JakartaMedium text-white/90 mt-0.5">
+              <Text className="text-xs font-JakartaMedium text-white/90 mt-0.5">
                 {selectedRole === 'driver'
                   ? 'Drive, deliver, and cash out on your schedule'
                   : selectedRole === 'vendor_admin'
@@ -189,126 +205,127 @@ const SignIn = () => {
             </View>
           </View>
 
-          <View className="px-4 pt-2 pb-4">
-            {/* Persona / Role Selector Segmented Bar */}
-            <View style={styles.roleSegmentBar}>
-              {PORTAL_ROLES.map((r) => {
-                const isActive = selectedRole === r.id;
-                return (
-                  <TouchableOpacity
-                    key={r.id}
-                    style={[styles.roleTab, isActive && styles.roleTabActive]}
-                    onPress={() => handleRoleSelect(r.id)}
-                    activeOpacity={0.8}
-                  >
-                    {r.iconType === 'ion' ? (
-                      <Ionicons
-                        name={r.icon as any}
-                        size={14}
-                        color={isActive ? '#FFFFFF' : '#6B7280'}
-                      />
-                    ) : (
-                      <FontAwesome5
-                        name={r.icon}
-                        size={12}
-                        color={isActive ? '#FFFFFF' : '#6B7280'}
-                      />
-                    )}
-                    <Text
-                      style={[styles.roleTabText, isActive && styles.roleTabTextActive]}
+          {/* Form Content Container with Full-Width Padding */}
+          <View className="flex-1 px-6 pt-4 pb-8 justify-between">
+            <View>
+              {/* Persona / Role Selector Segmented Bar */}
+              <View style={styles.roleSegmentBar}>
+                {PORTAL_ROLES.map((r) => {
+                  const isActive = selectedRole === r.id;
+                  return (
+                    <TouchableOpacity
+                      key={r.id}
+                      style={[styles.roleTab, isActive && styles.roleTabActive]}
+                      onPress={() => handleRoleSelect(r.id)}
+                      activeOpacity={0.8}
                     >
-                      {r.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            {/* Quick Demo Credentials Info Pill */}
-            {selectedRole === 'driver' && (
-              <View style={styles.demoPill}>
-                <Ionicons name="information-circle" size={16} color="#3122D2" />
-                <Text style={styles.demoPillText}>
-                  Pre-filled as Sarah Lee (Tesla Model 3 • Verified Driver)
-                </Text>
+                      {r.iconType === 'ion' ? (
+                        <Ionicons
+                          name={r.icon as any}
+                          size={15}
+                          color={isActive ? '#FFFFFF' : '#6B7280'}
+                        />
+                      ) : (
+                        <FontAwesome5
+                          name={r.icon}
+                          size={13}
+                          color={isActive ? '#FFFFFF' : '#6B7280'}
+                        />
+                      )}
+                      <Text
+                        style={[styles.roleTabText, isActive && styles.roleTabTextActive]}
+                      >
+                        {r.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
-            )}
 
-            {selectedRole === 'vendor_admin' && (
-              <View style={styles.demoPill}>
-                <Ionicons name="information-circle" size={16} color="#3122D2" />
-                <Text style={styles.demoPillText}>
-                  Pre-filled as Pizza Paradise (Merchant Admin)
-                </Text>
-              </View>
-            )}
+              {/* Quick Demo Credentials Info Pill */}
+              {selectedRole === 'driver' && (
+                <View style={styles.demoPill}>
+                  <Ionicons name="information-circle" size={18} color="#3122D2" />
+                  <Text style={styles.demoPillText}>
+                    Pre-filled as Sarah Lee (Tesla Model 3 • Verified Driver)
+                  </Text>
+                </View>
+              )}
 
-            <InputField
-              label={
-                selectedRole === 'driver'
-                  ? 'Driver Email / ID'
-                  : selectedRole === 'vendor_admin'
-                  ? 'Merchant Business Email'
-                  : 'Email'
-              }
-              placeholder="name@example.com"
-              icon={icons.email}
-              value={form.email}
-              onChangeText={(value: string) => {
-                setForm({ ...form, email: value });
-                if (fieldErrors.email) {
-                  setFieldErrors({ ...fieldErrors, email: '' });
+              {selectedRole === 'vendor_admin' && (
+                <View style={styles.demoPill}>
+                  <Ionicons name="information-circle" size={18} color="#3122D2" />
+                  <Text style={styles.demoPillText}>
+                    Pre-filled as Pizza Paradise (Merchant Admin)
+                  </Text>
+                </View>
+              )}
+
+              <InputField
+                label={
+                  selectedRole === 'driver'
+                    ? 'Driver Email / ID'
+                    : selectedRole === 'vendor_admin'
+                    ? 'Merchant Business Email'
+                    : 'Email'
                 }
-              }}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              error={emailError}
-            />
+                placeholder="name@example.com"
+                icon={icons.email}
+                value={form.email}
+                onChangeText={(value: string) => {
+                  setForm({ ...form, email: value });
+                  if (fieldErrors.email) {
+                    setFieldErrors({ ...fieldErrors, email: '' });
+                  }
+                }}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                error={emailError}
+              />
 
-            <InputField
-              label="Password"
-              placeholder="16-character secure password"
-              icon={icons.lock}
-              value={form.password}
-              secure={secure}
-              setSecure={setSecure}
-              handle={savedCreds?.password ? () => {
-                setForm((prev) => ({
-                  ...prev,
-                  email: prev.email || savedCreds.email,
-                  password: savedCreds.password,
-                }));
-                setSecure(false);
-              } : undefined}
-              onChangeText={(value: string) => {
-                setForm({ ...form, password: value });
-                if (fieldErrors.password) {
-                  setFieldErrors({ ...fieldErrors, password: '' });
-                }
-              }}
-              error={passwordError}
-            />
-            {savedCreds?.password && form.password !== savedCreds.password && (
-              <TouchableOpacity
-                onPress={() => {
+              <InputField
+                label="Password"
+                placeholder="16-character secure password"
+                icon={icons.lock}
+                value={form.password}
+                secure={secure}
+                setSecure={setSecure}
+                handle={savedCreds?.password ? () => {
                   setForm((prev) => ({
                     ...prev,
                     email: prev.email || savedCreds.email,
                     password: savedCreds.password,
                   }));
                   setSecure(false);
+                } : undefined}
+                onChangeText={(value: string) => {
+                  setForm({ ...form, password: value });
+                  if (fieldErrors.password) {
+                    setFieldErrors({ ...fieldErrors, password: '' });
+                  }
                 }}
-                className="flex-row items-center self-end mb-2 mt-1"
-                hitSlop={8}
-              >
-                <Ionicons name="key" size={13} color="#0286FF" style={{ marginRight: 4 }} />
-                <Text className="text-[11.5px] font-JakartaBold text-[#0286FF]">
-                  Autofill saved password ({savedCreds.password.substring(0, 4)}••••••••)
-                </Text>
-              </TouchableOpacity>
-            )}
+                error={passwordError}
+              />
+              {savedCreds?.password && form.password !== savedCreds.password && (
+                <TouchableOpacity
+                  onPress={() => {
+                    setForm((prev) => ({
+                      ...prev,
+                      email: prev.email || savedCreds.email,
+                      password: savedCreds.password,
+                    }));
+                    setSecure(false);
+                  }}
+                  className="flex-row items-center self-end mb-2 mt-1"
+                  hitSlop={8}
+                >
+                  <Ionicons name="key" size={13} color="#0286FF" style={{ marginRight: 4 }} />
+                  <Text className="text-[11.5px] font-JakartaBold text-[#0286FF]">
+                    Autofill saved password ({savedCreds.password.substring(0, 4)}••••••••)
+                  </Text>
+                </TouchableOpacity>
+              )}
 
-            <View className="items-center justify-center mt-4">
               <CustomButton
                 title={
                   fetchStatus === 'fetching'
@@ -320,17 +337,17 @@ const SignIn = () => {
                     : 'Sign In as Customer'
                 }
                 onPress={onSignInPress}
-                className="self-center px-6 py-2 min-w-[160px]"
-                textClassName="text-sm font-JakartaBold"
+                className="w-full py-3.5 mt-5"
+                textClassName="text-base font-JakartaBold text-white"
                 disabled={fetchStatus === 'fetching'}
               />
-            </View>
 
-            {selectedRole === 'customer' && <OAuth />}
+              {selectedRole === 'customer' && <OAuth />}
+            </View>
 
             <Link
               href="/sign-up"
-              className="flex flex-row text-center text-sm font-JakartaMedium text-general-200 mt-4 justify-center"
+              className="flex flex-row text-center text-sm font-JakartaMedium text-general-200 mt-6 mb-2 justify-center"
             >
               <Text>
                 {selectedRole === 'driver'
@@ -361,17 +378,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#F3F4F6',
     borderRadius: 14,
-    padding: 2.5,
-    marginBottom: 8,
+    padding: 3,
+    marginBottom: 12,
   },
   roleTab: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 6,
-    borderRadius: 10,
-    gap: 5,
+    paddingVertical: 8,
+    borderRadius: 11,
+    gap: 6,
   },
   roleTabActive: {
     backgroundColor: '#0286FF',
@@ -383,7 +400,7 @@ const styles = StyleSheet.create({
   },
   roleTabText: {
     fontFamily: 'JakartaBold',
-    fontSize: 12,
+    fontSize: 12.5,
     color: '#6B7280',
   },
   roleTabTextActive: {
@@ -395,8 +412,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#EEF2FF',
     borderWidth: 1,
     borderColor: '#C3D9FF',
-    borderRadius: 10,
-    padding: 10,
+    borderRadius: 12,
+    padding: 12,
     marginBottom: 14,
     gap: 8,
   },
@@ -405,5 +422,6 @@ const styles = StyleSheet.create({
     fontFamily: 'JakartaMedium',
     fontSize: 12,
     color: '#3122D2',
+    lineHeight: 16,
   },
 });

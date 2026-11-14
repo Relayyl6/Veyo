@@ -2,14 +2,14 @@ import { Stack, Redirect } from 'expo-router';
 import { useAuth } from '@clerk/expo';
 
 export default function AuthLayout() {
-  const { isSignedIn, isLoaded } = useAuth()
+  const { isSignedIn, isLoaded } = useAuth();
 
   if (!isLoaded) {
-    return null
+    return null;
   }
 
   if (isSignedIn) {
-    return <Redirect href={'/(root)/(tabs)/home'} />
+    return <Redirect href={'/(root)/(tabs)/home'} />;
   }
 
   return (
@@ -18,7 +18,7 @@ export default function AuthLayout() {
         headerShown: false,
         animationTypeForReplace: 'push',
         contentStyle: {
-          backgroundColor: '#F5F8FF',
+          backgroundColor: '#FFFFFF',
         },
       }}
     >
@@ -32,11 +32,6 @@ export default function AuthLayout() {
         name="sign-in"
         options={{
           title: 'Sign In',
-          presentation: 'formSheet',
-          sheetAllowedDetents: [0.9],
-          sheetGrabberVisible: true,
-          sheetCornerRadius: 20,
-          sheetExpandsWhenScrolledToEdge: true
         }} 
       />
       <Stack.Screen 

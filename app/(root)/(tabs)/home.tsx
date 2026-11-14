@@ -135,6 +135,7 @@ export default function HomeScreen() {
         <Header
           name={displayName}
           first={displayName}
+          title={userAddress || 'Victoria Island, Lagos'}
           image={images.logohor}
           onNotificationPress={() => router.push('/(root)/(tabs)/profile')}
         />

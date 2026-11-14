@@ -131,6 +131,7 @@ function IconWalletNaira() {
 //  COMPREHENSIVE MAIN COMPONENT
 // ─────────────────────────────────────────────
 export default function AnimatedSplashScreen({ onComplete }: { onComplete: () => void }) {
+  const containerOpacity = useRef(new Animated.Value(1)).current;
   const baseOpacity = useRef(new Animated.Value(0)).current;
   const detailOpacity = useRef(new Animated.Value(0)).current;
   
@@ -143,7 +144,11 @@ export default function AnimatedSplashScreen({ onComplete }: { onComplete: () =>
 
   useEffect(() => {
     async function init() {
-      await SplashScreen.hideAsync();
+      try {
+        await SplashScreen.hideAsync();
+      } catch (e) {
+        // Safe catch if native splash already hidden
+      }
       
       // Sequence timing chains mapping natural UI entry speeds
       Animated.timing(baseOpacity, { toValue: 1, duration: 550, useNativeDriver: true }).start(() => {
@@ -156,8 +161,15 @@ export default function AnimatedSplashScreen({ onComplete }: { onComplete: () =>
           Animated.spring(cardX, { toValue: 0, tension: 35, friction: 6, useNativeDriver: true }),
         ]).start(() => {
           setTimeout(() => {
-            onComplete();
-          }, 2500);
+            Animated.timing(containerOpacity, {
+              toValue: 0,
+              duration: 350,
+              easing: Easing.out(Easing.ease),
+              useNativeDriver: true,
+            }).start(() => {
+              onComplete();
+            });
+          }, 1200);
         });
       });
     }
@@ -165,7 +177,7 @@ export default function AnimatedSplashScreen({ onComplete }: { onComplete: () =>
   }, []);
 
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, { opacity: containerOpacity }]}>
       {/* Background Micro Stars / Sparkles Layer */}
       <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: detailOpacity }]} pointerEvents="none">
         <Svg width={SW} height={SH} style={StyleSheet.absoluteFillObject}>
@@ -270,9 +282,11 @@ export default function AnimatedSplashScreen({ onComplete }: { onComplete: () =>
         </Svg>
         <Text style={styles.geminiLabelText}>Gemini</Text>
       </Animated.View>
-    </View>
+    </Animated.View>
   );
 }
+
+
 
 // ─────────────────────────────────────────────
 //  STYLES CONFIGURATION

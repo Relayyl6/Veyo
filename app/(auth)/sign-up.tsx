@@ -13,8 +13,8 @@ import {
   Alert,
   TouchableOpacity,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons, FontAwesome5, MaterialIcons, Feather } from '@expo/vector-icons';
+import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { icons, images } from '@/constants/utils';
 import InputField from '@/components/InputField';
 import CustomButton from '@/components/CustomButton';
@@ -122,8 +122,6 @@ const SignUp = () => {
       Alert.alert('Error', 'Failed to resend code. Please try again.');
     }
   };
-
-
 
   const validateFields = () => {
     const errs: Record<string, string> = {};
@@ -409,6 +407,10 @@ const SignUp = () => {
   };
 
   const handleGeneratePassword = async () => {
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch {}
+
     const newPassword = generateSecurePassword(16);
     setForm((prev) => ({ ...prev, password: newPassword }));
     setSecure(false);
@@ -429,12 +431,6 @@ const SignUp = () => {
       role: selectedRole,
       savedAt: new Date().toISOString(),
     });
-
-    Alert.alert(
-      '🔑 16-Character Password Generated',
-      `Your secure password:\n\n${newPassword}\n\n✓ Saved to this phone's storage.\nYou don't need to remember it — it will automatically be available next time you log in!`,
-      [{ text: 'Got it!' }]
-    );
   };
 
   const emailError = fieldErrors.email || errors.fields.emailAddress?.message;
@@ -443,29 +439,51 @@ const SignUp = () => {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1, backgroundColor: 'white' }}
+      style={{ flex: 1, backgroundColor: '#FFFFFF' }}
     >
       <ScrollView
-        style={{ flex: 1 }}
+        className="flex-1 bg-white"
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         <View className="flex-1 bg-white">
-          {/* Header Banner */}
-          <View className="relative w-full h-[110px]">
-            <Image source={images.signUpCar} className="z-0 w-full h-[110px]" resizeMode="cover" />
-            <Text className="text-lg font-JakartaBold text-black absolute bottom-2 left-4">
-              Join Veyo
-            </Text>
+          {/* Header Banner with Full Screen Coverage */}
+          <View className="relative w-full h-[160px]">
+            <Image
+              source={images.signUpCar}
+              className="w-full h-full"
+              resizeMode="cover"
+            />
+            {/* Dark gradient overlay for text readability */}
+            <View className="absolute inset-0 bg-black/45" />
+
+            {/* Back button */}
+            <Pressable
+              onPress={() => router.back()}
+              className="absolute top-12 left-5 w-9 h-9 rounded-full bg-white/25 items-center justify-center active:bg-white/40"
+              hitSlop={10}
+            >
+              <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+            </Pressable>
+
+            <View className="absolute bottom-4 left-6 right-6">
+              <Text className="text-xl font-JakartaBold text-white">
+                Create Your Account
+              </Text>
+              <Text className="text-xs font-JakartaMedium text-white/90 mt-0.5">
+                Join Veyo to ride, order food, or send packages
+              </Text>
+            </View>
           </View>
 
-          <View className="px-4 pt-2 pb-4">
+          {/* Form Content Container with Full-Width Padding */}
+          <View className="flex-1 px-6 pt-4 pb-8">
             {/* 1. ROLE SELECTION CARDS */}
-            <Text className="text-xs font-JakartaBold text-neutral-700 mb-1.5">
+            <Text className="text-xs font-JakartaBold text-neutral-700 mb-2">
               Select Account Type
             </Text>
-            <View className="flex-row gap-2 mb-3">
+            <View className="flex-row gap-2.5 mb-4">
               {/* Customer */}
               <TouchableOpacity
                 style={[
@@ -483,7 +501,7 @@ const SignUp = () => {
                 >
                   <FontAwesome5
                     name="user"
-                    size={15}
+                    size={16}
                     color={selectedRole === 'customer' ? '#FFFFFF' : '#0286FF'}
                   />
                 </View>
@@ -515,7 +533,7 @@ const SignUp = () => {
                 >
                   <FontAwesome5
                     name="car"
-                    size={15}
+                    size={16}
                     color={selectedRole === 'driver' ? '#FFFFFF' : '#3122D2'}
                   />
                 </View>
@@ -547,7 +565,7 @@ const SignUp = () => {
                 >
                   <Ionicons
                     name="restaurant"
-                    size={16}
+                    size={17}
                     color={selectedRole === 'vendor_admin' ? '#FFFFFF' : '#0CC25F'}
                   />
                 </View>
@@ -755,20 +773,19 @@ const SignUp = () => {
             )}
 
             {/* Submit Action */}
-            <View className="items-center justify-center mt-4">
-              <CustomButton
-                title={fetchStatus === 'fetching' ? 'Registering...' : `Sign Up as ${selectedRole === 'driver' ? 'Driver' : selectedRole === 'vendor_admin' ? 'Merchant' : 'User'}`}
-                onPress={onSignUpPress}
-                className="self-center px-6 py-2 min-w-[170px]"
-                textClassName="text-sm font-JakartaBold"
-              />
-            </View>
+            <CustomButton
+              title={fetchStatus === 'fetching' ? 'Registering...' : `Sign Up as ${selectedRole === 'driver' ? 'Driver' : selectedRole === 'vendor_admin' ? 'Merchant' : 'Customer'}`}
+              onPress={onSignUpPress}
+              className="w-full py-3.5 mt-5"
+              textClassName="text-base font-JakartaBold text-white"
+              disabled={fetchStatus === 'fetching'}
+            />
 
             <OAuth />
 
             <Link
               href="/sign-in"
-              className="flex flex-row text-center text-sm font-JakartaMedium text-general-200 mt-4 justify-center"
+              className="flex flex-row text-center text-sm font-JakartaMedium text-general-200 mt-6 mb-2 justify-center"
             >
               <Text>Already have an account?</Text>
               <Text className="text-primary-500 font-JakartaBold"> Log In</Text>
@@ -777,7 +794,7 @@ const SignUp = () => {
 
           {/* 5. 6-DIGIT EMAIL VERIFICATION MODAL */}
           <Modal isVisible={showVerification}>
-            <View className="bg-white rounded-[20px] p-6 shadow-lg mx-auto w-full max-w-[360px]">
+            <View className="bg-white rounded-[24px] p-6 shadow-2xl mx-auto w-full max-w-[360px]">
               {isVerified ? (
                 <SuccessAnimation />
               ) : (
@@ -858,51 +875,59 @@ export default SignUp;
 const styles = StyleSheet.create({
   roleCard: {
     flex: 1,
-    paddingVertical: 6,
-    paddingHorizontal: 4,
-    borderRadius: 10,
-    backgroundColor: '#F8F8F8',
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    borderRadius: 14,
+    backgroundColor: '#F8FAFC',
     borderWidth: 1.5,
-    borderColor: '#EEEEEE',
+    borderColor: '#E2E8F0',
     alignItems: 'center',
   },
   roleCardActive: {
-    backgroundColor: '#EBF4FF',
+    backgroundColor: '#EFF6FF',
     borderColor: '#0286FF',
+    shadowColor: '#0286FF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
   },
   roleIconCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 3,
+    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   roleIconCircleActive: {
     backgroundColor: '#0286FF',
+    borderColor: '#0286FF',
   },
   roleTitle: {
     fontFamily: 'JakartaBold',
-    fontSize: 11,
-    color: '#333333',
+    fontSize: 12.5,
+    color: '#1E293B',
   },
   roleTitleActive: {
     color: '#0286FF',
   },
   roleDesc: {
     fontFamily: 'JakartaMedium',
-    fontSize: 8.5,
-    color: '#858585',
-    marginTop: 1,
+    fontSize: 10,
+    color: '#64748B',
+    marginTop: 2,
   },
   roleSpecificSection: {
-    backgroundColor: '#F5F8FF',
-    padding: 10,
-    borderRadius: 12,
-    marginVertical: 6,
+    backgroundColor: '#F8FAFC',
+    padding: 14,
+    borderRadius: 16,
+    marginVertical: 10,
     borderWidth: 1,
-    borderColor: '#C3D9FF',
+    borderColor: '#E2E8F0',
   },
   sectionHeaderRow: {
     flexDirection: 'row',
@@ -918,7 +943,7 @@ const styles = StyleSheet.create({
   inputSubLabel: {
     fontFamily: 'JakartaBold',
     fontSize: 11,
-    color: '#666666',
+    color: '#64748B',
     marginBottom: 6,
   },
   pillRow: {
@@ -928,12 +953,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   typePill: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#EEEEEE',
+    borderColor: '#E2E8F0',
   },
   typePillActive: {
     backgroundColor: '#0286FF',
@@ -941,8 +966,8 @@ const styles = StyleSheet.create({
   },
   typePillText: {
     fontFamily: 'JakartaBold',
-    fontSize: 10,
-    color: '#666666',
+    fontSize: 10.5,
+    color: '#64748B',
   },
   typePillTextActive: {
     color: '#FFFFFF',
@@ -955,11 +980,12 @@ const styles = StyleSheet.create({
   },
   modalSubtitle: {
     fontFamily: 'JakartaMedium',
-    fontSize: 12,
-    color: '#858585',
+    fontSize: 12.5,
+    color: '#64748B',
     textAlign: 'center',
     marginTop: 4,
     marginBottom: 16,
+    lineHeight: 18,
   },
   emailHighlight: {
     fontFamily: 'JakartaBold',
@@ -987,20 +1013,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   errorText: {
-    color: '#F56565',
+    color: '#EF4444',
     fontFamily: 'JakartaMedium',
-    fontSize: 11,
+    fontSize: 11.5,
     textAlign: 'center',
     marginBottom: 10,
   },
   verifyButton: {
     backgroundColor: '#0286FF',
-    paddingVertical: 11,
+    paddingVertical: 12,
     paddingHorizontal: 28,
     borderRadius: 24,
     alignItems: 'center',
     alignSelf: 'center',
-    minWidth: 180,
+    width: '100%',
     marginTop: 8,
   },
   buttonDisabled: {
@@ -1008,16 +1034,16 @@ const styles = StyleSheet.create({
   },
   verifyButtonText: {
     fontFamily: 'JakartaBold',
-    fontSize: 13,
+    fontSize: 14,
     color: '#FFFFFF',
   },
   resendLink: {
     alignItems: 'center',
-    marginTop: 12,
+    marginTop: 14,
   },
   resendLinkText: {
     fontFamily: 'JakartaBold',
-    fontSize: 12,
+    fontSize: 12.5,
     color: '#0286FF',
   },
   startOverLink: {
@@ -1026,7 +1052,7 @@ const styles = StyleSheet.create({
   },
   startOverLinkText: {
     fontFamily: 'JakartaMedium',
-    fontSize: 11,
-    color: '#858585',
+    fontSize: 11.5,
+    color: '#94A3B8',
   },
 });

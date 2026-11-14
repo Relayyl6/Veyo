@@ -17,7 +17,7 @@ import { dbContent, ServiceOptionRecord } from '@/lib/db';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_PADDING = SPACING.screen * 2; // 32px (16 on each side)
-const GAP = 8;
+const GAP = 10;
 const TOTAL = SCREEN_WIDTH - GRID_PADDING - GAP;
 
 // Width ratios: 32% square, 68% rectangle (accounting for gap)
@@ -268,7 +268,7 @@ const ServiceGrid = () => {
 
   if (loading && dbGrids.length === 0) {
     return (
-      <View style={[styles.gridContainer, { height: 168, justifyContent: 'center', alignItems: 'center' }]}>
+      <View style={[styles.gridContainer, { height: 174, justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="small" color="#0286FF" />
       </View>
     );
@@ -319,13 +319,14 @@ export default ServiceGrid;
 
 const styles = StyleSheet.create({
   gridContainer: {
-    marginVertical: 4,
+    marginVertical: 8,
     gap: GAP,
   },
   row: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    height: 80,
+    alignItems: 'center',
+    gap: GAP,
+    height: 82,
   },
   cardOuter: {
     height: '100%',

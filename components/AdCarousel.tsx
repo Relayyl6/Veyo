@@ -46,7 +46,7 @@ const AdCarousel = () => {
 
   if (loading && adverts.length === 0) {
     return (
-      <View style={[styles.card, { width: CARD_WIDTH, marginVertical: 4, alignItems: 'center', justifyContent: 'center', backgroundColor: '#1E293B' }]}>
+      <View style={[styles.card, { width: CARD_WIDTH, marginVertical: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#1E293B' }]}>
         <ActivityIndicator size="small" color="#0286FF" />
       </View>
     );
@@ -63,8 +63,8 @@ const AdCarousel = () => {
         keyExtractor={(item) => item.id}
         horizontal
         showsHorizontalScrollIndicator={false}
-        pagingEnabled
         snapToInterval={CARD_WIDTH + 10}
+        snapToAlignment="start"
         decelerationRate="fast"
         onViewableItemsChanged={onViewRef.current}
         viewabilityConfig={viewConfigRef.current}
@@ -129,10 +129,10 @@ export default AdCarousel;
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 4,
+    marginVertical: 12,
   },
   card: {
-    height: 110,
+    height: 116,
     borderRadius: RADIUS.card,
     overflow: 'hidden',
     marginRight: 10,
@@ -146,14 +146,14 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    padding: 14,
     position: 'relative',
   },
   textColumn: {
     flex: 1,
     zIndex: 10,
     justifyContent: 'center',
-    paddingRight: 10,
+    paddingRight: 12,
   },
   title: {
     fontSize: 16,
@@ -162,12 +162,12 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
   subtitle: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontFamily: 'JakartaMedium',
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginTop: 2,
+    color: 'rgba(255, 255, 255, 0.85)',
+    marginTop: 3,
     marginBottom: 8,
-    lineHeight: 14,
+    lineHeight: 15,
   },
   ctaBtn: {
     alignSelf: 'flex-start',
@@ -181,8 +181,8 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   heroImage: {
-    width: 86,
-    height: 86,
+    width: 88,
+    height: 88,
     borderRadius: 12,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
@@ -190,8 +190,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 6,
-    gap: 4,
+    marginTop: 8,
+    gap: 5,
   },
   dot: {
     height: 3.5,

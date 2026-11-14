@@ -8,7 +8,7 @@ import {
   Image,
   Platform,
 } from 'react-native';
-import MapView, { PROVIDER_DEFAULT, Marker, Callout } from 'react-native-maps';
+import MapView, { PROVIDER_DEFAULT, Marker, Callout, UrlTile } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { MaterialIcons, Ionicons, Feather } from '@expo/vector-icons';
@@ -167,6 +167,13 @@ const Map: React.FC<MapProps> = ({
         pitchEnabled={false}
         onMapReady={() => setMapReady(true)}
       >
+        <UrlTile
+          urlTemplate={`https://maps.geoapify.com/v1/tile/osm-bright-smooth/{z}/{x}/{y}.png?apiKey=${process.env.EXPO_PUBLIC_GEOAPIFY_API_KEY ?? '9c5d12edbcc14f59bbb02c74ee09859d'}`}
+          maximumZ={19}
+          flipY={false}
+          zIndex={1}
+          tileSize={256}
+        />
         {/* User Marker if native indicator is delayed */}
         {hasCoords && (
           <Marker

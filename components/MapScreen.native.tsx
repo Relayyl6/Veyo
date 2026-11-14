@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -10,1381 +10,1795 @@ import {
   Animated,
   StatusBar,
   Platform,
+  Dimensions,
+  Alert,
 } from 'react-native';
 import MapView, {
   Marker,
   Polyline,
-  Circle,
-  MapType,
-  MarkerAnimated,
-  Region,
+  UrlTile,
   PROVIDER_DEFAULT,
+  Region,
 } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack } from 'expo-router';
-import { useLocationStore } from '@/store/store';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
+import { Ionicons, Feather, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
+
+import { useLocationStore, useDriverStore } from '@/store/store';
+import {
+  GeoPoint,
+  Waypoint,
+  RouteLeg,
+  TriangulatedRoute,
+  DispatchTriangulationResult,
+  RideTierId,
+  DeliveryTierId,
+  RIDE_TIERS,
+  DELIVERY_TIERS,
+  FareBreakdown,
+  TripLifecycleStage,
+  getStageMetadata,
+  haversineDistanceKm,
+  calculateBearing,
+  interpolatePointAlongPolyline,
+  formatDistance,
+  formatDuration,
+  fetchGeoapifyRoute,
+  calculateDispatchTriangulation,
+  calculateDynamicFare,
+  estimateAllRideTiers,
+  estimateAllDeliveryTiers,
+  selectOptimalDriver,
+  CandidateDriver,
+  searchPlacesGeoapify,
+  reverseGeocodeGeoapify,
+  GeocodedPlace,
+} from '@/lib/triangulation';
+import { COLORS, RADIUS, SPACING } from '@/constants/designTokens';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const GEOAPIFY_API_KEY =
+  process.env.EXPO_PUBLIC_GEOAPIFY_API_KEY ?? '9c5d12edbcc14f59bbb02c74ee09859d';
 
 // ─────────────────────────────────────────────────────────────
-//  GEO HELPER
-//  Haversine formula: calculates the straight-line ("as the crow
-//  flies") distance between two lat/lng points on a sphere.
-//  Returns kilometres.
+// BACKWARDS COMPATIBILITY EXPORTS
 // ─────────────────────────────────────────────────────────────
 export function calculateHaversineDistance(
-  lat1: number, lon1: number,
-  lat2: number, lon2: number,
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
 ): number {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * (Math.PI / 180);
-  const dLon = (lon2 - lon1) * (Math.PI / 180);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * (Math.PI / 180)) *
-    Math.cos(lat2 * (Math.PI / 180)) *
-    Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return haversineDistanceKm({ latitude: lat1, longitude: lon1 }, { latitude: lat2, longitude: lon2 });
 }
 
-/**
- * geoUtils.ts
- * ─────────────────────────────────────────────────────────────────────────────
- * Road-aware distance utilities.
- *
- * WHY NOT HAVERSINE?
- * ─────────────────
- * Haversine gives you the straight-line ("as the crow flies") distance between
- * two GPS coordinates on a sphere. It completely ignores roads, rivers, walls,
- * and one-way streets — so "200m away" might actually be a 2km detour.
- *
- * WHAT WE DO INSTEAD
- * ──────────────────
- * The Google Directions API already returns a polyline — a sequence of GPS
- * coordinates that trace the actual road path. We sum up the Haversine
- * distance between each consecutive pair of points on that polyline.
- * Because the points are extremely close together (every ~5-20m along a road),
- * the straight-line error between each pair is negligible (~0.01%). The sum
- * accurately reflects road distance.
- *
- * DIAGRAM
- * ──────────────────────────────────────────────────────────
- *   A ──── B ──── C ──── D ──── E   ← polyline points (road)
- *   |      |      |      |      |
- *   d(A,B)+d(B,C)+d(C,D)+d(D,E) = road distance  ✓
- *
- *   vs
- *
- *   A ─────────────────────────── E  ← Haversine (straight line)  ✗
- *
- * WALKING ETA vs DRIVING ETA
- * ──────────────────────────
- * We expose two helpers:
- *   - walkingEta(km)  → assumes 5 km/h average walking speed
- *   - drivingEta(km)  → uses the Directions API duration directly (preferred)
- *     or falls back to 30 km/h urban driving estimate if API data unavailable
- *
- * For driving ETA, always prefer `leg.duration.text` from the Directions API
- * response — it accounts for real traffic, speed limits, and turn penalties.
- * The formula fallback here is only for "offline" / non-driving contexts.
- * ─────────────────────────────────────────────────────────────────────────────
- */
-
-interface Coords {
-  latitude: number;
-  longitude: number;
-}
-
-// ─────────────────────────────────────────────────────────────
-//  LOW-LEVEL: straight-line distance between two points
-//  Still useful internally for measuring tiny polyline segments.
-//  Do NOT use this for road distances or ETAs.
-// ─────────────────────────────────────────────────────────────
-function haversineKm(a: Coords, b: Coords): number {
-  const R = 6371;
-  const dLat = (b.latitude  - a.latitude)  * (Math.PI / 180);
-  const dLon = (b.longitude - a.longitude) * (Math.PI / 180);
-  const sin2 =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(a.latitude  * (Math.PI / 180)) *
-    Math.cos(b.latitude  * (Math.PI / 180)) *
-    Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(sin2), Math.sqrt(1 - sin2));
-}
-
-// ─────────────────────────────────────────────────────────────
-//  ROAD DISTANCE  from a decoded polyline
-//  Pass the `polyline` array returned by fetchRoadRoute().
-//  Returns distance in kilometres along the actual road path.
-// ─────────────────────────────────────────────────────────────
-export function roadDistanceKm(polyline: Coords[]): number {
+export function roadDistanceKm(polyline: GeoPoint[]): number {
   if (polyline.length < 2) return 0;
   let total = 0;
   for (let i = 0; i < polyline.length - 1; i++) {
-    // Each segment is tiny (5-20m), so Haversine error is < 0.01%
-    total += haversineKm(polyline[i], polyline[i + 1]);
+    total += haversineDistanceKm(polyline[i], polyline[i + 1]);
   }
   return total;
 }
 
-// ─────────────────────────────────────────────────────────────
-//  FORMATTED ROAD DISTANCE  e.g. "2.4 km" or "850 m"
-// ─────────────────────────────────────────────────────────────
-export function formatRoadDistance(polyline: Coords[]): string {
+export function formatRoadDistance(polyline: GeoPoint[]): string {
   const km = roadDistanceKm(polyline);
-  if (km < 1) return `${Math.round(km * 1000)} m`;
-  return `${km.toFixed(1)} km`;
+  return formatDistance(km);
 }
 
-// ─────────────────────────────────────────────────────────────
-//  WALKING ETA  from road distance
-//  Uses 5 km/h (WHO standard comfortable walking pace).
-//  Returns a human-readable string like "12 min".
-// ─────────────────────────────────────────────────────────────
-export function walkingEta(polyline: Coords[]): string {
+export function walkingEta(polyline: GeoPoint[]): string {
   const km = roadDistanceKm(polyline);
-  const minutes = Math.ceil((km / 5) * 60); // 5 km/h
-  if (minutes < 60) return `${minutes} min`;
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  const minutes = Math.ceil((km / 5) * 60);
+  return formatDuration(minutes);
 }
 
-// ─────────────────────────────────────────────────────────────
-//  DRIVING ETA  fallback (prefer Directions API duration)
-//  Use this ONLY when you have a polyline but no API duration text.
-//  Assumes 30 km/h urban average (conservative, accounts for lights/turns).
-// ─────────────────────────────────────────────────────────────
-export function drivingEtaFallback(polyline: Coords[]): string {
+export function drivingEtaFallback(polyline: GeoPoint[]): string {
   const km = roadDistanceKm(polyline);
-  const minutes = Math.ceil((km / 30) * 60); // 30 km/h urban
-  if (minutes < 60) return `${minutes} min`;
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return m > 0 ? `${h}h ${m}m` : `${h}h`;
-}
-
-// ─────────────────────────────────────────────────────────────
-//  GOOGLE DIRECTIONS API  — full route fetch
-//  Returns the decoded polyline + official duration/distance text
-//  from Google (which uses real traffic data).
-//
-//  Teaching note: the `overview_polyline.points` field is a
-//  compressed string encoding. We decode it into Coords[] so
-//  react-native-maps can render it as a <Polyline>.
-// ─────────────────────────────────────────────────────────────
-function decodePolyline(encoded: string): Coords[] {
-  const points: Coords[] = [];
-  let index = 0, lat = 0, lng = 0;
-  while (index < encoded.length) {
-    let b: number, shift = 0, result = 0;
-    do {
-      b = encoded.charCodeAt(index++) - 63;
-      result |= (b & 0x1f) << shift;
-      shift += 5;
-    } while (b >= 0x20);
-    lat += result & 1 ? ~(result >> 1) : result >> 1;
-
-    shift = 0; result = 0;
-    do {
-      b = encoded.charCodeAt(index++) - 63;
-      result |= (b & 0x1f) << shift;
-      shift += 5;
-    } while (b >= 0x20);
-    lng += result & 1 ? ~(result >> 1) : result >> 1;
-
-    points.push({ latitude: lat / 1e5, longitude: lng / 1e5 });
-  }
-  return points;
-}
-
-export interface RouteResult {
-  /** Decoded GPS points tracing the road — pass directly to <Polyline coordinates> */
-  polyline: Coords[];
-  /** Road distance in km (summed from polyline segments) */
-  distanceKm: number;
-  /** Human-readable distance e.g. "3.2 km" — from Google, includes unit localisation */
-  distanceText: string;
-  /** Human-readable duration e.g. "12 mins" — from Google, uses real traffic */
-  durationText: string;
-  /** Raw duration in seconds — useful for countdowns or progress bars */
-  durationSeconds: number;
+  const minutes = Math.ceil((km / 30) * 60);
+  return formatDuration(minutes);
 }
 
 export async function fetchRoadRoute(
-  origin: Coords,
-  destination: Coords,
-  mode: 'driving' | 'walking' | 'bicycling' = 'driving',
-): Promise<RouteResult | null> {
-  const url =
-    `https://maps.googleapis.com/maps/api/directions/json` +
-    `?origin=${origin.latitude},${origin.longitude}` +
-    `&destination=${destination.latitude},${destination.longitude}` +
-    `&mode=${mode}` +
-    `&key=${GOOGLE_API_KEY}`;
-
+  origin: GeoPoint,
+  destination: GeoPoint
+): Promise<{
+  polyline: GeoPoint[];
+  distanceKm: number;
+  distanceText: string;
+  durationText: string;
+  durationSeconds: number;
+} | null> {
   try {
-    const res  = await fetch(url);
-    const json = await res.json();
-
-    if (json.status !== 'OK') {
-      console.error('[fetchRoadRoute] Directions API error:', json.status, json.error_message);
-      return null;
-    }
-
-    const leg = json.routes[0].legs[0];
-    const polyline = decodePolyline(json.routes[0].overview_polyline.points);
-
+    const route = await fetchGeoapifyRoute([origin, destination], 'drive');
     return {
-      polyline,
-      distanceKm:      roadDistanceKm(polyline),   // measured from actual polyline
-      distanceText:    leg.distance.text,            // Google's formatted string
-      durationText:    leg.duration.text,            // Google's formatted string (traffic-aware)
-      durationSeconds: leg.duration.value,           // raw seconds
+      polyline: route.polyline,
+      distanceKm: route.totalDistanceKm,
+      distanceText: route.formattedDistance,
+      durationText: route.formattedDuration,
+      durationSeconds: Math.round(route.totalDurationMins * 60),
     };
-  } catch (e) {
-    console.error('[fetchRoadRoute] Network error:', e);
+  } catch {
     return null;
   }
 }
 
 // ─────────────────────────────────────────────────────────────
-//  NEARBY PLACE ROAD DISTANCE  (batch helper)
-//  For a list of places, fetches each road distance individually.
-//  WARNING: this fires N Directions API calls — use sparingly
-//  (e.g. max 5 places). For larger sets, use the Distance Matrix API.
-//
-//  Teaching note: Distance Matrix API is purpose-built for
-//  "one origin → many destinations" queries. It's one request
-//  instead of N, and is significantly cheaper at scale.
-//  URL: https://maps.googleapis.com/maps/api/distancematrix/json
+// MAP STYLES (Clean OSM-Bright-Smooth baseline aesthetic)
 // ─────────────────────────────────────────────────────────────
-export async function fetchRoadDistances(
-  origin: Coords,
-  destinations: Coords[],
-  apiKey: string,
-  mode: 'driving' | 'walking' = 'walking',
-): Promise<Array<{ distanceText: string; durationText: string; durationSeconds: number } | null>> {
-  if (destinations.length === 0) return [];
+const OSM_BRIGHT_SMOOTH_MAP_STYLE = [
+  { elementType: 'geometry', stylers: [{ color: '#f8f9fa' }] },
+  { elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#334155' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#ffffff' }] },
+  { featureType: 'administrative', elementType: 'geometry', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+  { featureType: 'road', elementType: 'geometry.fill', stylers: [{ color: '#ffffff' }] },
+  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#e2e8f0' }] },
+  { featureType: 'road.highway', elementType: 'geometry.fill', stylers: [{ color: '#fef08a' }] },
+  { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#fde047' }] },
+  { featureType: 'road.arterial', elementType: 'geometry.fill', stylers: [{ color: '#ffffff' }] },
+  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#c7d2fe' }] },
+  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#4338ca' }] },
+];
 
-  // Build one Distance Matrix request instead of N Directions requests
-  const destStr = destinations
-    .map(d => `${d.latitude},${d.longitude}`)
-    .join('|');
-
-  const url =
-    `https://maps.googleapis.com/maps/api/distancematrix/json` +
-    `?origins=${origin.latitude},${origin.longitude}` +
-    `&destinations=${encodeURIComponent(destStr)}` +
-    `&mode=${mode}` +
-    `&key=${apiKey}`;
-
-  try {
-    const res  = await fetch(url);
-    const json = await res.json();
-
-    if (json.status !== 'OK') {
-      console.error('[fetchRoadDistances] Distance Matrix error:', json.status);
-      return destinations.map(() => null);
-    }
-
-    return json.rows[0].elements.map((el: any) => {
-      if (el.status !== 'OK') return null;
-      return {
-        distanceText:    el.distance.text,
-        durationText:    el.duration.text,
-        durationSeconds: el.duration.value,
-      };
-    });
-  } catch (e) {
-    console.error('[fetchRoadDistances] Network error:', e);
-    return destinations.map(() => null);
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-//  TYPES
-// ─────────────────────────────────────────────────────────────
-type MapTheme = 'dark' | 'light' | 'satellite';
-type MapMode = 'ride' | 'food' | 'discover';
-type DiscoverCategory = 'restaurant' | 'atm' | 'pos' | 'hotspot' | 'all';
-
-interface Coords { latitude: number; longitude: number; }
-
-interface NearbyPlace {
-  id: string;
-  name: string;
-  category: DiscoverCategory;
-  lat: number;
-  lng: number;
-  rating?: number;
-  distance?: string;
-  isOpen?: boolean;
-  eta?: string;
-}
-
-interface RideState {
-  pickup: Coords | null;
-  dropoff: Coords | null;
-  routePolyline: Coords[];   // decoded road route from Directions API
-  driverLocation: Coords | null;
-  driverEta: string;
-  surgeMultiplier: number;
-  routeDuration: string;
-  routeDistance: string;
-}
-
-interface FoodState {
-  restaurantLocation: Coords | null;
-  restaurantName: string;
-  riderLocation: Coords | null;
-  deliveryEta: string;
-  orderStatus: 'idle' | 'confirmed' | 'picked_up' | 'arriving';
-}
-
-// ─────────────────────────────────────────────────────────────
-//  CONFIG
-// ─────────────────────────────────────────────────────────────
-const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_API_KEY!;
-
-const CATEGORY_META: Record<DiscoverCategory, { label: string; color: string; icon: string }> = {
-  all:        { label: 'All',        color: '#1C75FF', icon: '🗺' },
-  restaurant: { label: 'Eateries',   color: '#FF6B35', icon: '🍽' },
-  atm:        { label: 'ATMs',       color: '#00C896', icon: '🏧' },
-  pos:        { label: 'POS',        color: '#A259FF', icon: '💳' },
-  hotspot:    { label: 'Hotspots',   color: '#FFD93D', icon: '🔥' },
-};
-
-const CATEGORY_TO_GOOGLE_TYPE: Record<DiscoverCategory, string> = {
-  all:        'point_of_interest',
-  restaurant: 'restaurant',
-  atm:        'atm',
-  pos:        'finance',
-  hotspot:    'tourist_attraction',
-};
-
-// ─────────────────────────────────────────────────────────────
-//  DARK MAP STYLE  (Google Maps JSON style — Android only)
-//  On iOS, MapKit uses the system appearance automatically.
-//  Teaching note: mapStyle is an array of "feature + element"
-//  visibility/color rules applied server-side by Google.
-// ─────────────────────────────────────────────────────────────
-const DARK_MAP_STYLE = [
+const DARK_MATTER_MAP_STYLE = [
   { elementType: 'geometry', stylers: [{ color: '#0b1528' }] },
   { elementType: 'labels.text.stroke', stylers: [{ color: '#0b1528' }] },
   { elementType: 'labels.text.fill', stylers: [{ color: '#7a8baa' }] },
   { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#162040' }] },
   { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#111e35' }] },
   { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0d1a30' }] },
-  { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#111e35' }] },
-  { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#4a5a7a' }] },
-  { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#111e35' }] },
+  { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
 ];
 
-// ─────────────────────────────────────────────────────────────
-//  GOOGLE PLACES AUTOCOMPLETE  (REST, no extra native library)
-//  Teaching note: We debounce the input so we don't call the
-//  API on every single keystroke — we wait 350ms of silence.
-// ─────────────────────────────────────────────────────────────
-async function fetchSuggestions(
-  input: string, origin: Coords,
-): Promise<{ placeId: string; description: string }[]> {
-  if (input.length < 2) return [];
-  const url =
-    `https://maps.googleapis.com/maps/api/place/autocomplete/json` +
-    `?input=${encodeURIComponent(input)}` +
-    `&location=${origin.latitude},${origin.longitude}` +
-    `&radius=50000&key=${GOOGLE_API_KEY}`;
-  try {
-    const res = await fetch(url);
-    const json = await res.json();
-    if (json.status !== 'OK') return [];
-    return json.predictions.slice(0, 5).map((p: any) => ({
-      placeId: p.place_id,
-      description: p.description,
-    }));
-  } catch { return []; }
+type MapTheme = 'osm-bright' | 'dark' | 'satellite';
+type MapMode = 'ride' | 'delivery' | 'discover';
+
+interface NearbySpot {
+  id: string;
+  name: string;
+  category: string;
+  rating: number;
+  lat: number;
+  lng: number;
+  distance: string;
+  eta: string;
+  icon: string;
 }
 
-async function fetchPlaceCoords(placeId: string): Promise<Coords | null> {
-  const url =
-    `https://maps.googleapis.com/maps/api/place/details/json` +
-    `?place_id=${placeId}&fields=geometry&key=${GOOGLE_API_KEY}`;
-  try {
-    const res = await fetch(url);
-    const json = await res.json();
-    if (json.status !== 'OK') return null;
-    const loc = json.result.geometry.location;
-    return { latitude: loc.lat, longitude: loc.lng };
-  } catch { return null; }
-}
+const DEFAULT_COORDS = {
+  pickup: { latitude: 6.5244, longitude: 3.3792 }, // Victoria Island / Lagos
+  dropoff: { latitude: 6.4474, longitude: 3.4723 }, // Lekki Phase 1
+};
 
-// ─────────────────────────────────────────────────────────────
-//  GOOGLE NEARBY PLACES
-// ─────────────────────────────────────────────────────────────
-function detectCategory(types: string[]): DiscoverCategory {
-  if (types.includes('restaurant') || types.includes('food')) return 'restaurant';
-  if (types.includes('atm')) return 'atm';
-  if (types.includes('finance')) return 'pos';
-  return 'hotspot';
-}
-
-async function fetchNearbyPlaces(origin: Coords, category: DiscoverCategory): Promise<NearbyPlace[]> {
-  // FIXED: If category is 'all', remove type restriction to prevent API failures
-  const typeParam = category !== 'all' ? `&type=${CATEGORY_TO_GOOGLE_TYPE[category]}` : '';
-  
-  const placesUrl =
-    `https://maps.googleapis.com/maps/api/place/nearbysearch/json` +
-    `?location=${origin.latitude},${origin.longitude}` +
-    `&radius=1500${typeParam}&key=${GOOGLE_API_KEY}`;
-
-  try {
-    const res = await fetch(placesUrl);
-    const json = await res.json();
-    if (json.status !== 'OK' && json.status !== 'ZERO_RESULTS') return [];
-
-    const rawPlaces = (json.results as any[]).slice(0, 12);
-    if (rawPlaces.length === 0) return [];
-
-    const destinationsParam = rawPlaces
-      .map((p) => `${p.geometry.location.lat},${p.geometry.location.lng}`)
-      .join('|');
-
-    const matrixUrl =
-      `https://maps.googleapis.com/maps/api/distancematrix/json` +
-      `?origins=${origin.latitude},${origin.longitude}` +
-      `&destinations=${destinationsParam}` +
-      `&mode=driving&key=${GOOGLE_API_KEY}`;
-
-    const matrixRes = await fetch(matrixUrl);
-    const matrixJson = await matrixRes.json();
-    const distanceRows = matrixJson.rows?.[0]?.elements || [];
-
-    return rawPlaces.map((p, idx) => {
-      const matrixElement = distanceRows[idx];
-      let displayDistance = '0.00 km';
-      let displayEta = '0 min';
-
-      if (matrixElement && matrixElement.status === 'OK') {
-        displayDistance = matrixElement.distance.text;
-        displayEta = matrixElement.duration.text;
-      } else {
-        const straightLineDist = calculateHaversineDistance(
-          origin.latitude, origin.longitude,
-          p.geometry.location.lat, p.geometry.location.lng
-        );
-        displayDistance = straightLineDist.toFixed(2) + ' km';
-        displayEta = `${Math.floor(straightLineDist / 0.08)} min`;
-      }
-
-      return {
-        id: p.place_id,
-        name: p.name,
-        category: detectCategory(p.types), // Safe localized classification parser
-        lat: p.geometry.location.lat,
-        lng: p.geometry.location.lng,
-        rating: p.rating || 0,
-        isOpen: p.opening_hours?.open_now ?? true,
-        distance: displayDistance,
-        eta: displayEta,
-      };
-    });
-  } catch { return []; }
-}
-
-// ─────────────────────────────────────────────────────────────
-//  AI INSIGHT (mock — swap for real Gemini/Claude call)
-// ─────────────────────────────────────────────────────────────
-function getAIInsight(mode: MapMode, surge: number): string {
-  if (mode === 'ride') {
-    return surge > 1.5
-      ? `⚡ High demand. Prices +${Math.round((surge - 1) * 100)}%. Try in 12 min.`
-      : '🧠 Light traffic on your usual route. Best time to book.';
-  }
-  if (mode === 'food') return '🍽 3 nearby spots have < 20 min delivery right now.';
-  return '📍 Popular area — 5 eateries within 400m.';
-}
-
-// ─────────────────────────────────────────────────────────────
-//  THEME PALETTE
-// ─────────────────────────────────────────────────────────────
-function getThemeColors(theme: MapTheme) {
-  return theme === 'dark'
-    ? { bg: '#0B1528', surface: '#111E35', card: '#162040', text: '#F0F4FF', sub: '#7A8BAA', border: '#1E2D4A', pill: '#1C2E4A', active: '#1C75FF' }
-    : { bg: '#F5F7FA', surface: '#FFFFFF', card: '#FFFFFF', text: '#0D1B35', sub: '#6B7A99', border: '#DDE3F0', pill: '#E8EDF5', active: '#1C75FF' };
-}
-
-// ─────────────────────────────────────────────────────────────
-//  MAIN COMPONENT
-// ─────────────────────────────────────────────────────────────
 export default function VeyoMapScreen() {
-  // ── Core
-  const [theme, setTheme] = useState<MapTheme>('dark');
-  const [mode, setMode] = useState<MapMode>('ride');
-  const [origin, setOrigin] = useState<Coords | null>(null);
-  const [isLoadingGPS, setIsLoadingGPS] = useState(true);
-  const [aiInsight, setAiInsight] = useState('');
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const searchParams = useLocalSearchParams<{ mode?: string }>();
 
-  // ── Map ref — used to animate the camera (flyTo equivalent)
   const mapRef = useRef<MapView>(null);
+  const pulseAnim = useRef(new Animated.Value(0)).current;
 
-  // ── Search / Autocomplete
+  // Stores
+  const {
+    userLatitude,
+    userLongitude,
+    userAddress,
+    destinationLatitude,
+    destinationLongitude,
+    destinationAddress,
+    setDestinationLocation,
+  } = useLocationStore();
+  const { drivers } = useDriverStore();
+
+  // Mode and Theme
+  const [mode, setMode] = useState<MapMode>(
+    searchParams.mode === 'delivery' ? 'delivery' : 'ride'
+  );
+  const [theme, setTheme] = useState<MapTheme>('osm-bright');
+
+  // Multi-point coordinates
+  const [pickup, setPickup] = useState<GeoPoint>(() => {
+    if (typeof userLatitude === 'number' && typeof userLongitude === 'number') {
+      return { latitude: userLatitude, longitude: userLongitude };
+    }
+    return DEFAULT_COORDS.pickup;
+  });
+
+  const [dropoff, setDropoff] = useState<GeoPoint>(() => {
+    if (typeof destinationLatitude === 'number' && typeof destinationLongitude === 'number') {
+      return { latitude: destinationLatitude, longitude: destinationLongitude };
+    }
+    return DEFAULT_COORDS.dropoff;
+  });
+
+  const [pickupTitle, setPickupTitle] = useState(userAddress || 'Current Location (VI, Lagos)');
+  const [dropoffTitle, setDropoffTitle] = useState(destinationAddress || 'Lekki Phase 1, Admiralty Way');
+
+  // Delivery intermediate stops / checkpoints
+  const [checkpoints, setCheckpoints] = useState<Waypoint[]>([]);
+
+  // Nearby Driver Pool
+  const [driverPool, setDriverPool] = useState<CandidateDriver[]>([
+    {
+      id: 101,
+      name: 'Babatunde A.',
+      coordinate: { latitude: pickup.latitude + 0.0042, longitude: pickup.longitude - 0.0035 },
+      rating: 4.92,
+      vehicleType: 'car',
+    },
+    {
+      id: 102,
+      name: 'Chinedu O.',
+      coordinate: { latitude: pickup.latitude - 0.0038, longitude: pickup.longitude + 0.0045 },
+      rating: 4.88,
+      vehicleType: 'car',
+    },
+    {
+      id: 103,
+      name: 'Musa D. (Bike)',
+      coordinate: { latitude: pickup.latitude + 0.0025, longitude: pickup.longitude + 0.002 },
+      rating: 4.95,
+      vehicleType: 'bike',
+    },
+    {
+      id: 104,
+      name: 'Folake K.',
+      coordinate: { latitude: pickup.latitude - 0.0055, longitude: pickup.longitude - 0.004 },
+      rating: 4.85,
+      vehicleType: 'van',
+    },
+  ]);
+
+  // Active Assigned Driver & Live Location
+  const [activeDriver, setActiveDriver] = useState<CandidateDriver | null>(null);
+  const [liveDriverPos, setLiveDriverPos] = useState<GeoPoint | null>(null);
+  const [liveDriverBearing, setLiveDriverBearing] = useState<number>(0);
+
+  // Triangulation Routing Data
+  const [triangulation, setTriangulation] = useState<DispatchTriangulationResult | null>(null);
+  const [isRouting, setIsRouting] = useState<boolean>(false);
+
+  // Tier Selections & Dynamic Fares
+  const [selectedRideTier, setSelectedRideTier] = useState<RideTierId>('economy');
+  const [selectedDeliveryTier, setSelectedDeliveryTier] = useState<DeliveryTierId>('standard_parcel');
+  const [rideFares, setRideFares] = useState<Record<RideTierId, FareBreakdown> | null>(null);
+  const [deliveryFares, setDeliveryFares] = useState<Record<DeliveryTierId, FareBreakdown> | null>(null);
+
+  // State Machine Lifecycle
+  const [lifecycleStage, setLifecycleStage] = useState<TripLifecycleStage>('idle');
+  const [simulatedProgress, setSimulatedProgress] = useState<number>(0);
+  const simulationTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Search & Autocomplete
   const [searchText, setSearchText] = useState('');
-  const [suggestions, setSuggestions] = useState<{ placeId: string; description: string }[]>([]);
+  const [suggestions, setSuggestions] = useState<GeocodedPlace[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ── Ride state
-  const [pickupStage, setPickupStage] = useState<'pickup' | 'dropoff'>('pickup');
-  const [rideState, setRideState] = useState<RideState>({
-    pickup: null,
-    dropoff: null,
-    routePolyline: [],
-    driverLocation: null,
-    driverEta: '4 min',
-    surgeMultiplier: 1.2,
-    routeDuration: '',
-    routeDistance: '',
-  });
+  // Discover mode spots
+  const [nearbySpots, setNearbySpots] = useState<NearbySpot[]>([
+    {
+      id: 'spot-1',
+      name: 'Ocean Basket Seafood',
+      category: 'restaurant',
+      rating: 4.8,
+      lat: pickup.latitude + 0.003,
+      lng: pickup.longitude + 0.002,
+      distance: '420 m',
+      eta: '5 min walk',
+      icon: 'restaurant',
+    },
+    {
+      id: 'spot-2',
+      name: 'GTBank E-Branch & ATM',
+      category: 'atm',
+      rating: 4.6,
+      lat: pickup.latitude - 0.0025,
+      lng: pickup.longitude + 0.0035,
+      distance: '310 m',
+      eta: '4 min walk',
+      icon: 'cash-outline',
+    },
+    {
+      id: 'spot-3',
+      name: 'Terra Kulture Arts Center',
+      category: 'hotspot',
+      rating: 4.9,
+      lat: pickup.latitude + 0.005,
+      lng: pickup.longitude - 0.004,
+      distance: '680 m',
+      eta: '8 min walk',
+      icon: 'sparkles',
+    },
+  ]);
+  const [selectedSpot, setSelectedSpot] = useState<NearbySpot | null>(null);
 
-  // Teaching note: MarkerAnimated lets us smoothly animate a marker
-  // between coordinates without removing/re-adding it.
-  const driverCoordAnim = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
-
-  // ── Food state
-  const [foodState, setFoodState] = useState<FoodState>({
-    restaurantLocation: null,
-    restaurantName: '',
-    riderLocation: null,
-    deliveryEta: '22 min',
-    orderStatus: 'idle',
-  });
-
-  // ── Discover state
-  const [discoverCategory, setDiscoverCategory] = useState<DiscoverCategory>('all');
-  const [nearbyPlaces, setNearbyPlaces] = useState<NearbyPlace[]>([]);
-  const [selectedPlace, setSelectedPlace] = useState<NearbyPlace | null>(null);
-
-  // ── Animations
-  const insightAnim = useRef(new Animated.Value(0)).current;
-
-  const TC = getThemeColors(theme);
-
-  const { userLatitude, userLongitude, isLoading, destinationLatitude, destinationLongitude } = useLocationStore()
-
-  // ─────────────────────────
-  //  Boot: request GPS
-  // ─────────────────────────
+  // Concentric Pulse Animation for Pickup Pin
   useEffect(() => {
-    (async () => {  
-      setOrigin({ latitude: userLatitude as number, longitude: userLongitude as number });
-      setIsLoadingGPS(isLoading);
-    })();
-  }, []);
-
-  // When origin loads, show AI insight and load default discover layer
-  useEffect(() => {
-    if (!origin) return;
-    setAiInsight(getAIInsight(mode, rideState.surgeMultiplier));
-    Animated.timing(insightAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
-    loadDiscoverPlaces('all');
-  }, [origin]);
-
-  // When mode changes, reset and reload
-  useEffect(() => {
-    setAiInsight(getAIInsight(mode, rideState.surgeMultiplier));
-    setSelectedPlace(null);
-    if (origin && mode === 'discover') loadDiscoverPlaces(discoverCategory);
-  }, [mode]);
-
-  useEffect(() => {
-    if (mode === 'discover') loadDiscoverPlaces(discoverCategory);
-  }, [discoverCategory]);
-
-  // ─────────────────────────
-  //  Fetch nearby places
-  // ─────────────────────────
-  const loadDiscoverPlaces = useCallback(async (cat: DiscoverCategory) => {
-    if (!origin) return;
-    const places = await fetchNearbyPlaces(origin, cat);
-    setNearbyPlaces(places);
-  }, [origin]);
-
-  // ─────────────────────────
-  //  Camera helper
-  //  Teaching note: animateToRegion is react-native-maps' equivalent
-  //  of Leaflet's flyTo(). We call it on the mapRef imperatively.
-  // ─────────────────────────
-  const flyTo = useCallback((lat: number, lng: number, delta = 0.01) => {
-    mapRef.current?.animateToRegion(
-      { latitude: lat, longitude: lng, latitudeDelta: delta, longitudeDelta: delta },
-      800,
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 0, duration: 0, useNativeDriver: true }),
+      ])
     );
-  }, []);
+    pulse.start();
+    return () => pulse.stop();
+  }, [pulseAnim]);
 
-  const fitToCoords = useCallback((coords: Coords[]) => {
-    mapRef.current?.fitToCoordinates(coords, {
-      edgePadding: { top: 120, right: 60, bottom: 280, left: 60 },
-      animated: true,
-    });
-  }, []);
+  // ─────────────────────────────────────────────────────────────
+  // TRIANGULATION COMPUTATION
+  // ─────────────────────────────────────────────────────────────
+  const computeTriangulation = useCallback(
+    async (pOrigin: GeoPoint, pDest: GeoPoint, pCheckpoints: Waypoint[] = []) => {
+      setIsRouting(true);
+      try {
+        // 1. Select optimal candidate driver
+        const optimal = selectOptimalDriver(pOrigin, driverPool);
+        const assigned = optimal ? optimal.driver : driverPool[0];
+        setActiveDriver(assigned);
+        setLiveDriverPos(assigned.coordinate);
 
-  // ─────────────────────────
-  //  Ride: map press handler
-  //  Teaching note: <MapView onPress> gives us the tapped coordinate
-  //  directly — no postMessage bridge needed like in the WebView version.
-  // ─────────────────────────
-  const handleMapPress = useCallback(async (e: { nativeEvent: { coordinate: Coords } }) => {
-    if (mode !== 'ride') return;
-    const coord = e.nativeEvent.coordinate;
+        // 2. Compute full multi-point triangulation via Geoapify Routing
+        const result = await calculateDispatchTriangulation({
+          driverPosition: assigned.coordinate,
+          pickup: pOrigin,
+          dropoff: pDest,
+          checkpoints: pCheckpoints,
+          mode: 'drive',
+        });
 
-    if (pickupStage === 'pickup') {
-      setRideState(prev => ({ ...prev, pickup: coord }));
-      setPickupStage('dropoff');
-    } else {
-      setRideState(prev => ({ ...prev, dropoff: coord }));
-      if (rideState.pickup) {
-        await drawRoute(rideState.pickup, coord);
-      }
-      setPickupStage('pickup');
-    }
-  }, [mode, pickupStage, rideState.pickup]);
+        setTriangulation(result);
+        setLiveDriverBearing(result.driverBearing);
 
-  // ─────────────────────────
-  //  Draw route + simulate driver
-  // ─────────────────────────
-  const drawRoute = useCallback(async (from: Coords, to: Coords) => {
-    const route = await fetchRoadRoute(from, to);
-    if (!route) return;
-    setRideState(prev => ({
-      ...prev,
-      routePolyline: route.polyline,
-      routeDuration: route.durationText,
-      routeDistance: route.distanceText,
-    }));
-    fitToCoords([from, to]);
-    simulateDriver(from);
-  }, [fitToCoords]);
+        // 3. Compute dynamic fares across all tiers
+        const surge = 1.15; // 15% dynamic demand surge index
+        const rFares = estimateAllRideTiers({
+          distanceKm: result.transitLeg.distanceKm,
+          durationMins: result.transitLeg.durationMins,
+          surgeMultiplier: surge,
+        });
+        const dFares = estimateAllDeliveryTiers({
+          distanceKm: result.transitLeg.distanceKm,
+          durationMins: result.transitLeg.durationMins,
+          surgeMultiplier: surge,
+        });
 
-  // Animate driver marker approaching pickup
-  const simulateDriver = (pickup: Coords) => {
-    const startLat = pickup.latitude + 0.008;
-    const startLng = pickup.longitude + 0.006;
-    let step = 0;
-    const steps = 20;
-    const iv = setInterval(() => {
-      step++;
-      const t = step / steps;
-      const lat = startLat + (pickup.latitude - startLat) * t;
-      const lng = startLng + (pickup.longitude - startLng) * t;
-      setRideState(prev => ({
-        ...prev,
-        driverLocation: { latitude: lat, longitude: lng },
-        driverEta: `${Math.max(1, Math.round((1 - t) * 5))} min`,
-      }));
-      if (step >= steps) clearInterval(iv);
-    }, 800);
-  };
+        setRideFares(rFares);
+        setDeliveryFares(dFares);
 
-  // ─────────────────────────
-  //  Simulate food delivery
-  // ─────────────────────────
-  const simulateFoodDelivery = useCallback(() => {
-    if (!origin) return;
-    const restaurant = {
-      latitude: origin.latitude + 0.006,
-      longitude: origin.longitude + 0.004,
-    };
-    setFoodState(prev => ({
-      ...prev,
-      restaurantLocation: restaurant,
-      restaurantName: 'Amala Joint',
-      orderStatus: 'confirmed',
-      riderLocation: restaurant,
-    }));
-    fitToCoords([restaurant, origin]);
-
-    setTimeout(() => {
-      setFoodState(prev => ({ ...prev, orderStatus: 'picked_up' }));
-      let step = 0;
-      const steps = 25;
-      const iv = setInterval(() => {
-        step++;
-        const t = step / steps;
-        const lat = restaurant.latitude + (origin.latitude - restaurant.latitude) * t;
-        const lng = restaurant.longitude + (origin.longitude - restaurant.longitude) * t;
-        setFoodState(prev => ({
-          ...prev,
-          riderLocation: { latitude: lat, longitude: lng },
-          deliveryEta: `${Math.max(1, Math.round((1 - t) * 18))} min`,
-        }));
-        if (step >= steps) {
-          clearInterval(iv);
-          setFoodState(prev => ({ ...prev, orderStatus: 'arriving' }));
+        // 4. Fit camera bounds cleanly
+        if (mapRef.current) {
+          const fitPoints = [
+            assigned.coordinate,
+            pOrigin,
+            ...pCheckpoints.map((c) => c.coordinate),
+            pDest,
+          ];
+          mapRef.current.fitToCoordinates(fitPoints, {
+            edgePadding: { top: 120, right: 60, bottom: 320, left: 60 },
+            animated: true,
+          });
         }
-      }, 700);
-    }, 2000);
-  }, [origin, fitToCoords]);
-
-  // ─────────────────────────
-  //  Autocomplete handler
-  //  Teaching note: clearTimeout + setTimeout = debounce pattern.
-  //  We cancel the previous timer on each keystroke, so the API
-  //  call only fires 350ms after the user stops typing.
-  // ─────────────────────────
-  const handleSearchChange = useCallback((text: string) => {
-    setSearchText(text);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!origin || text.length < 2) { setSuggestions([]); setShowSuggestions(false); return; }
-    debounceRef.current = setTimeout(async () => {
-      const results = await fetchSuggestions(text, origin);
-      setSuggestions(results);
-      setShowSuggestions(results.length > 0);
-    }, 350);
-  }, [origin]);
-
-  const handleSuggestionPick = useCallback(async (placeId: string, description: string) => {
-    setShowSuggestions(false);
-    setSearchText(description);
-    const coords = await fetchPlaceCoords(placeId);
-    if (!coords) return;
-
-    if (mode === 'ride') {
-      if (!rideState.pickup) {
-        setRideState(prev => ({ ...prev, pickup: coords }));
-        setPickupStage('dropoff');
-        flyTo(coords.latitude, coords.longitude);
-      } else {
-        setRideState(prev => ({ ...prev, dropoff: coords }));
-        await drawRoute(rideState.pickup, coords);
-        setPickupStage('pickup');
+      } catch (err) {
+        console.warn('[MapScreen] Triangulation computation error:', err);
+      } finally {
+        setIsRouting(false);
       }
-    } else {
-      flyTo(coords.latitude, coords.longitude, 0.008);
+    },
+    [driverPool]
+  );
+
+  // Recalculate whenever pickup or dropoff or checkpoints change
+  useEffect(() => {
+    computeTriangulation(pickup, dropoff, checkpoints);
+  }, [pickup, dropoff, checkpoints, computeTriangulation]);
+
+  // Recenter Camera
+  const handleRecenter = useCallback(() => {
+    if (mapRef.current) {
+      mapRef.current.animateToRegion(
+        {
+          latitude: pickup.latitude,
+          longitude: pickup.longitude,
+          latitudeDelta: 0.025,
+          longitudeDelta: 0.025,
+        },
+        600
+      );
     }
-  }, [mode, rideState.pickup, flyTo, drawRoute]);
+  }, [pickup]);
 
-  // ─────────────────────────
-  //  Clear ride
-  // ─────────────────────────
-  const clearRide = useCallback(() => {
-    setRideState({
-      pickup: null, dropoff: null, routePolyline: [],
-      driverLocation: null, driverEta: '4 min',
-      surgeMultiplier: 1.2, routeDuration: '', routeDistance: '',
-    });
-    setPickupStage('pickup');
-    if (origin) flyTo(origin.latitude, origin.longitude, 0.02);
-  }, [origin, flyTo]);
+  // Fit Route
+  const handleFitRoute = useCallback(() => {
+    if (mapRef.current && triangulation) {
+      mapRef.current.fitToCoordinates(triangulation.fullPolyline, {
+        edgePadding: { top: 110, right: 50, bottom: 300, left: 50 },
+        animated: true,
+      });
+    }
+  }, [triangulation]);
 
-  // ─────────────────────────
-  //  Map provider / type
-  //  Teaching note: PROVIDER_DEFAULT = Apple Maps on iOS, Google on Android.
-  //  mapType controls satellite vs standard rendering.
-  //  customMapStyle only applies on Android with Google Maps.
-  // ─────────────────────────
-  const mapType: MapType = theme === 'satellite' ? 'hybrid' : 'standard';
-  const mapStyle = theme === 'dark' && Platform.OS === 'android' ? DARK_MAP_STYLE : undefined;
+  // ─────────────────────────────────────────────────────────────
+  // MAP TAP HANDLER (Change Dropoff or Add Checkpoint)
+  // ─────────────────────────────────────────────────────────────
+  const handleMapPress = useCallback(
+    async (e: { nativeEvent: { coordinate: GeoPoint } }) => {
+      if (lifecycleStage !== 'idle') return;
+      const tapped = e.nativeEvent.coordinate;
 
-  const centerLat = origin?.latitude ?? 6.5244;
-  const centerLng = origin?.longitude ?? 3.3792;
+      if (mode === 'delivery') {
+        Alert.alert('Delivery Map Action', 'Choose how to use this tapped location:', [
+          {
+            text: 'Set as Final Destination',
+            onPress: async () => {
+              setDropoff(tapped);
+              const addr = await reverseGeocodeGeoapify(tapped);
+              setDropoffTitle(addr);
+              setDestinationLocation({
+                latitude: tapped.latitude,
+                longitude: tapped.longitude,
+                address: addr,
+              });
+            },
+          },
+          {
+            text: 'Add Delivery Stop',
+            onPress: async () => {
+              const stopNumber = checkpoints.length + 1;
+              const addr = await reverseGeocodeGeoapify(tapped);
+              const newWp: Waypoint = {
+                id: `cp-${Date.now()}`,
+                coordinate: tapped,
+                type: 'checkpoint',
+                title: `Stop ${stopNumber}`,
+                address: addr,
+                sequence: stopNumber,
+              };
+              setCheckpoints((prev) => [...prev, newWp]);
+            },
+          },
+          { text: 'Cancel', style: 'cancel' },
+        ]);
+      } else {
+        // Ride mode: update dropoff
+        setDropoff(tapped);
+        const addr = await reverseGeocodeGeoapify(tapped);
+        setDropoffTitle(addr);
+        setDestinationLocation({
+          latitude: tapped.latitude,
+          longitude: tapped.longitude,
+          address: addr,
+        });
+      }
+    },
+    [lifecycleStage, mode, checkpoints, setDestinationLocation]
+  );
+
+  // ─────────────────────────────────────────────────────────────
+  // AUTOCOMPLETE SEARCH HANDLER
+  // ─────────────────────────────────────────────────────────────
+  const handleSearchTextChange = useCallback(
+    (text: string) => {
+      setSearchText(text);
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+
+      if (!text || text.trim().length < 2) {
+        setSuggestions([]);
+        setShowSuggestions(false);
+        return;
+      }
+
+      searchDebounceRef.current = setTimeout(async () => {
+        const places = await searchPlacesGeoapify(text, pickup);
+        setSuggestions(places);
+        setShowSuggestions(places.length > 0);
+      }, 300);
+    },
+    [pickup]
+  );
+
+  const handleSelectSuggestion = useCallback(
+    (place: GeocodedPlace) => {
+      setSearchText(place.name);
+      setShowSuggestions(false);
+      setDropoff(place.coordinate);
+      setDropoffTitle(place.formattedAddress || place.name);
+      setDestinationLocation({
+        latitude: place.coordinate.latitude,
+        longitude: place.coordinate.longitude,
+        address: place.formattedAddress || place.name,
+      });
+
+      if (mapRef.current) {
+        mapRef.current.animateToRegion(
+          {
+            latitude: place.coordinate.latitude,
+            longitude: place.coordinate.longitude,
+            latitudeDelta: 0.015,
+            longitudeDelta: 0.015,
+          },
+          600
+        );
+      }
+    },
+    [setDestinationLocation]
+  );
+
+  // ─────────────────────────────────────────────────────────────
+  // LIVE TRIP / DISPATCH SIMULATION STATE MACHINE
+  // ─────────────────────────────────────────────────────────────
+  const startDispatchSimulation = useCallback(() => {
+    if (!triangulation) return;
+
+    if (simulationTimerRef.current) {
+      clearInterval(simulationTimerRef.current);
+    }
+
+    setLifecycleStage('dispatch_searching');
+
+    // Stage 1: Searching for Driver (1.8s)
+    setTimeout(() => {
+      setLifecycleStage('driver_assigned');
+
+      // Stage 2: Driver En Route to Pickup (Traverses dispatchLeg)
+      const dispatchPolyline = triangulation.dispatchLeg.polyline;
+      let step = 0;
+      const totalSteps = 24;
+
+      simulationTimerRef.current = setInterval(() => {
+        step++;
+        const ratio = step / totalSteps;
+        const interpolated = interpolatePointAlongPolyline(dispatchPolyline, ratio);
+
+        setLiveDriverPos(interpolated.point);
+        setLiveDriverBearing(interpolated.bearing);
+        setSimulatedProgress(Math.round(ratio * 30));
+
+        if (step >= totalSteps) {
+          if (simulationTimerRef.current) clearInterval(simulationTimerRef.current);
+
+          // Stage 3: Driver Arrived at Pickup
+          setLifecycleStage('driver_arrived');
+          setLiveDriverPos(pickup);
+
+          // Stage 4: Transit to Destination starts after 2.5s
+          setTimeout(() => {
+            setLifecycleStage('in_transit');
+
+            const transitPolyline = triangulation.transitLeg.polyline;
+            let transitStep = 0;
+            const transitTotalSteps = 40;
+
+            simulationTimerRef.current = setInterval(() => {
+              transitStep++;
+              const tRatio = transitStep / transitTotalSteps;
+              const tInterp = interpolatePointAlongPolyline(transitPolyline, tRatio);
+
+              setLiveDriverPos(tInterp.point);
+              setLiveDriverBearing(tInterp.bearing);
+              setSimulatedProgress(30 + Math.round(tRatio * 70));
+
+              // Near destination threshold
+              if (tRatio > 0.85 && lifecycleStage !== 'approaching_destination') {
+                setLifecycleStage('approaching_destination');
+              }
+
+              if (transitStep >= transitTotalSteps) {
+                if (simulationTimerRef.current) clearInterval(simulationTimerRef.current);
+                setLifecycleStage('completed');
+                setLiveDriverPos(dropoff);
+                setSimulatedProgress(100);
+              }
+            }, 600);
+          }, 2500);
+        }
+      }, 500);
+    }, 1800);
+  }, [triangulation, pickup, dropoff, lifecycleStage]);
+
+  const handleCancelOrReset = useCallback(() => {
+    if (simulationTimerRef.current) {
+      clearInterval(simulationTimerRef.current);
+    }
+    setLifecycleStage('idle');
+    setSimulatedProgress(0);
+    if (activeDriver) {
+      setLiveDriverPos(activeDriver.coordinate);
+    }
+    handleFitRoute();
+  }, [activeDriver, handleFitRoute]);
+
+  // Clean up interval on unmount
+  useEffect(() => {
+    return () => {
+      if (simulationTimerRef.current) clearInterval(simulationTimerRef.current);
+    };
+  }, []);
+
+  // Theme palettes
+  const isDark = theme === 'dark';
+  const bgColor = isDark ? '#0B1528' : '#F8FAFC';
+  const cardBg = isDark ? '#111E35' : '#FFFFFF';
+  const textColor = isDark ? '#F1F5F9' : '#0B1528';
+  const subTextColor = isDark ? '#94A3B8' : '#64748B';
+  const borderColor = isDark ? '#1E2D4A' : '#E2E8F0';
+
+  const stageMeta = getStageMetadata(lifecycleStage);
+
+  const activeRideFare = rideFares?.[selectedRideTier];
+  const activeDeliveryFare = deliveryFares?.[selectedDeliveryTier];
 
   return (
-    <View style={[s.root, { backgroundColor: TC.bg }]}>
-      <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} />
+    <View style={[styles.root, { backgroundColor: bgColor }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <Stack.Screen options={{ headerShown: false }} />
 
-      {/* ── MAP ────────────────────────────────────────────── */}
-      {/*
-        Teaching note: react-native-maps renders as a NATIVE view —
-        it sits in the same layer as your RN UI but is GPU-accelerated.
-        Children (Marker, Polyline etc.) are declarative — you just
-        describe what should be on the map and React handles updates.
-      */}
+      {/* ── MAP VIEW ────────────────────────────────────────── */}
       <MapView
         ref={mapRef}
         style={StyleSheet.absoluteFill}
-        mapType={mapType}
-        customMapStyle={mapStyle}
+        provider={PROVIDER_DEFAULT}
+        customMapStyle={isDark ? DARK_MATTER_MAP_STYLE : OSM_BRIGHT_SMOOTH_MAP_STYLE}
+        mapType={theme === 'satellite' ? 'hybrid' : 'standard'}
         initialRegion={{
-          latitude: centerLat,
-          longitude: centerLng,
-          latitudeDelta: 0.02,
-          longitudeDelta: 0.02,
+          latitude: (pickup.latitude + dropoff.latitude) / 2,
+          longitude: (pickup.longitude + dropoff.longitude) / 2,
+          latitudeDelta: 0.05,
+          longitudeDelta: 0.05,
         }}
-        showsUserLocation={true}          // native blue dot — no custom marker needed
-        showsMyLocationButton={false}     // we have our own recenter button
+        showsUserLocation={false}
+        showsMyLocationButton={false}
         showsCompass={false}
         toolbarEnabled={false}
         onPress={handleMapPress}
-        provider={PROVIDER_DEFAULT}
       >
-        {/* Pickup pin */}
-        {rideState.pickup && (
-          <Marker coordinate={rideState.pickup} anchor={{ x: 0.5, y: 0.5 }}>
-            <View style={s.pickupPin} />
-          </Marker>
+        {/* ── Geoapify Vector / Raster Tile Layer matching RideCard osm-bright-smooth ── */}
+        {theme !== 'satellite' && (
+          <UrlTile
+            key={`geoapify-tile-${theme}`}
+            urlTemplate={
+              isDark
+                ? `https://maps.geoapify.com/v1/tile/dark-matter-dark-grey/{z}/{x}/{y}.png?apiKey=${GEOAPIFY_API_KEY}`
+                : `https://maps.geoapify.com/v1/tile/osm-bright-smooth/{z}/{x}/{y}.png?apiKey=${GEOAPIFY_API_KEY}`
+            }
+            maximumZ={19}
+            flipY={false}
+            zIndex={1}
+            tileSize={256}
+          />
         )}
 
-        {/* Dropoff pin */}
-        {rideState.dropoff && (
-          <Marker coordinate={rideState.dropoff} anchor={{ x: 0.5, y: 0.5 }}>
-            <View style={s.dropoffPin} />
-          </Marker>
-        )}
+        {/* ── Driver Dispatch Leg Polyline (Driver -> Pickup) ── */}
+        {triangulation &&
+          (lifecycleStage === 'idle' ||
+            lifecycleStage === 'dispatch_searching' ||
+            lifecycleStage === 'driver_assigned') && (
+            <Polyline
+              coordinates={triangulation.dispatchLeg.polyline}
+              strokeColor="#0286FF"
+              strokeWidth={4}
+              lineDashPattern={[8, 5]}
+              zIndex={3}
+            />
+          )}
 
-        {/* Road route polyline */}
-        {rideState.routePolyline.length > 0 && (
+        {/* ── Primary Transit Leg Polyline (Pickup -> Dropoff) ── */}
+        {triangulation && (
           <Polyline
-            coordinates={rideState.routePolyline}
-            strokeColor="#1C75FF"
+            coordinates={triangulation.transitLeg.polyline}
+            strokeColor={isDark ? '#38BDF8' : '#0286FF'}
             strokeWidth={5}
             lineCap="round"
             lineJoin="round"
+            zIndex={4}
           />
         )}
 
-        {/* Driver marker */}
-        {rideState.driverLocation && (
-          <Marker coordinate={rideState.driverLocation} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false}>
-            <View style={s.driverMarker}><Text style={{ fontSize: 16 }}>🚗</Text></View>
-          </Marker>
-        )}
+        {/* ── Delivery Checkpoint Segments ── */}
+        {triangulation &&
+          triangulation.multiDropLegs.map((leg, i) => (
+            <Polyline
+              key={`leg-${i}`}
+              coordinates={leg.polyline}
+              strokeColor={i % 2 === 0 ? '#10B981' : '#8B5CF6'}
+              strokeWidth={5}
+              lineCap="round"
+              lineJoin="round"
+              zIndex={5}
+            />
+          ))}
 
-        {/* Food: restaurant pin */}
-        {foodState.restaurantLocation && (
-          <Marker coordinate={foodState.restaurantLocation} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false}>
-            <View style={[s.driverMarker, { backgroundColor: '#FF6B35' }]}>
-              <Text style={{ fontSize: 16 }}>🍽</Text>
+        {/* ── Point A: Pickup Marker (Green Pill) ── */}
+        <Marker coordinate={pickup} anchor={{ x: 0.5, y: 0.85 }} zIndex={10}>
+          <View style={styles.markerAnchor}>
+            <View style={styles.pickupPillBadge}>
+              <View style={styles.pickupPillDot} />
+              <Text style={styles.pickupPillText} numberOfLines={1}>
+                {pickupTitle.split(',')[0]}
+              </Text>
+            </View>
+            <Animated.View
+              style={[
+                styles.pulseRing,
+                {
+                  transform: [
+                    {
+                      scale: pulseAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [1, 2.2],
+                      }),
+                    },
+                  ],
+                  opacity: pulseAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.7, 0],
+                  }),
+                },
+              ]}
+            />
+            <View style={styles.pickupCorePin}>
+              <View style={styles.pickupInnerDot} />
+            </View>
+          </View>
+        </Marker>
+
+        {/* ── Point C: Dropoff Marker (Dark Slate Pill) ── */}
+        <Marker coordinate={dropoff} anchor={{ x: 0.5, y: 0.85 }} zIndex={10}>
+          <View style={styles.markerAnchor}>
+            <View style={styles.dropoffPillBadge}>
+              <Ionicons name="flag" size={11} color="#FFFFFF" />
+              <Text style={styles.dropoffPillText} numberOfLines={1}>
+                {dropoffTitle.split(',')[0]}
+              </Text>
+            </View>
+            <View style={styles.dropoffCorePin}>
+              <Ionicons name="location" size={16} color="#FFFFFF" />
+            </View>
+          </View>
+        </Marker>
+
+        {/* ── Point D...: Checkpoints / Stops ── */}
+        {checkpoints.map((cp, idx) => (
+          <Marker key={cp.id} coordinate={cp.coordinate} anchor={{ x: 0.5, y: 0.85 }} zIndex={9}>
+            <View style={styles.markerAnchor}>
+              <View style={styles.checkpointBadge}>
+                <Text style={styles.checkpointBadgeText}>Stop {idx + 1}</Text>
+              </View>
+              <View style={styles.checkpointCorePin}>
+                <Text style={styles.checkpointPinNumber}>{idx + 1}</Text>
+              </View>
+            </View>
+          </Marker>
+        ))}
+
+        {/* ── Point B: Live Dispatched Driver / Courier ── */}
+        {liveDriverPos && (
+          <Marker coordinate={liveDriverPos} anchor={{ x: 0.5, y: 0.5 }} zIndex={20}>
+            <View style={styles.driverMarkerContainer}>
+              {/* ETA / Info tag */}
+              <View style={styles.driverPillTag}>
+                <Text style={styles.driverPillTagText}>
+                  {triangulation ? triangulation.estimatedPickupEta : '3 min'}
+                </Text>
+              </View>
+              {/* Rotating vehicle icon pointed along bearing */}
+              <View
+                style={[
+                  styles.driverVehicleCircle,
+                  {
+                    transform: [{ rotate: `${liveDriverBearing}deg` }],
+                  },
+                ]}
+              >
+                <FontAwesome5
+                  name={activeDriver?.vehicleType === 'bike' ? 'motorcycle' : 'car'}
+                  size={15}
+                  color="#FFFFFF"
+                />
+              </View>
             </View>
           </Marker>
         )}
 
-        {/* Food: delivery route */}
-        {foodState.restaurantLocation && origin && (
-          <Polyline
-            coordinates={[foodState.restaurantLocation, origin]}
-            strokeColor="#FF6B35"
-            strokeWidth={4}
-            lineDashPattern={[10, 6]}
-          />
-        )}
+        {/* ── Other Nearby Radar Drivers (in Idle Mode) ── */}
+        {lifecycleStage === 'idle' &&
+          driverPool.map((d) => {
+            if (activeDriver && d.id === activeDriver.id) return null;
+            return (
+              <Marker key={`nearby-${d.id}`} coordinate={d.coordinate} anchor={{ x: 0.5, y: 0.5 }} zIndex={8}>
+                <View style={styles.idleDriverPin}>
+                  <FontAwesome5
+                    name={d.vehicleType === 'bike' ? 'motorcycle' : 'car'}
+                    size={11}
+                    color="#0286FF"
+                  />
+                </View>
+              </Marker>
+            );
+          })}
 
-        {/* Food: rider marker */}
-        {foodState.riderLocation && (
-          <Marker coordinate={foodState.riderLocation} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false}>
-            <View style={[s.driverMarker, { backgroundColor: '#FF6B35' }]}>
-              <Text style={{ fontSize: 16 }}>🛵</Text>
-            </View>
-          </Marker>
-        )}
-
-        {/* Discover: place markers */}
-        {mode === 'discover' && nearbyPlaces.map(place => {
-          const meta = CATEGORY_META[place.category];
-          return (
+        {/* ── Discover POI Markers ── */}
+        {mode === 'discover' &&
+          nearbySpots.map((spot) => (
             <Marker
-              key={place.id}
-              coordinate={{ latitude: place.lat, longitude: place.lng }}
-              tracksViewChanges={false}
-              onPress={() => setSelectedPlace(place)}
+              key={spot.id}
+              coordinate={{ latitude: spot.lat, longitude: spot.lng }}
+              anchor={{ x: 0.5, y: 0.85 }}
+              onPress={() => setSelectedSpot(spot)}
             >
-              <View style={[s.placeChip, { backgroundColor: meta.color }]}>
-                <Text style={s.placeChipText}>{meta.icon} {place.name}</Text>
+              <View style={styles.spotMarkerPill}>
+                <Ionicons name={spot.icon as any} size={12} color="#0286FF" />
+                <Text style={styles.spotMarkerText}>{spot.name}</Text>
               </View>
             </Marker>
-          );
-        })}
+          ))}
       </MapView>
 
-      {/* ── TOP UI ─────────────────────────────────────────── */}
-      <SafeAreaView style={s.safeTop} pointerEvents="box-none">
-
-        {/* Search bar + theme toggle */}
-        <View style={[s.topBar, { backgroundColor: TC.surface + 'F2' }]}>
-          <View style={[s.searchBox, { backgroundColor: TC.card, borderColor: TC.border }]}>
-            <Text style={{ fontSize: 15, marginRight: 6 }}>🔍</Text>
-            <TextInput
-              style={[s.searchInput, { color: TC.text }]}
-              placeholder={
-                mode === 'ride' ? 'Where to?' :
-                mode === 'food' ? 'Search restaurants...' :
-                'Find places near you...'
+      {/* ── TOP FLOATING NAVIGATION & SEARCH BAR ──────────────── */}
+      <SafeAreaView style={styles.topSafeArea} pointerEvents="box-none">
+        <View style={[styles.topBarCard, { backgroundColor: cardBg, borderColor }]}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.push('/(root)/(tabs)/home');
               }
-              placeholderTextColor={TC.sub}
+            }}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="arrow-back" size={20} color={textColor} />
+          </TouchableOpacity>
+
+          {/* Search Input */}
+          <View style={[styles.searchInputContainer, { backgroundColor: isDark ? '#162040' : '#F1F5F9' }]}>
+            <Ionicons name="search" size={16} color={subTextColor} />
+            <TextInput
+              style={[styles.searchInput, { color: textColor }]}
+              placeholder={mode === 'delivery' ? 'Search delivery destination...' : 'Where are you heading?'}
+              placeholderTextColor={subTextColor}
               value={searchText}
-              onChangeText={handleSearchChange}
-              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+              onChangeText={handleSearchTextChange}
             />
             {searchText.length > 0 && (
-              <TouchableOpacity onPress={() => { setSearchText(''); setSuggestions([]); setShowSuggestions(false); }}>
-                <Text style={{ color: TC.sub, fontSize: 16, paddingLeft: 6 }}>✕</Text>
+              <TouchableOpacity onPress={() => setSearchText('')}>
+                <Ionicons name="close-circle" size={16} color={subTextColor} />
               </TouchableOpacity>
             )}
           </View>
-          {/* Theme picker */}
-          <View style={[s.themeRow, { backgroundColor: TC.pill }]}>
-            {(['dark', 'light', 'satellite'] as MapTheme[]).map(t => (
+
+          {/* Theme Switcher */}
+          <View style={[styles.themePillToggle, { backgroundColor: isDark ? '#162040' : '#E2E8F0' }]}>
+            {(['osm-bright', 'dark', 'satellite'] as MapTheme[]).map((t) => (
               <TouchableOpacity
                 key={t}
-                style={[s.themeBtn, theme === t && { backgroundColor: TC.active }]}
+                style={[styles.themeOptionBtn, theme === t && styles.themeOptionBtnActive]}
                 onPress={() => setTheme(t)}
               >
-                <Text style={{ fontSize: 13 }}>
-                  {t === 'dark' ? '🌙' : t === 'light' ? '☀️' : '🛰'}
+                <Text style={styles.themeOptionEmoji}>
+                  {t === 'osm-bright' ? '☀️' : t === 'dark' ? '🌙' : '🛰'}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
-        {/* Autocomplete dropdown */}
+        {/* Autocomplete Dropdown List */}
         {showSuggestions && (
-          <View style={[s.dropdown, { backgroundColor: TC.surface, borderColor: TC.border }]}>
-            {suggestions.map((sug, i) => (
+          <View style={[styles.suggestionsDropdown, { backgroundColor: cardBg, borderColor }]}>
+            {suggestions.map((item, idx) => (
               <TouchableOpacity
-                key={sug.placeId}
+                key={item.placeId || idx}
                 style={[
-                  s.dropdownRow,
-                  i < suggestions.length - 1 && { borderBottomWidth: 1, borderBottomColor: TC.border },
+                  styles.suggestionRow,
+                  idx < suggestions.length - 1 && { borderBottomWidth: 1, borderBottomColor: borderColor },
                 ]}
-                onPress={() => handleSuggestionPick(sug.placeId, sug.description)}
+                onPress={() => handleSelectSuggestion(item)}
               >
-                <Text style={{ fontSize: 13, marginRight: 8 }}>📍</Text>
-                <Text style={[s.dropdownText, { color: TC.text }]} numberOfLines={1}>
-                  {sug.description}
-                </Text>
+                <Ionicons name="location-outline" size={17} color="#0286FF" />
+                <View style={{ flex: 1, marginLeft: 8 }}>
+                  <Text style={[styles.suggestionTitle, { color: textColor }]} numberOfLines={1}>
+                    {item.name}
+                  </Text>
+                  <Text style={[styles.suggestionSub, { color: subTextColor }]} numberOfLines={1}>
+                    {item.formattedAddress}
+                  </Text>
+                </View>
               </TouchableOpacity>
             ))}
           </View>
         )}
 
-        {/* Mode tabs */}
-        <View style={[s.modeTabs, { backgroundColor: TC.surface + 'EE' }]}>
-          {([
-            { id: 'ride', label: 'Ride', icon: '🚗' },
-            { id: 'food', label: 'Delivery', icon: '🛵' },
-            { id: 'discover', label: 'Discover', icon: '🔍' },
-          ] as { id: MapMode; label: string; icon: string }[]).map(tab => (
-            <TouchableOpacity
-              key={tab.id}
-              style={[s.modeTab, mode === tab.id && { backgroundColor: TC.active }]}
-              onPress={() => setMode(tab.id)}
-            >
-              <Text style={{ fontSize: 14 }}>{tab.icon}</Text>
-              <Text style={[s.modeTabText, { color: mode === tab.id ? '#FFF' : TC.sub }]}>
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        {/* Mobility Mode Tabs: Ride vs Delivery vs Discover */}
+        <View style={[styles.modeTabsRow, { backgroundColor: cardBg, borderColor }]}>
+          {(
+            [
+              { id: 'ride', label: 'Ride Triangulation', icon: 'car-sport-outline' },
+              { id: 'delivery', label: 'Courier Multi-Drop', icon: 'cube-outline' },
+              { id: 'discover', label: 'Spots', icon: 'compass-outline' },
+            ] as const
+          ).map((tab) => {
+            const isActive = mode === tab.id;
+            return (
+              <TouchableOpacity
+                key={tab.id}
+                style={[styles.modeTabButton, isActive && styles.modeTabButtonActive]}
+                onPress={() => setMode(tab.id)}
+              >
+                <Ionicons name={tab.icon} size={15} color={isActive ? '#FFFFFF' : subTextColor} />
+                <Text style={[styles.modeTabButtonText, { color: isActive ? '#FFFFFF' : subTextColor }]}>
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
-
-        {/* AI Insight bar */}
-        {!!aiInsight && (
-          <Animated.View
-            style={[
-              s.insightBar,
-              { backgroundColor: TC.surface + 'EE' },
-              {
-                opacity: insightAnim,
-                transform: [{ translateY: insightAnim.interpolate({ inputRange: [0, 1], outputRange: [-10, 0] }) }],
-              },
-            ]}
-          >
-            <Text style={[s.insightText, { color: TC.text }]}>{aiInsight}</Text>
-          </Animated.View>
-        )}
-
-        {/* Discover category pills */}
-        {mode === 'discover' && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={s.pillScroll}
-            contentContainerStyle={s.pillScrollContent}
-          >
-            {(Object.keys(CATEGORY_META) as DiscoverCategory[]).map(cat => {
-              const meta = CATEGORY_META[cat];
-              const active = discoverCategory === cat;
-              return (
-                <TouchableOpacity
-                  key={cat}
-                  style={[s.pill, {
-                    backgroundColor: active ? meta.color : TC.pill,
-                    borderColor: active ? meta.color : TC.border,
-                  }]}
-                  onPress={() => setDiscoverCategory(cat)}
-                >
-                  <Text style={{ fontSize: 12 }}>{meta.icon}</Text>
-                  <Text style={[s.pillText, { color: active ? '#FFF' : TC.sub }]}>{meta.label}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        )}
       </SafeAreaView>
 
-      {/* ── RECENTER BUTTON ────────────────────────────────── */}
-      {!isLoadingGPS && origin && (
+      {/* ── RECENTER & FIT BUTTONS (FAB) ─────────────────────── */}
+      <View style={styles.fabControlsColumn}>
         <TouchableOpacity
-          style={[s.recenterBtn, { backgroundColor: TC.surface, borderColor: TC.border }]}
-          onPress={() => flyTo(origin.latitude, origin.longitude, 0.02)}
+          style={[styles.fabButton, { backgroundColor: cardBg, borderColor }]}
+          onPress={handleFitRoute}
+          activeOpacity={0.85}
         >
-          <Text style={{ fontSize: 18 }}>◎</Text>
+          <Feather name="maximize" size={18} color="#0286FF" />
         </TouchableOpacity>
-      )}
+        <TouchableOpacity
+          style={[styles.fabButton, { backgroundColor: cardBg, borderColor, marginTop: 8 }]}
+          onPress={handleRecenter}
+          activeOpacity={0.85}
+        >
+          <MaterialIcons name="my-location" size={19} color="#0286FF" />
+        </TouchableOpacity>
+      </View>
 
-      {/* ── RIDE BOTTOM CARD ───────────────────────────────── */}
-      {mode === 'ride' && (
-        <View style={[s.bottomCard, { backgroundColor: TC.surface }]}>
-          <View style={s.rideHintRow}>
-            <View style={s.routeDots}>
-              <View style={[s.dot, { backgroundColor: '#00C896' }]} />
-              <View style={[s.dotLine, { backgroundColor: TC.border }]} />
-              <View style={[s.dot, { backgroundColor: '#FF3B30' }]} />
+      {/* ── BOTTOM ROUTE OVERVIEW & DISPATCH CARD ───────────── */}
+      <View style={[styles.bottomSheetCard, { backgroundColor: cardBg, borderColor }]}>
+        {/* Drag Handle */}
+        <View style={styles.sheetHandleBar} />
+
+        {/* Triangulation Metrics Strip */}
+        {triangulation ? (
+          <View style={[styles.metricsStrip, { borderColor }]}>
+            <View style={styles.metricItem}>
+              <Text style={[styles.metricLabel, { color: subTextColor }]}>Driver ETA</Text>
+              <Text style={[styles.metricValue, { color: textColor }]}>
+                {triangulation.estimatedPickupEta}
+              </Text>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[s.hintLabel, { color: TC.sub }]}>
-                {pickupStage === 'pickup' ? 'TAP MAP FOR PICKUP' : 'TAP MAP FOR DROP-OFF'}
+            <View style={[styles.metricDivider, { backgroundColor: borderColor }]} />
+            <View style={styles.metricItem}>
+              <Text style={[styles.metricLabel, { color: subTextColor }]}>Trip Time</Text>
+              <Text style={[styles.metricValue, { color: textColor }]}>
+                {triangulation.estimatedDropoffEta}
               </Text>
-              <Text style={[s.hintValue, { color: TC.text }]}>
-                {pickupStage === 'pickup'
-                  ? rideState.pickup
-                    ? `${rideState.pickup.latitude.toFixed(4)}, ${rideState.pickup.longitude.toFixed(4)}`
-                    : 'Set your pickup point'
-                  : 'Where are you going?'}
+            </View>
+            <View style={[styles.metricDivider, { backgroundColor: borderColor }]} />
+            <View style={styles.metricItem}>
+              <Text style={[styles.metricLabel, { color: subTextColor }]}>Distance</Text>
+              <Text style={[styles.metricValue, { color: textColor }]}>
+                {triangulation.formattedDistance}
               </Text>
+            </View>
+            <View style={[styles.metricDivider, { backgroundColor: borderColor }]} />
+            <View style={styles.metricItem}>
+              <Text style={[styles.metricLabel, { color: subTextColor }]}>Surge</Text>
+              <Text style={[styles.metricValue, { color: '#F59E0B' }]}>1.15×</Text>
             </View>
           </View>
+        ) : (
+          <View style={styles.loadingRouteRow}>
+            <ActivityIndicator size="small" color="#0286FF" />
+            <Text style={[styles.loadingRouteText, { color: subTextColor }]}>
+              Calculating Geoapify road triangulation...
+            </Text>
+          </View>
+        )}
 
-          {rideState.routePolyline.length > 0 && (
-            <>
-              <View style={[s.metaRow, { borderColor: TC.border }]}>
-                <View style={s.metaItem}>
-                  <Text style={[s.metaVal, { color: TC.text }]}>{rideState.driverEta}</Text>
-                  <Text style={[s.metaLbl, { color: TC.sub }]}>Driver ETA</Text>
-                </View>
-                <View style={[s.metaDivider, { backgroundColor: TC.border }]} />
-                <View style={s.metaItem}>
-                  <Text style={[s.metaVal, { color: TC.text }]}>{rideState.routeDuration}</Text>
-                  <Text style={[s.metaLbl, { color: TC.sub }]}>Trip Time</Text>
-                </View>
-                <View style={[s.metaDivider, { backgroundColor: TC.border }]} />
-                <View style={s.metaItem}>
-                  <Text style={[s.metaVal, { color: TC.text }]}>{rideState.routeDistance}</Text>
-                  <Text style={[s.metaLbl, { color: TC.sub }]}>Distance</Text>
-                </View>
-                <View style={[s.metaDivider, { backgroundColor: TC.border }]} />
-                <View style={s.metaItem}>
-                  <Text style={[s.metaVal, { color: rideState.surgeMultiplier > 1.3 ? '#FF6B35' : TC.text }]}>
-                    {rideState.surgeMultiplier}×
-                  </Text>
-                  <Text style={[s.metaLbl, { color: TC.sub }]}>Surge</Text>
-                </View>
-              </View>
-              <TouchableOpacity style={s.cta}>
-                <Text style={s.ctaText}>Book Ride</Text>
-              </TouchableOpacity>
-            </>
-          )}
+        {/* ── IDLE STAGE: TIER SELECTION & PRICING ────────────── */}
+        {lifecycleStage === 'idle' && mode === 'ride' && (
+          <>
+            <Text style={[styles.sectionHeading, { color: textColor }]}>Select Vehicle Class</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.tiersScroll}
+            >
+              {(Object.keys(RIDE_TIERS) as RideTierId[]).map((tierKey) => {
+                const config = RIDE_TIERS[tierKey];
+                const isSelected = selectedRideTier === tierKey;
+                const fare = rideFares?.[tierKey];
 
-          {(rideState.pickup || rideState.dropoff) && (
-            <TouchableOpacity onPress={clearRide}>
-              <Text style={[s.clearText, { color: TC.sub }]}>Clear route</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
+                return (
+                  <TouchableOpacity
+                    key={tierKey}
+                    style={[
+                      styles.tierCard,
+                      { backgroundColor: isDark ? '#162040' : '#F8FAFC', borderColor },
+                      isSelected && styles.tierCardActive,
+                    ]}
+                    onPress={() => setSelectedRideTier(tierKey)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.tierTopRow}>
+                      <Ionicons
+                        name={config.icon as any}
+                        size={22}
+                        color={isSelected ? '#0286FF' : subTextColor}
+                      />
+                      <Text style={[styles.tierPrice, { color: isSelected ? '#0286FF' : textColor }]}>
+                        {fare?.formattedTotal ?? '$12.00'}
+                      </Text>
+                    </View>
+                    <Text style={[styles.tierName, { color: textColor }]}>{config.name}</Text>
+                    <Text style={[styles.tierSubtitle, { color: subTextColor }]} numberOfLines={1}>
+                      {config.subtitle}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
 
-      {/* ── FOOD BOTTOM CARD ───────────────────────────────── */}
-      {mode === 'food' && (
-        <View style={[s.bottomCard, { backgroundColor: TC.surface }]}>
-          {foodState.orderStatus === 'idle' ? (
-            <>
-              <Text style={[s.foodTitle, { color: TC.text }]}>Track a delivery</Text>
-              <Text style={[s.foodSub, { color: TC.sub }]}>
-                Start an order to see live rider tracking on the map
+            {/* Request CTA */}
+            <TouchableOpacity
+              style={styles.primaryCtaBtn}
+              activeOpacity={0.85}
+              onPress={startDispatchSimulation}
+            >
+              <Text style={styles.primaryCtaText}>
+                Confirm {RIDE_TIERS[selectedRideTier].name} · {activeRideFare?.formattedTotal ?? '$14.50'}
               </Text>
-              <TouchableOpacity style={[s.cta, { backgroundColor: '#FF6B35' }]} onPress={simulateFoodDelivery}>
-                <Text style={s.ctaText}>🛵  Simulate Live Order</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <View style={s.foodStatusRow}>
-                <View style={[s.foodDot, {
-                  backgroundColor:
-                    foodState.orderStatus === 'arriving' ? '#00C896' :
-                    foodState.orderStatus === 'picked_up' ? '#FF6B35' : '#1C75FF',
-                }]} />
-                <View>
-                  <Text style={[s.foodName, { color: TC.text }]}>{foodState.restaurantName}</Text>
-                  <Text style={[s.foodStatus, { color: TC.sub }]}>
-                    {foodState.orderStatus === 'confirmed' ? 'Order confirmed — preparing...' :
-                     foodState.orderStatus === 'picked_up' ? 'Rider picked up your order' :
-                     '🎉 Your order is arriving!'}
-                  </Text>
-                </View>
-              </View>
-              <View style={[s.metaRow, { borderColor: TC.border, marginTop: 12 }]}>
-                <View style={s.metaItem}>
-                  <Text style={[s.metaVal, { color: TC.text }]}>{foodState.deliveryEta}</Text>
-                  <Text style={[s.metaLbl, { color: TC.sub }]}>ETA</Text>
-                </View>
-                <View style={[s.metaDivider, { backgroundColor: TC.border }]} />
-                <View style={s.metaItem}>
-                  <Text style={[s.metaVal, { color: '#FF6B35' }]}>🛵 Live</Text>
-                  <Text style={[s.metaLbl, { color: TC.sub }]}>Rider</Text>
-                </View>
-              </View>
-            </>
-          )}
-        </View>
-      )}
+              <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+            </TouchableOpacity>
+          </>
+        )}
 
-      {/* ── DISCOVER: Place list ────────────────────────────── */}
-      {mode === 'discover' && !selectedPlace && (
-        <View style={[s.discoverSheet, { backgroundColor: TC.surface }]}>
-          <View style={[s.sheetHandle, { backgroundColor: TC.border }]} />
-          <Text style={[s.discoverTitle, { color: TC.text }]}>
-            {CATEGORY_META[discoverCategory].icon} {CATEGORY_META[discoverCategory].label} Near You
-          </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {nearbyPlaces
-              .filter(p => discoverCategory === 'all' || p.category === discoverCategory)
-              .map(place => (
+        {/* ── IDLE STAGE: DELIVERY MULTI-DROP ─────────────────── */}
+        {lifecycleStage === 'idle' && mode === 'delivery' && (
+          <>
+            <View style={styles.deliveryHeaderRow}>
+              <Text style={[styles.sectionHeading, { color: textColor }]}>Courier Parcel Dispatch</Text>
+              <TouchableOpacity
+                style={styles.addStopBtn}
+                onPress={() => {
+                  Alert.alert('Add Stop', 'Tap anywhere on the map to place an intermediate checkpoint.');
+                }}
+              >
+                <Ionicons name="add-circle" size={15} color="#0286FF" />
+                <Text style={styles.addStopBtnText}>Add Stop ({checkpoints.length})</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.tiersScroll}
+            >
+              {(Object.keys(DELIVERY_TIERS) as DeliveryTierId[]).map((tierKey) => {
+                const config = DELIVERY_TIERS[tierKey];
+                const isSelected = selectedDeliveryTier === tierKey;
+                const fare = deliveryFares?.[tierKey];
+
+                return (
+                  <TouchableOpacity
+                    key={tierKey}
+                    style={[
+                      styles.tierCard,
+                      { backgroundColor: isDark ? '#162040' : '#F8FAFC', borderColor },
+                      isSelected && styles.tierCardActive,
+                    ]}
+                    onPress={() => setSelectedDeliveryTier(tierKey)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.tierTopRow}>
+                      <Ionicons
+                        name={config.icon as any}
+                        size={22}
+                        color={isSelected ? '#0286FF' : subTextColor}
+                      />
+                      <Text style={[styles.tierPrice, { color: isSelected ? '#0286FF' : textColor }]}>
+                        {fare?.formattedTotal ?? '$8.50'}
+                      </Text>
+                    </View>
+                    <Text style={[styles.tierName, { color: textColor }]}>{config.name}</Text>
+                    <Text style={[styles.tierSubtitle, { color: subTextColor }]} numberOfLines={1}>
+                      {config.subtitle}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            <TouchableOpacity
+              style={[styles.primaryCtaBtn, { backgroundColor: '#10B981' }]}
+              activeOpacity={0.85}
+              onPress={startDispatchSimulation}
+            >
+              <Text style={styles.primaryCtaText}>
+                Dispatch {DELIVERY_TIERS[selectedDeliveryTier].name} ·{' '}
+                {activeDeliveryFare?.formattedTotal ?? '$10.00'}
+              </Text>
+              <Ionicons name="cube" size={18} color="#FFFFFF" />
+            </TouchableOpacity>
+          </>
+        )}
+
+        {/* ── IDLE STAGE: DISCOVER MODE ───────────────────────── */}
+        {lifecycleStage === 'idle' && mode === 'discover' && (
+          <>
+            <Text style={[styles.sectionHeading, { color: textColor }]}>Nearby Places & Hotspots</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+              {nearbySpots.map((spot) => (
                 <TouchableOpacity
-                  key={place.id}
-                  style={[s.discoverCard, { backgroundColor: TC.card, borderColor: TC.border }]}
+                  key={spot.id}
+                  style={[
+                    styles.spotCard,
+                    { backgroundColor: isDark ? '#162040' : '#F8FAFC', borderColor },
+                  ]}
                   onPress={() => {
-                    setSelectedPlace(place);
-                    flyTo(place.lat, place.lng, 0.01);
+                    setSelectedSpot(spot);
+                    setDropoff({ latitude: spot.lat, longitude: spot.lng });
+                    setDropoffTitle(spot.name);
                   }}
                 >
-                  <Text style={{ fontSize: 22, marginBottom: 6 }}>
-                    {CATEGORY_META[place.category]?.icon ?? '📍'}
-                  </Text>
-                  <Text style={[s.discoverName, { color: TC.text }]} numberOfLines={1}>{place.name}</Text>
-                  {place.rating && <Text style={s.discoverRating}>⭐ {place.rating}</Text>}
-                  <Text style={[s.discoverDist, { color: TC.sub }]}>{place.distance}</Text>
-                  <View style={[s.openBadge, { backgroundColor: place.isOpen ? '#00C896' : '#FF3B30' }]}>
-                    <Text style={s.openBadgeText}>{place.isOpen ? 'Open' : 'Closed'}</Text>
+                  <View style={styles.spotIconCircle}>
+                    <Ionicons name={spot.icon as any} size={18} color="#0286FF" />
                   </View>
+                  <Text style={[styles.spotName, { color: textColor }]} numberOfLines={1}>
+                    {spot.name}
+                  </Text>
+                  <Text style={[styles.spotRating, { color: '#F59E0B' }]}>★ {spot.rating}</Text>
+                  <Text style={[styles.spotDist, { color: subTextColor }]}>
+                    {spot.distance} · {spot.eta}
+                  </Text>
                 </TouchableOpacity>
               ))}
-          </ScrollView>
-        </View>
-      )}
+            </ScrollView>
+          </>
+        )}
 
-      {/* ── DISCOVER: Selected place detail ─────────────────── */}
-      {mode === 'discover' && selectedPlace && (
-        <View style={[s.placeDetail, { backgroundColor: TC.surface }]}>
-          <View style={s.placeDetailHeader}>
-            <View style={{ flex: 1 }}>
-              <Text style={[s.placeDetailName, { color: TC.text }]}>{selectedPlace.name}</Text>
-              <Text style={[s.placeDetailCat, { color: CATEGORY_META[selectedPlace.category].color }]}>
-                {CATEGORY_META[selectedPlace.category].icon} {CATEGORY_META[selectedPlace.category].label}
+        {/* ── ACTIVE LIFECYCLE SIMULATION (UBER / BOLT RADAR) ───── */}
+        {lifecycleStage !== 'idle' && (
+          <View style={styles.lifecycleCard}>
+            <View style={styles.lifecycleHeaderRow}>
+              <View style={[styles.statusBadge, { backgroundColor: stageMeta.color + '20' }]}>
+                <Ionicons name={stageMeta.icon as any} size={15} color={stageMeta.color} />
+                <Text style={[styles.statusBadgeText, { color: stageMeta.color }]}>
+                  {stageMeta.label}
+                </Text>
+              </View>
+              <Text style={[styles.progressNumber, { color: subTextColor }]}>
+                {simulatedProgress}%
               </Text>
             </View>
-            <TouchableOpacity
-              style={[s.closeBtn, { backgroundColor: TC.pill }]}
-              onPress={() => setSelectedPlace(null)}
-            >
-              <Text style={{ color: TC.sub, fontWeight: '700' }}>✕</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={[s.metaRow, { borderColor: TC.border }]}>
-            {selectedPlace.rating && (
-              <View style={s.metaItem}>
-                <Text style={[s.metaVal, { color: TC.text }]}>⭐ {selectedPlace.rating}</Text>
-                <Text style={[s.metaLbl, { color: TC.sub }]}>Rating</Text>
+
+            <Text style={[styles.stageDesc, { color: subTextColor }]}>
+              {stageMeta.description}
+            </Text>
+
+            {/* Progress Track */}
+            <View style={[styles.progressTrack, { backgroundColor: borderColor }]}>
+              <View
+                style={[
+                  styles.progressBarFill,
+                  { width: `${simulatedProgress}%`, backgroundColor: stageMeta.color },
+                ]}
+              />
+            </View>
+
+            {/* Driver Profile Hub Strip */}
+            {activeDriver && (
+              <View style={[styles.activeDriverRow, { borderColor }]}>
+                <View style={styles.driverAvatar}>
+                  <Text style={styles.driverAvatarText}>{activeDriver.name.charAt(0)}</Text>
+                </View>
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={[styles.activeDriverName, { color: textColor }]}>
+                    {activeDriver.name}
+                  </Text>
+                  <Text style={[styles.activeDriverSub, { color: subTextColor }]}>
+                    {activeDriver.vehicleType === 'bike' ? 'Honda Ace 125' : 'Toyota Corolla 2022'} · ★{' '}
+                    {activeDriver.rating}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.driverCallBtn}
+                  onPress={() => Alert.alert('Calling Driver', `Dialing ${activeDriver.name}...`)}
+                >
+                  <Ionicons name="call" size={16} color="#0286FF" />
+                </TouchableOpacity>
               </View>
             )}
-            <View style={s.metaItem}>
-              <Text style={[s.metaVal, { color: TC.text }]}>{selectedPlace.distance}</Text>
-              <Text style={[s.metaLbl, { color: TC.sub }]}>Distance</Text>
-            </View>
-            <View style={s.metaItem}>
-              <Text style={[s.metaVal, { color: TC.text }]}>{selectedPlace.eta}</Text>
-              <Text style={[s.metaLbl, { color: TC.sub }]}>Walk ETA</Text>
-            </View>
-            <View style={s.metaItem}>
-              <Text style={[s.metaVal, { color: selectedPlace.isOpen ? '#00C896' : '#FF3B30' }]}>
-                {selectedPlace.isOpen ? 'Open' : 'Closed'}
-              </Text>
-              <Text style={[s.metaLbl, { color: TC.sub }]}>Status</Text>
-            </View>
-          </View>
-          {selectedPlace.category === 'restaurant' && (
-            <TouchableOpacity style={[s.cta, { backgroundColor: '#FF6B35' }]}>
-              <Text style={s.ctaText}>🛵  Order from here</Text>
-            </TouchableOpacity>
-          )}
-          {(selectedPlace.category === 'atm' || selectedPlace.category === 'pos') && (
-            <TouchableOpacity style={[s.cta, { backgroundColor: '#00C896' }]}>
-              <Text style={s.ctaText}>🚗  Ride here</Text>
-            </TouchableOpacity>
-          )}
-          {selectedPlace.category === 'hotspot' && (
-            <TouchableOpacity style={[s.cta, { backgroundColor: '#FFD93D' }]}>
-              <Text style={[s.ctaText, { color: '#111' }]}>🔍  Explore</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
 
-      {/* ── GPS LOADING OVERLAY ─────────────────────────────── */}
-      {isLoadingGPS && (
-        <View style={s.loadingOverlay}>
-          <ActivityIndicator size="large" color="#1C75FF" />
-          <Text style={s.loadingText}>Getting your location...</Text>
-        </View>
-      )}
+            {/* Cancel / Reset Button */}
+            <TouchableOpacity style={styles.cancelTripBtn} onPress={handleCancelOrReset}>
+              <Text style={styles.cancelTripBtnText}>
+                {lifecycleStage === 'completed' ? 'Done & Book Another' : 'Cancel Dispatch Request'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
     </View>
   );
 }
 
 // ─────────────────────────────────────────────────────────────
-//  STYLES
+// STYLES
 // ─────────────────────────────────────────────────────────────
-const s = StyleSheet.create({
-  root: { flex: 1 },
-  safeTop: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
-
-  // Top bar
-  topBar: {
-    marginHorizontal: 16, marginTop: 8, borderRadius: 16, padding: 10,
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 12, elevation: 8,
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
   },
-  searchBox: {
-    flex: 1, flexDirection: 'row', alignItems: 'center',
-    borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1,
+  topSafeArea: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 30,
+    paddingHorizontal: SPACING.screen,
   },
-  searchInput: { flex: 1, fontSize: 14, fontWeight: '500' },
-  themeRow: { flexDirection: 'row', borderRadius: 10, overflow: 'hidden', padding: 2 },
-  themeBtn: { padding: 7, borderRadius: 8 },
-
-  // Autocomplete
-  dropdown: {
-    marginHorizontal: 16, marginTop: 4, borderRadius: 12, borderWidth: 1,
-    overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 8, elevation: 10,
+  topBarCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: RADIUS.card,
+    padding: 8,
+    marginTop: 6,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 8,
   },
-  dropdownRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12 },
-  dropdownText: { flex: 1, fontSize: 13, fontWeight: '500' },
-
-  // Mode tabs
-  modeTabs: {
-    flexDirection: 'row', marginHorizontal: 16, marginTop: 8, borderRadius: 14, padding: 4,
-    shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 8, elevation: 5,
+  backButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  modeTab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 10, gap: 5 },
-  modeTabText: { fontSize: 13, fontWeight: '700' },
-
-  // AI insight
-  insightBar: {
-    marginHorizontal: 16, marginTop: 8, borderRadius: 12,
-    paddingHorizontal: 14, paddingVertical: 10,
-    shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 6, elevation: 4,
+  searchInputContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: RADIUS.md,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    marginHorizontal: 8,
   },
-  insightText: { fontSize: 13, fontWeight: '500', lineHeight: 18 },
-
-  // Category pills
-  pillScroll: { marginTop: 8 },
-  pillScrollContent: { paddingHorizontal: 16, gap: 8, flexDirection: 'row' },
-  pill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1, gap: 5 },
-  pillText: { fontSize: 12, fontWeight: '700' },
-
-  // Map markers
-  pickupPin: { width: 16, height: 16, borderRadius: 8, backgroundColor: '#00C896', borderWidth: 3, borderColor: '#fff' },
-  dropoffPin: { width: 16, height: 16, borderRadius: 8, backgroundColor: '#FF3B30', borderWidth: 3, borderColor: '#fff' },
-  driverMarker: {
-    width: 38, height: 38, borderRadius: 19, backgroundColor: '#00E5FF',
-    borderWidth: 3, borderColor: '#fff', alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 6, elevation: 6,
+  searchInput: {
+    flex: 1,
+    marginLeft: 6,
+    fontSize: 13,
+    fontWeight: '500',
+    paddingVertical: 0,
   },
-  placeChip: {
-    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20,
-    flexDirection: 'row', alignItems: 'center',
-    shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 4, elevation: 4,
+  themePillToggle: {
+    flexDirection: 'row',
+    borderRadius: RADIUS.sm,
+    padding: 2,
   },
-  placeChipText: { fontSize: 11, fontWeight: '700', color: '#fff' },
-
-  // Recenter
-  recenterBtn: {
-    position: 'absolute', right: 16, bottom: 220,
-    width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 8, elevation: 8,
+  themeOptionBtn: {
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderRadius: RADIUS.sm - 2,
   },
-
-  // Bottom card (shared by ride + food)
-  bottomCard: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    padding: 20, paddingBottom: 36,
-    shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 20, elevation: 20,
+  themeOptionBtnActive: {
+    backgroundColor: '#0286FF',
   },
-
-  // Ride card internals
-  rideHintRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  routeDots: { alignItems: 'center', gap: 3 },
-  dot: { width: 10, height: 10, borderRadius: 5 },
-  dotLine: { width: 2, height: 20, borderRadius: 1 },
-  hintLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 0.8, marginBottom: 2 },
-  hintValue: { fontSize: 14, fontWeight: '600' },
-
-  // Shared meta row
-  metaRow: { flexDirection: 'row', borderTopWidth: 1, marginTop: 16, paddingTop: 14, marginBottom: 4 },
-  metaItem: { flex: 1, alignItems: 'center' },
-  metaDivider: { width: 1 },
-  metaVal: { fontSize: 17, fontWeight: '800' },
-  metaLbl: { fontSize: 11, fontWeight: '500', marginTop: 2 },
-
-  // CTA button
-  cta: { backgroundColor: '#1C75FF', borderRadius: 14, paddingVertical: 15, alignItems: 'center', marginTop: 16 },
-  ctaText: { color: '#FFF', fontSize: 15, fontWeight: '800', letterSpacing: 0.3 },
-  clearText: { textAlign: 'center', marginTop: 12, fontSize: 13, fontWeight: '500' },
-
-  // Food
-  foodTitle: { fontSize: 17, fontWeight: '800', marginBottom: 6 },
-  foodSub: { fontSize: 13, lineHeight: 18, marginBottom: 16 },
-  foodStatusRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  foodDot: { width: 12, height: 12, borderRadius: 6 },
-  foodName: { fontSize: 15, fontWeight: '700' },
-  foodStatus: { fontSize: 12, marginTop: 2 },
-
-  // Discover sheet
-  discoverSheet: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    padding: 16, paddingBottom: 28,
-    shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 20, elevation: 20,
+  themeOptionEmoji: {
+    fontSize: 12,
   },
-  sheetHandle: { width: 36, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 12 },
-  discoverTitle: { fontSize: 15, fontWeight: '800', marginBottom: 12 },
-  discoverCard: { width: 140, borderRadius: 14, padding: 12, marginRight: 10, borderWidth: 1 },
-  discoverName: { fontSize: 13, fontWeight: '700', marginBottom: 4 },
-  discoverRating: { fontSize: 12, color: '#FFD93D', marginBottom: 2 },
-  discoverDist: { fontSize: 11, marginBottom: 6 },
-  openBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, alignSelf: 'flex-start' },
-  openBadgeText: { color: '#FFF', fontSize: 10, fontWeight: '700' },
-
-  // Place detail
-  placeDetail: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    padding: 20, paddingBottom: 36,
-    shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 20, elevation: 20,
+  suggestionsDropdown: {
+    borderRadius: RADIUS.md,
+    marginTop: 4,
+    borderWidth: 1,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 10,
   },
-  placeDetailHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 16 },
-  placeDetailName: { fontSize: 18, fontWeight: '800', marginBottom: 4 },
-  placeDetailCat: { fontSize: 13, fontWeight: '600' },
-  closeBtn: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
-
-  // Loading overlay
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(11,21,40,0.85)',
-    justifyContent: 'center', alignItems: 'center',
+  suggestionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
-  loadingText: { color: '#FFF', marginTop: 12, fontSize: 14, fontWeight: '600' },
+  suggestionTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  suggestionSub: {
+    fontSize: 11,
+    marginTop: 1,
+  },
+  modeTabsRow: {
+    flexDirection: 'row',
+    borderRadius: RADIUS.md,
+    padding: 3,
+    marginTop: 6,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  modeTabButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 7,
+    borderRadius: RADIUS.sm,
+    gap: 4,
+  },
+  modeTabButtonActive: {
+    backgroundColor: '#0286FF',
+  },
+  modeTabButtonText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  fabControlsColumn: {
+    position: 'absolute',
+    right: 16,
+    bottom: 340,
+    zIndex: 25,
+  },
+  fabButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  markerAnchor: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pickupPillBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#059669',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    marginBottom: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+    maxWidth: 140,
+  },
+  pickupPillDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#FFFFFF',
+    marginRight: 5,
+  },
+  pickupPillText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  pulseRing: {
+    position: 'absolute',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#10B981',
+    bottom: 0,
+  },
+  pickupCorePin: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#10B981',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+  pickupInnerDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#FFFFFF',
+  },
+  dropoffPillBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0F172A',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    marginBottom: 4,
+    gap: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+    maxWidth: 140,
+  },
+  dropoffPillText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  dropoffCorePin: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#EF4444',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+  checkpointBadge: {
+    backgroundColor: '#8B5CF6',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginBottom: 3,
+  },
+  checkpointBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  checkpointCorePin: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#8B5CF6',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkpointPinNumber: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  driverMarkerContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  driverPillTag: {
+    backgroundColor: '#0286FF',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginBottom: 2,
+  },
+  driverPillTagText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '700',
+  },
+  driverVehicleCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#0B1528',
+    borderWidth: 2,
+    borderColor: '#0286FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 6,
+  },
+  idleDriverPin: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#0286FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  spotMarkerPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    gap: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  spotMarkerText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#0B1528',
+  },
+  bottomSheetCard: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    borderTopLeftRadius: RADIUS.modal,
+    borderTopRightRadius: RADIUS.modal,
+    borderTopWidth: 1,
+    paddingHorizontal: SPACING.screen,
+    paddingTop: 10,
+    paddingBottom: 28,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 20,
+    zIndex: 20,
+  },
+  sheetHandleBar: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#94A3B8',
+    alignSelf: 'center',
+    marginBottom: 10,
+    opacity: 0.6,
+  },
+  metricsStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    marginBottom: 12,
+  },
+  metricItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  metricDivider: {
+    width: 1,
+    height: 22,
+  },
+  metricLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  metricValue: {
+    fontSize: 15,
+    fontWeight: '800',
+    marginTop: 2,
+  },
+  loadingRouteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 8,
+  },
+  loadingRouteText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  sectionHeading: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  deliveryHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  addStopBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  addStopBtnText: {
+    color: '#0286FF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  tiersScroll: {
+    gap: 10,
+    paddingBottom: 8,
+  },
+  tierCard: {
+    width: 130,
+    borderRadius: RADIUS.cardCompact,
+    borderWidth: 1.5,
+    padding: 10,
+  },
+  tierCardActive: {
+    borderColor: '#0286FF',
+    backgroundColor: '#F0F7FF',
+  },
+  tierTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  tierPrice: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  tierName: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  tierSubtitle: {
+    fontSize: 10,
+    fontWeight: '500',
+  },
+  primaryCtaBtn: {
+    backgroundColor: '#0286FF',
+    borderRadius: RADIUS.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    marginTop: 6,
+    gap: 8,
+    shadowColor: '#0286FF',
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  primaryCtaText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  spotCard: {
+    width: 140,
+    borderRadius: RADIUS.cardCompact,
+    borderWidth: 1,
+    padding: 10,
+    marginRight: 10,
+  },
+  spotIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  spotName: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  spotRating: {
+    fontSize: 11,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  spotDist: {
+    fontSize: 10,
+  },
+  lifecycleCard: {
+    paddingVertical: 4,
+  },
+  lifecycleHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 5,
+  },
+  statusBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  progressNumber: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  stageDesc: {
+    fontSize: 12,
+    marginBottom: 8,
+    marginTop: 2,
+  },
+  progressTrack: {
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  activeDriverRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    paddingTop: 10,
+    marginBottom: 10,
+  },
+  driverAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#0286FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  driverAvatarText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  activeDriverName: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  activeDriverSub: {
+    fontSize: 11,
+    marginTop: 1,
+  },
+  driverCallBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelTripBtn: {
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelTripBtnText: {
+    color: '#EF4444',
+    fontSize: 13,
+    fontWeight: '700',
+  },
 });
