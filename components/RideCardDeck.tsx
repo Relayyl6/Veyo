@@ -1,34 +1,27 @@
 import React, { useState, useRef } from 'react';
-import { View, Animated, TouchableOpacity, Text } from 'react-native';
+import { View, Animated, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import RideCard from './RideCard'; // Adjust path if needed
-// import { Ride } from '@/types/data'; // Adjust path if needed
+import RideCard from './RideCard';
+import { RADIUS, SPACING } from '@/constants/designTokens';
 
 export default function RideCardDeck({ rides }: { rides: any[] }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const anim = useRef(new Animated.Value(0)).current;
-  
-  // 1. ADDED: A lock to prevent mashing the button and causing skips
-  const isAnimating = useRef(false); 
+  const isAnimating = useRef(false);
 
-  const currentRide = rides?.[currentIndex];
-  const nextRide = rides?.[currentIndex + 1];
+  const safeRides = rides && rides.length > 0 ? rides : [];
+  const currentRide = safeRides[currentIndex];
+  const totalRides = safeRides.length;
 
-  // 2. MOVED UP: Functions must be defined before the early return empty state
   const handleNext = () => {
-    // Prevent action if currently animating or no next ride
-    if (!nextRide || isAnimating.current) return;
-    
+    if (currentIndex >= totalRides - 1 || isAnimating.current) return;
     isAnimating.current = true;
 
-    // The shuffle animation
-    Animated.spring(anim, {
+    Animated.timing(anim, {
       toValue: 1,
+      duration: 220,
       useNativeDriver: true,
-      tension: 50,
-      friction: 8,
     }).start(({ finished }) => {
-      // Only proceed if the animation fully finished (wasn't interrupted)
       if (finished) {
         setCurrentIndex((prev) => prev + 1);
         anim.setValue(0);
@@ -38,136 +31,183 @@ export default function RideCardDeck({ rides }: { rides: any[] }) {
   };
 
   const handlePrev = () => {
-    // Prevent action if currently animating or at the beginning
     if (currentIndex === 0 || isAnimating.current) return;
-    
     isAnimating.current = true;
 
-    // Snap animation to the "swiped up" position instantly
-    anim.setValue(1);
-    
-    // Change the data to the previous card
-    setCurrentIndex((prev) => prev - 1);
-
-    // Wait 1 frame for React to render, then smoothly drop it down
-    setTimeout(() => {
-      Animated.spring(anim, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 50,
-        friction: 8,
-      }).start(({ finished }) => {
-        if (finished) {
-          isAnimating.current = false;
-        }
-      });
-    }, 50); // slight 50ms delay makes the swap invisible to the eye
+    Animated.timing(anim, {
+      toValue: -1,
+      duration: 220,
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (finished) {
+        setCurrentIndex((prev) => prev - 1);
+        anim.setValue(0);
+        isAnimating.current = false;
+      }
+    });
   };
 
-  // If no rides, or we've swiped through all of them, return nothing
-  // Empty State: No rides at all, or swiped through the whole list
-  if (!rides || rides.length === 0 || currentIndex >= rides.length) {
+  if (!currentRide) {
     return (
-      <View className="my-2 bg-white rounded-xl p-4 flex items-center justify-center shadow-sm shadow-neutral-200 border border-neutral-100 relative">
-        
-        {/* If they swiped past the last card, let them go back */}
-        {currentIndex > 0 && (
-          <TouchableOpacity
-            onPress={handlePrev}
-            activeOpacity={0.9}
-            style={{
-              position: 'absolute',
-              top: -15,
-              alignSelf: 'center',
-              zIndex: 50,
-            }}
-            className="bg-neutral-800 flex-row items-center justify-center px-4 py-1.5 rounded-full shadow-md"
-          >
-            <Ionicons name="chevron-up" size={12} color="white" />
-            <Text className="text-white text-[10px] font-bold ml-1">Prev</Text>
-          </TouchableOpacity>
-        )}
-
-        <Ionicons name="car-outline" size={48} color="#d4d4d4" />
-        <Text className="text-neutral-500 font-JakartaMedium mt-2 text-sm">
-          {rides.length === 0 ? "No recent rides" : "You've reached the end!"}
-        </Text>
+      <View style={styles.emptyContainer}>
+        <Ionicons name="car-outline" size={36} color="#D1D5DB" />
+        <Text style={styles.emptyText}>No recent rides recorded</Text>
       </View>
     );
   }
 
   return (
-    <View className="my-2 relative">
-      {currentIndex > 0 && (
-        <TouchableOpacity
-          onPress={handlePrev}
-          activeOpacity={0.9}
-          style={{
-            position: 'absolute',
-            top: -15,
-            alignSelf: 'center',
-            zIndex: 50, // High z-index ensures it's always clickable
-          }}
-          className="bg-neutral-800 flex-row items-center justify-center px-3 py-1 rounded-full shadow-md"
-        >
-          <Ionicons name="chevron-up" size={12} color="white" />
-          <Text className="text-white text-[10px] font-bold ml-1">Prev</Text>
-        </TouchableOpacity>
-      )}
-
-      {/* --- NEXT CARD (Scales down & acts as background) --- */}
-      {nextRide && (
-        <Animated.View
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            zIndex: 1,
-            opacity: anim.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }),
-            transform: [
-              // Starts 25px lower, moves to 0
-              { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) },
-              // Starts smaller to create the stacked look, expands to 1
-              { scale: anim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) },
-            ],
-          }}
-        >
-          <TouchableOpacity activeOpacity={0.9} onPress={handleNext}>
-            <RideCard ride={nextRide} />
-
-            {/* THE "PILL" - Sticking out the bottom middle */}
-            <Animated.View
-              style={{
-                position: 'absolute',
-                bottom: -10,
-                alignSelf: 'center',
-                opacity: anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 0, 0] }), // Fades out when clicked
-              }}
-              className="bg-neutral-800 flex-row items-center justify-center px-3 py-1 rounded-full shadow-md"
-            >
-              <Text className="text-white text-[9.5px] font-bold mr-1">Next</Text>
-              <Ionicons name="chevron-down" size={11} color="white" />
-            </Animated.View>
-          </TouchableOpacity>
-        </Animated.View>
-      )}
-
-      {/* --- CURRENT CARD (Slides up and fades out) --- */}
+    <View style={styles.deckWrapper}>
+      {/* Active Card with subtle slide animation */}
       <Animated.View
         style={{
-          zIndex: 2,
-          opacity: anim.interpolate({ inputRange: [0, 0.8, 1], outputRange: [1, 0, 0] }),
+          opacity: anim.interpolate({
+            inputRange: [-1, 0, 1],
+            outputRange: [0.5, 1, 0.5],
+          }),
           transform: [
-            // Slides up aggressively 
-            { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [0, -150] }) },
-            // Shrinks slightly as it leaves
-            { scale: anim.interpolate({ inputRange: [0, 1], outputRange: [1, 0.95] }) },
+            {
+              translateX: anim.interpolate({
+                inputRange: [-1, 0, 1],
+                outputRange: [-60, 0, 60],
+              }),
+            },
           ],
         }}
       >
         <RideCard ride={currentRide} />
       </Animated.View>
+
+      {/* Clean, Integrated Pagination Strip */}
+      {totalRides > 1 && (
+        <View style={styles.paginationRow}>
+          <TouchableOpacity
+            onPress={handlePrev}
+            disabled={currentIndex === 0}
+            style={[
+              styles.navBtn,
+              currentIndex === 0 && styles.navBtnDisabled,
+            ]}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name="chevron-back"
+              size={14}
+              color={currentIndex === 0 ? '#CBD5E1' : '#374151'}
+            />
+            <Text
+              style={[
+                styles.navBtnText,
+                currentIndex === 0 && styles.navBtnTextDisabled,
+              ]}
+            >
+              Prev
+            </Text>
+          </TouchableOpacity>
+
+          {/* Dots Indicator */}
+          <View style={styles.dotsRow}>
+            {safeRides.map((_, idx) => (
+              <View
+                key={idx}
+                style={[
+                  styles.dot,
+                  idx === currentIndex ? styles.dotActive : styles.dotInactive,
+                ]}
+              />
+            ))}
+          </View>
+
+          <TouchableOpacity
+            onPress={handleNext}
+            disabled={currentIndex === totalRides - 1}
+            style={[
+              styles.navBtn,
+              currentIndex === totalRides - 1 && styles.navBtnDisabled,
+            ]}
+            activeOpacity={0.7}
+          >
+            <Text
+              style={[
+                styles.navBtnText,
+                currentIndex === totalRides - 1 && styles.navBtnTextDisabled,
+              ]}
+            >
+              Next
+            </Text>
+            <Ionicons
+              name="chevron-forward"
+              size={14}
+              color={currentIndex === totalRides - 1 ? '#CBD5E1' : '#374151'}
+            />
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  deckWrapper: {
+    marginVertical: 4,
+  },
+  emptyContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: RADIUS.card,
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
+  },
+  emptyText: {
+    fontFamily: 'JakartaMedium',
+    fontSize: 13,
+    color: '#9CA3AF',
+    marginTop: 6,
+  },
+  paginationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+    marginTop: 6,
+  },
+  navBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
+    gap: 2,
+  },
+  navBtnDisabled: {
+    backgroundColor: 'transparent',
+  },
+  navBtnText: {
+    fontFamily: 'JakartaBold',
+    fontSize: 11,
+    color: '#374151',
+  },
+  navBtnTextDisabled: {
+    color: '#CBD5E1',
+  },
+  dotsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  dot: {
+    height: 4,
+    borderRadius: 2,
+  },
+  dotActive: {
+    width: 16,
+    backgroundColor: '#0286FF',
+  },
+  dotInactive: {
+    width: 6,
+    backgroundColor: '#E5E7EB',
+  },
+});

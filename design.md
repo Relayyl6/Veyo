@@ -1,328 +1,289 @@
-# Veyo Design System Specification (`design.md`)
+# Veyo Unified Design System & Multi-Tier Architecture Specification (`DESIGN.md`)
 
-This document defines the foundational design principles, design tokens, typography, component standards, and spatial layout rules for the **Veyo** cross-platform mobility, food delivery, and on-demand logistics application. It is the authoritative reference for all visual and interaction design decisions.
+This document defines the authoritative design system, spatial scale, component specifications, tripartite user hierarchy (Customer, Driver, Merchant), and Neon PostgreSQL multi-tier partitioning for the **Veyo** platform.
+
+All code and styling decisions across the mobile application and backend APIs must strictly adhere to the standards outlined in this document.
 
 ---
 
 ## 1. Brand Identity & Design Principles
 
-Veyo delivers an intelligent, unified augmentation of **ride-hailing**, **food ordering**, and **same-day logistics**. Every interface is built around four primary pillars:
+Veyo integrates **mobility (ride-hailing)**, **on-demand food delivery**, and **same-day logistics** into a single cohesive platform. Every screen adheres to four core pillars:
 
-1. **Immediate Situational Awareness** — The user should comprehend their live location, nearby drivers, route progress, restaurant delivery ETA, or order status within 500ms of opening any screen.
-2. **Native Ergonomics & Responsiveness** — Every interactive element must respect system safe areas, notch dimensions, and the floating navigation tab bar. Touch targets must be at least **44 × 44 pt**.
-3. **High-Contrast Clarity** — Clean white/neutral surfaces paired with vivid electric blue (`#0286FF`) and indigo (`#3122D2`) create an uncluttered, authoritative aesthetic.
-4. **Resilient Feedback & Dual-Engine State** — Critical operations (booking rides, scheduling airport transfers, food ordering, menu editing, role switching) always confirm intent and give immediate visual receipt of state transitions.
+1. **Immediate Situational Awareness** — Users grasp their live location, nearby drivers, route progress, or order status within 500ms of opening any view.
+2. **Native Ergonomics & Safe-Area Bounds** — All interactive surfaces clear the floating tab bar, dynamic island/notch headers, and keyboard overlays. Touch targets are strictly $\ge 44 \times 44\text{ pt}$.
+3. **High-Contrast Clarity** — Neutral slate surfaces (`#F6F8FA`, `#FFFFFF`) paired with electric blue (`#0286FF`), deep brand indigo (`#3122D2`), and semantic status accents create an authoritative visual structure.
+4. **Resilient Feedback & Dual-Engine State** — Critical operations (booking rides, scheduling airport transfers, food ordering, menu editing, role switching) provide immediate visual feedback and robust offline fallbacks.
 
 ---
 
-## 2. Color Palette & Tokens
+## 2. Design Tokens (`constants/designTokens.ts`)
 
-### 2.1 Primary Brand Accents
+All components import tokens from `@/constants/designTokens` rather than hardcoding arbitrary pixel values:
 
-| Token | Hex Value | Usage |
+```typescript
+import { SPACING, RADIUS, COLORS, TYPOGRAPHY, LAYOUT, TIERS } from '@/constants/designTokens';
+```
+
+### 2.1 Spatial Scale Matrix
+
+| Token | Value | Tailwind Class | Primary Usage |
+| :--- | :--- | :--- | :--- |
+| `SPACING.screen` | `16px` | `px-4` / `mx-4` | Screen horizontal gutter / outer boundary inset |
+| `SPACING.screenCompact` | `12px` | `px-3` | Compact viewports |
+| `SPACING.card` | `12px` | `p-3` | Standard card internal padding |
+| `SPACING.cardCompact` | `10px` | `p-2.5` | Dense cards (`Options`, `RideCard`, `WeatherCard`) |
+| `SPACING.sectionGap` | `12px` | `gap-3` / `my-3` | Vertical separation between stacked sections |
+| `SPACING.itemGap` | `8px` | `gap-2` | Separation between items inside a row/grid |
+| `SPACING.micro` | `4px` | `gap-1` / `p-1` | Badges, chips, stepper dots |
+
+### 2.2 Corner Radii
+
+| Token | Value | Tailwind Class | Target Elements |
+| :--- | :--- | :--- | :--- |
+| `RADIUS.xs` | `6px` | `rounded-sm` | Stepper dots, micro tags |
+| `RADIUS.sm` | `8px` | `rounded-lg` | Semantic status badges, category chips |
+| `RADIUS.md` | `12px` | `rounded-xl` | Buttons, input fields, thumbnails |
+| `RADIUS.cardCompact` | `14px` | `rounded-2xl` | Options cards, weather cards, prediction items |
+| `RADIUS.card` | `16px` | `rounded-2xl` | Standard elevated cards (`RideCard`, `PackageTracker`) |
+| `RADIUS.modal` | `20px` | `rounded-3xl` | Bottom sheets, action modals |
+| `RADIUS.pill` | `9999px` | `rounded-full` | Action pills, avatars, floating action button (FAB) |
+
+### 2.3 Color Tokens & Semantic Badges
+
+| Palette Token | Hex Value | Semantic Usage |
 | :--- | :--- | :--- |
-| `primary.500` | `#0286FF` | Primary action buttons, active tab pills, selected markers, active highlights |
-| `brand.indigo` | `#3122D2` | High-emphasis branding, icon tints, driver partner accents |
-| `slate.dark` | `#0B1528` | Deep header text, callout tooltip backgrounds, dark mode surfaces |
-| `primary.100` | `#F5F8FF` | Tinted background containers, web fallback cards |
-| `primary.200` | `#EBF4FF` | Soft pill backgrounds, selected state surfaces, map borders |
-| `primary.300` | `#C3D9FF` | Outlined card borders, scheduled trip card borders |
+| `COLORS.primary[500]` | `#0286FF` | Brand Primary: CTAs, active highlights, customer accent |
+| `COLORS.primary[100]` | `#F5F8FF` | Tinted background containers |
+| `COLORS.brand.indigo` | `#3122D2` | Brand Indigo: Driver partner accent, high-emphasis icons |
+| `COLORS.slate.dark` | `#0B1528` | Primary text headings, dark surfaces |
+| `COLORS.surface.white` | `#FFFFFF` | Elevated cards, input boxes, modal sheets |
+| `COLORS.surface.background` | `#F6F8FA` | Base screen background |
+| `COLORS.surface.border` | `#EEEEEE` | Standard component border hairline |
 
-### 2.2 Surface & Neutral Tones
-
-| Token | Hex Value | Usage |
-| :--- | :--- | :--- |
-| `surface.white` | `#FFFFFF` | Elevated cards, bottom sheets, input fields, modals |
-| `general.500` | `#F6F8FA` | Screen background base for all root tab views |
-| `general.300` | `#EEEEEE` | Dividers, subtle borders, segmented control tracks |
-| `neutral.200` | `#858585` | Subtitle text, placeholder labels, secondary icons |
-| `neutral.900` | `#333333` | Primary body copy, address text |
-
-### 2.3 Semantic Status Tokens
-
-| State | Badge BG | Text / Icon Color | Border | Usage |
-| :--- | :--- | :--- | :--- | :--- |
-| `completed` / `paid` | `#F0FFF4` | `#0CC25F` / `#2F855A` | `#C6F6D5` | Successful trip, delivered food order, paid invoice |
-| `canceled` / `failed` | `#FFF5F5` | `#F56565` / `#C53030` | `#FED7D7` | Canceled ride, canceled order, failed transaction |
-| `searching` / `pending` | `#FFFBEB` | `#EAB308` / `#CA8A04` | `#FEF3C7` | Finding driver, restaurant confirming order |
-| `in_transit` / `active` | `#FFF7ED` | `#F97316` / `#C2410C` | `#FFEDD5` | En-route ride, food out for delivery |
+#### Semantic Status Tokens:
+- **Completed / Paid**: Background `#ECFDF5`, Text `#059669`, Border `#A7F3D0`
+- **Active / In Transit**: Background `#FFF7ED`, Text `#F97316`, Border `#FFEDD5`
+- **Searching / Pending**: Background `#FFFBEB`, Text `#D97706`, Border `#FEF3C7`
+- **Canceled / Failed**: Background `#FEF2F2`, Text `#DC2626`, Border `#FECACA`
 
 ---
 
 ## 3. Typography System
 
-The application standardizes on **Plus Jakarta Sans** across all platforms.
+Standardized on **Plus Jakarta Sans** across iOS, Android, and Web:
 
-### 3.1 Font Tokens
-
-| Font Token | Weight | Tailwind Class | Typical Usage |
-| :--- | :--- | :--- | :--- |
-| `JakartaExtraBold` | 800 | `font-JakartaExtraBold` | Hero banners, numeric total fares ($) |
-| `JakartaBold` | 700 | `font-JakartaBold` | Screen titles, card headings, CTA labels, tab pills |
-| `JakartaSemiBold` | 600 | `font-JakartaSemiBold` | Section subheadings, list headers, user names |
-| `JakartaMedium` | 500 | `font-JakartaMedium` | Body text, addresses, metric labels, form inputs |
-| `JakartaLight` | 300 | `font-JakartaLight` | Micro captions, disclaimer footers, timestamps |
-
-### 3.2 Scale Matrix
-
-| Role | Size | Weight |
-| :--- | :--- | :--- |
-| Display | 22–26 pt | `font-JakartaBold` |
-| Title (H1) | 18–20 pt | `font-JakartaBold` |
-| Section Heading (H2) | 15–16 pt | `font-JakartaBold` |
-| Card Title / Subheading | 13–14 pt | `font-JakartaBold` or `font-JakartaSemiBold` |
-| Body Regular | 12–13 pt | `font-JakartaMedium` |
-| Pills / Badges | 10–11 pt | `font-JakartaBold` |
-| Micro / Sub-labels | 9–10 pt | `font-JakartaMedium` |
+| Font Family | Weight | Token Scale | Size (pt) | Typical Application |
+| :--- | :--- | :--- | :--- | :--- |
+| `JakartaExtraBold` | 800 | `TYPOGRAPHY.sizes.hero` | 24 | Total balance values ($), splash headlines |
+| `JakartaBold` | 700 | `TYPOGRAPHY.sizes.h1` | 20 | Screen titles, primary CTA button text |
+| `JakartaBold` | 700 | `TYPOGRAPHY.sizes.h2` | 16 | Section headings ("Veyo Intelligence", "Active Logistics") |
+| `JakartaBold` | 700 | `TYPOGRAPHY.sizes.h3` | 14 | Card headers, dish titles, fare amounts |
+| `JakartaMedium` | 500 | `TYPOGRAPHY.sizes.body` | 12–13 | Body copy, addresses, form inputs |
+| `JakartaSemiBold` | 600 | `TYPOGRAPHY.sizes.caption` | 10–11 | Subtitles, driver names, badge labels |
+| `JakartaMedium` | 500 | `TYPOGRAPHY.sizes.micro` | 9–10 | Timestamps, micro sub-labels, distance tags |
 
 ---
 
-## 4. Layout Grid & Spatial Hierarchy
+## 4. Screen Layout & Safe-Area Bounds
 
-### 4.1 Screen Padding Standards
+### 4.1 ScrollView Safe-Area Clearance Formula
 
-- **Horizontal Screen Inset** — `16px` (`mx-4` or `paddingHorizontal: 16`).
-- **Card Inset** — `12px` to `16px` internal padding.
-- **Card Spacing (Gap)** — `12px` vertical gap between stacked cards.
-
-### 4.2 Safe Area & Tab Bar Clearance
-
-The app uses an animated floating tab bar with `height: 70` and `marginBottom: 20`. All tab screens must provide proper clearance:
+Because Veyo features both an **absolute floating header** at the top and an **animated floating navigation bar** (height `70px`, bottom margin `20px`) at the bottom, all tab screens must strictly use this clearance formula:
 
 ```tsx
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SPACING } from '@/constants/designTokens';
 
 const insets = useSafeAreaInsets();
 
-// ScrollView content container style MUST follow this formula:
-contentContainerStyle={{
-  paddingTop: insets.top + 65,         // Accounts for absolute header
-  paddingBottom: insets.bottom + 90,   // Crucial: clears the 70px floating tab bar + margins
-}}
+<ScrollView
+  showsVerticalScrollIndicator={false}
+  contentContainerStyle={{
+    paddingTop: insets.top + 70,       // Clears absolute floating header (no overlap)
+    paddingBottom: insets.bottom + 90, // Clears 70px floating tab bar + margin
+    paddingHorizontal: SPACING.screen, // Strict 16px screen gutter
+    gap: SPACING.sectionGap,           // Strict 12px section vertical separation
+  }}
+>
+  {/* Content */}
+</ScrollView>
 ```
 
-### 4.3 Elevation & Corner Radii
+### 4.2 Floating Action Button (FAB) Positioning
 
-| Element | Radius | Border | Shadow |
+The primary `+` FAB must sit comfortably above the floating tab bar without clipping or colliding with inline elements:
+- `position: 'absolute'`
+- `bottom: 96` (clears tab bar height 70 + margin 20 + 6px buffer)
+- `right: 18`
+- `width: 54`, `height: 54`, `borderRadius: 27`
+- `backgroundColor: '#0286FF'`, elevation: 5
+
+---
+
+## 5. Tripartite User Hierarchy (3 Tiers)
+
+The app serves three interconnected user tiers configured via `RoleSwitcherPill.tsx` and partitioned in the Neon PostgreSQL database:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                    GLOBAL ROLE SWITCHER                      │
+│     [ 👤 Customer ]    [ 🚗 Driver ]    [ 🏪 Merchant ]       │
+└──────────────────────────────────────┬───────────────────────┘
+                                       │
+        ┌──────────────────────────────┼──────────────────────────────┐
+        ▼                              ▼                              ▼
+  1. CUSTOMER TIER               2. DRIVER TIER                3. MERCHANT TIER
+  - Mobility Booking             - Online Shift Radar          - Storefront Dashboard
+  - Food & Grocery Catalog       - Live Dispatch Queue         - Order Fulfillment Queue
+  - Package Sender (Logistics)   - Earnings & Instant Payout   - Full Menu CRUD Management
+  - AI Personalized Insights     - Safety Ratings & Trips      - Revenue & Settlement Payout
+```
+
+### 5.1 Customer Tier (`role: 'customer'`)
+- **Accent**: `#0286FF` (Electric Blue)
+- **Primary Flows**:
+  - `WhereToInput` & `QuickActionGrid` for swift mobility and package delivery.
+  - `AdCarousel` & `ServiceGrid` for promotions and service switching.
+  - `RideCardDeck` for browsing recent completed trips with driver details and ratings.
+  - `PackageTrackerCard` for live logistics tracking.
+  - `AIPredictionList` & `WeatherCard` for intelligent contextual ordering.
+
+### 5.2 Driver Partner Tier (`role: 'driver'`)
+- **Accent**: `#3122D2` (Brand Indigo)
+- **Primary Flows**:
+  - `DriverProfileHub.tsx`: Driver credential card (Sarah Lee, verified badge), registered Tesla Model 3 (TES1234), payout bank details.
+  - Shift HUD: Online/Offline dispatch toggle, active 1.4x surge indicator, shift earnings summary ($184.50, 8 trips).
+  - Incoming request dispatch card with countdown timer (14s) and accept/decline actions.
+  - Driver earnings ledger and instant payout transfers.
+
+### 5.3 Merchant / Restaurant Tier (`role: 'vendor_admin'`)
+- **Accent**: `#D97706` (Amber / Golden Orange)
+- **Primary Flows**:
+  - `VendorDashboardHub.tsx`: Pizza Paradise / Brooklyn Bites storefront header, operating hours (`10:00 AM - 10:00 PM`), open/close toggle.
+  - Kitchen Order Queue: Segmented tabs (`All`, `New`, `In Kitchen`, `Ready for Courier`) with lifecycle status updates.
+  - Full Menu CRUD: Add dish modal (price, prep time, dietary tags), edit pricing, inventory in-stock toggle, dish deletion.
+  - Merchant settlements and platform fee ledger.
+
+---
+
+## 6. Neon PostgreSQL Multi-Tier Partition Architecture
+
+The backend database runs on **Neon PostgreSQL Serverless** (`ep-mute-darkness-apx5nu52-pooler.c-7.us-east-1.aws.neon.tech/neondb`) with role-partitioned schemas, performance indexes, and dedicated views.
+
+### 6.1 Database Client (`lib/db.ts`)
+
+A centralized, singleton Neon DB client provides type-safe access to partitioned views:
+
+```typescript
+import { getDb, dbTiers } from '@/lib/db';
+
+// Query Customer Partition
+const customerProfile = await dbTiers.customer.getProfile(userId);
+const customerRides = await dbTiers.customer.getRides(userId);
+
+// Query Driver Partition
+const driverProfile = await dbTiers.driver.getProfile(driverId);
+const driverEarnings = await dbTiers.driver.getEarnings(driverId);
+
+// Query Merchant Partition
+const merchantProfile = await dbTiers.merchant.getProfile(vendorId);
+const merchantOrders = await dbTiers.merchant.getOrders(vendorId);
+const menuItems = await dbTiers.merchant.getMenuItems(vendorId);
+```
+
+### 6.2 Partitioned Database Views
+
+1. **`vw_customer_tier`**: Aggregates customer profile, wallet balance, lifetime ride count, food order count, and gross spend.
+2. **`vw_driver_tier`**: Aggregates driver profile, vehicle details, license plate, ratings, acceptance/cancellation rates, gross earnings, and pending payout balance.
+3. **`vw_merchant_tier`**: Aggregates vendor profile, owner details, active menu items count, lifetime orders, kitchen queue count, and net merchant settlement balance.
+4. **`vw_customer_rides`**: Multi-table join between `rides`, `driver_profiles`, and `users` providing enriched ride records with coordinates, timestamps, and ratings.
+5. **`vw_merchant_orders`**: Multi-table join between `orders`, `vendors`, and customer records detailing lifecycle order progress, items, and delivery addresses.
+
+### 6.3 Relational Tables (13 Seeded Tables)
+
+| Table | Primary Key | Key Foreign Keys | Key Constraints |
 | :--- | :--- | :--- | :--- |
-| Standard Cards | `18` (`rounded-2xl`) | 1px `#EEEEEE` | `elevation: 2` (Android) / `shadowOpacity: 0.06` (iOS) |
-| Embedded Map Cards | `20` | 1px `#E6F3FF`, `overflow: hidden` | — |
-| Pills & Buttons | `10–14` | — | — |
-| Floating Micro-Pills | `20` | — | — |
-| Floating Navigation Bar | `50` | — | `height: 70`, margin horizontal `20`, bottom `20` |
+| `users` | `id (UUID)` | — | `role IN ('customer', 'driver', 'vendor_admin')`, unique `clerk_id` |
+| `driver_profiles` | `id (UUID)` | `user_id -> users(id)` | Vehicle details, license plate, rating |
+| `vendors` | `id (UUID)` | `owner_id -> users(id)` | Category, coordinates, opening/closing hours |
+| `menu_items` | `id (UUID)` | `vendor_id -> vendors(id)` | Dietary flags, price, preparation time |
+| `rides` | `id (UUID)` | `user_id -> users(id)`, `driver_id -> driver_profiles(id)` | `canceled_by` is nullable UUID (never `'N/A'`) |
+| `orders` | `id (UUID)` | `user_id -> users(id)`, `vendor_id -> vendors(id)` | Order status, delivery coordinates |
+| `order_items` | `id (UUID)` | `order_id -> orders(id)`, `menu_item_id -> menu_items(id)` | Quantity, unit price, total price |
+| `wallet_transactions` | `id (UUID)` | `user_id -> users(id)` | `amount > 0` check constraint, transaction type |
+| `driver_earnings` | `id (UUID)` | `driver_id -> driver_profiles(id)` | Base, tips, bonus, total earnings |
+| `payments` | `id (UUID)` | `user_id -> users(id)` | Status, gateway intent ID |
+| `reviews` | `id (UUID)` | `user_id -> users(id)` | Rating 1–5, feedback text |
+| `ride_locations` | `id (UUID)` | `ride_id -> rides(id)` | GPS polyline points |
+| `user_activities` | `id (UUID)` | `user_id -> users(id)` | Activity type, timestamp |
 
 ---
 
-## 5. Component Patterns
+## 7. Component Retrofit Standards
 
-### 5.1 Embedded Map Card (`components/Map.native.tsx`)
+### 7.1 `components/Options.tsx`
+- **Height**: Fixed 80px per row (`height: 80`, total height 168px including 8px gap).
+- **Radius**: `RADIUS.cardCompact` (14px).
+- **Padding**: `SPACING.cardCompact` (10px).
+- **Asset Reliability**: Zero fragile remote URLs (`freepngimg.com`). Bundled local assets (`images.signUpCar`, `images.drinks`) and vector icons (`Ionicons`, `FontAwesome5`, `Feather`) with soft pastel background tints (`#FEF3C7`, `#DCFCE7`, `#E0F2FE`, `#F3E8FF`).
+- **Continuous Visibility**: Cards never fade to 0 opacity during morphing; text and icons maintain minimum 80% opacity.
 
-The embedded map is a high-density, context-aware preview widget:
+### 7.2 `components/Insights.tsx`
+- **No Rogue Floating Buttons**: Removed the absolute positioned traffic light pill (`bottom-16 right-5 z-50`) that previously collided with the primary `+` FAB.
+- **`TrafficDigestCard`**: Inlined as an expandable notification banner inside the flow with smooth `LayoutAnimation`.
+- **`AIPredictionList`**: Compact card height of 114px (`width: 206`), `RADIUS.cardCompact` (14px), high-contrast gradient overlay, and cart shortcut.
+- **`WeatherCard`**: Height 44px, soft blue tint (`#F0F7FF`), weather icon circle, forward chevron.
 
-- **Default Height** — `210px` to `240px`.
-- **Top Badge Bar**
-  - Left: Pulsing status pill (`● 4 Drivers Nearby` or `● Live GPS`).
-  - Right: "Full Map" / Maximize button linking to `/(utils)/map`.
-- **Bottom Controls**
-  - Right: Floating Recenter FAB with crosshair icon that smoothly animates camera to user coordinates.
-  - Bottom Strip: Semi-transparent frosted bar showing current live address or location status.
-- **Fallbacks** — When GPS is acquiring or unavailable, falls back gracefully to default regional center without blank screens or crashes.
+### 7.3 `components/RideCard.tsx` & `components/RideCardDeck.tsx`
+- **Route Stepper**: Removed the bare unstyled `<Ionicons name="arrow-up" />` arrow. Implemented a clean vertical route indicator (green origin dot $\to$ dashed vertical line $\to$ dark destination dot).
+- **Map Thumbnail**: Standardized 78x78px with 12px radius, clean error/empty fallbacks.
+- **Driver Strip**: Circular avatar (28px), driver name, star rating with gold star icon (`#FBBF24`), semantic status pill (`Completed`, `Canceled`, `Active`), and payment pill (`Paid`, `Pending`).
+- **Deck Navigation**: Replaced the awkward protruding bottom button with a clean integrated footer strip (`[ < Prev ]  • • •  [ Next > ]`).
 
-### 5.2 Segmented Control
+### 7.4 `components/AdCarousel.tsx`
+- **Height**: Standardized 110px.
+- **Radius**: `RADIUS.card` (16px).
+- **Gradient**: Deep rich gradients (`['#1E1B4B', '#0F172A']`, `['#0B1528', '#1E3A8A']`).
+- **Typography**: 16pt `JakartaBold` headline, 10.5pt `JakartaMedium` subtitle, 11pt CTA button.
+- **Pagination**: Centered dot indicator with 14px active pill.
 
-Used for dual-mode views such as `[ Past Trips (4) | Scheduled (2) ]`:
+### 7.5 `components/CustomButton.tsx`
+- **Dimensions**: Default `w-fit` and `self-center` with minimum touch target $\ge 44\text{ pt}$ (`py-2.5 px-6 min-w-[160px]`).
+- **Radius**: `RADIUS.pill` (rounded-full).
+- **Typography**: 13–14pt `JakartaBold`.
 
-- **Track** — `#EEEEEE`, padding `4px`, `borderRadius: 14`.
-- **Active Pill** — `#0286FF` background, pure white text, elevation 2.
-- **Inactive Pill** — Transparent background, `#666666` text.
+### 7.6 `components/OAuth.tsx`
+- **Layout**: Centered row (`justifyContent: 'center', gap: 12`).
+- **Button Size**: `minWidth: 95`, `paddingVertical: 6.5`, `paddingHorizontal: 14`, `borderRadius: 20`.
+- **Icons**: 16x16px Google and Apple brand marks.
 
-### 5.3 Trip History Card
-
-Every historical trip card features:
-
-1. **Header Row** — Ride ID (`RD-20240812-001`), formatted timestamp, and semantic status badge.
-2. **Route Timeline**
-   - Origin: Green indicator dot (`#0CC25F`) + pickup address.
-   - Connecting vertical hairline divider (`#CED1DD`).
-   - Destination: Red indicator dot (`#F56565`) + destination address.
-3. **Trip Metrics Quad** — Total fare (highlighted in `#0286FF`), distance (`km`), duration (`mins`), and payment status (`Paid`).
-4. **Driver Profile Strip** — Driver avatar, full name, rating pill (★ 4.9), vehicle model.
-5. **Action Footer**
-   - **Rebook** — Primary soft tint (`#EBF4FF`), icon + "Rebook Ride" (sets store destination and opens booking flow).
-   - **Trip Support** — Neutral border, icon + "Trip Support" (opens support sheet).
-
-### 5.4 Scheduled Trip Card
-
-Focused on future planning:
-
-- Scheduled departure pill with clock icon: `Tomorrow • 05:30 AM`.
-- Vehicle tier: `Veyo Comfort Sedan`.
-- Estimated upfront fare.
-- Direct quick actions: "Cancel Reservation" (with confirmation alert) and "View Route".
-
-### 5.5 Support Bottom Sheet
-
-Slides up smoothly with top drag handle (`width: 40`, `height: 4`, `#D9D9D9`):
-
-- "I left an item in the car" — alerts driver & logs support ticket.
-- "Fare or billing query" — opens dispute review.
-- "Download Tax Invoice" — triggers itemized receipt.
-
-### 5.6 Multi-Role Onboarding Cards (`app/(auth)/sign-up.tsx`)
-
-The sign-up screen supports tripartite role registration:
-
-- **Role Selection Cards**: Three elevated selector cards for `Passenger` (`customer`), `Driver Partner` (`driver`), and `Merchant` (`vendor_admin`).
-  - Container: `#F8F8F8` background, 1.5px border `#EEEEEE`, `borderRadius: 14`.
-  - Active State: Soft blue tint `#EBF4FF`, 1.5px border `#0286FF`.
-  - Icon: Centered circle avatar ($34 \times 34\text{ pt}$) with filled `#0286FF` on active.
-- **Dynamic Profile Fields**:
-  - **Driver Partner**: Vehicle category pills (`Standard`, `Comfort`, `SUV`, `Luxury`), Vehicle Make & Model, License Plate number (auto-capitalized), Driver's License number.
-  - **Merchant / Vendor Partner**: Cuisine category pills (`Fast Food`, `Italian`, `Bakery`, `Cafe`, `Japanese`, `American`), Business / Restaurant Name, Store Address, Contact Phone.
-
-### 5.7 Food & Restaurant Catalog Patterns
-
-- **Vendor Discovery Card**: Cover image thumbnail with rating badge (★ 4.8), preparation time (`20 min`), delivery fee (`$2.99`), and cuisine category chip.
-- **Menu Item Card**: Food photo, item title, item description, dietary indicators (`Vegetarian` green leaf, `Gluten-Free` wheat-off), base price, and circular `+` button for instant cart addition.
-- **Floating Cart Pill**: Sticky bottom bar showing item count badge, restaurant name, and running subtotal with animated slide-up to checkout.
+### 7.7 `components/RoleSwitcherPill.tsx`
+- **Layout**: Centered segmented track (`height: 36`, `borderRadius: 20`, `padding: 3`).
+- **Active Pill**: `#0286FF` background with subtle shadow, white text and icon.
 
 ---
 
-## 6. Motion & Feedback Guidelines
-
-- **Map Camera Movements** — Use `animateToRegion` with duration `600ms` for smooth recentering.
-- **Button Touches** — Use `activeOpacity={0.8}` or `activeOpacity={0.7}` on touchables for responsive tactile feedback.
-- **Modals** — Use `animationType="slide"` with transparent backdrop `rgba(0, 0, 0, 0.5)`.
-
----
-
-## 7. Platform Splitting Rules (Design-Impacting)
-
-These rules affect how visual components are authored and must be respected when designing any map or native-view surface:
+## 8. Platform Splitting Rules
 
 1. **Never directly import `react-native-maps` into files in `app/`**.
-2. **Always use Platform Extensions**:
-   - `components/[ComponentName].native.tsx` — full native map logic.
-   - `components/[ComponentName].tsx` — web-safe stub or preview card.
-   - Import cleanly: `import Map from '@/components/Map';`
-3. **Existing Native-Split Modules**:
-   - `components/Map.native.tsx` & `components/Map.tsx` — embedded map preview widget.
-   - `components/MapScreen.native.tsx` & `components/MapScreen.tsx` — full-screen navigation map, re-exported by `app/(utils)/map.tsx`.
+2. **Platform File Extensions**:
+   - `components/[Name].native.tsx` — Full native MapView logic.
+   - `components/[Name].tsx` — Web-safe fallback / preview widget.
+3. **No `styled` from `nativewind`**: NativeWind v4 does not support `styled()`. Use Tailwind utility classes or `StyleSheet.create`.
+4. **No `"output": "server"` in `app.json`**: Retain static export to preserve Expo Router and EAS update compatibility.
 
 ---
 
-## 8. Styling Authoring Rules
+## 9. Design QA & Verification Checklist
 
-1. **DO NOT import `styled` from `nativewind`** — NativeWind v4 does not export `styled`; doing so triggers `TS2305`. Use Tailwind utility classes in `className="..."` or `StyleSheet.create`.
-2. **No `"output": "server"` in `app.json`** — it triggers eager bundling of all routes and crashes native-only packages during EAS builds. Leave `"output"` omitted or `"static"`.
-
----
-
-## 9. Tab Architecture & Responsibilities
-
-Five core tabs are defined in `app/(root)/(tabs)/_layout.tsx`:
-
-| Tab Route | Screen Title | Responsibility | Key Components |
-| :--- | :--- | :--- | :--- |
-| `home.tsx` | Home | Live greeting, carousel promotions, service options, recent trip deck, insights | `AdCarousel`, `ServiceGrid`, `RideCardDeck`, `VeyoInsightsScreen` |
-| `explore.tsx` | Explore | Food discovery grid, restaurant storefront, dish customization, live tracking | `FoodDiscoveryCard`, `VendorStorefrontModal`, `FoodDetailModal`, `OrderTrackingModal` |
-| `trips.tsx` | Mobility | Swift mobility booking, traffic alerts, destination shortcuts, ride tiers, package tracker | `Map`, `TrafficAlertBanner`, `QuickActionGrid`, `DestinationShortcuts`, `RideOptionCard`, `PackageTrackerCard`, `QuietModeModal`, `RideChatModal` |
-| `wallet.tsx` | Wallet | Available balance, student transport mode budget, spending chart, vouchers & modals | `WalletBalanceCard`, `StudentBudgetCard`, `SpendingChart`, `SendMoneyModal`, `TopUpModal`, `AnalyticsModal`, `TransactionHistoryModal` |
-| `profile.tsx` | Profile | User details, AI tailored experience preferences, emergency contacts, referral banner | `AITailoredPreferences`, `EmergencyContacts`, `ReferralBanner` |
-
----
-
-## 10. Reusable Component Catalog
-
-| Component | Path | Responsibility | Visual Reference |
-| :--- | :--- | :--- | :--- |
-| `TrafficAlertBanner` | `components/TrafficAlertBanner.tsx` | Amber alert card with "Avoid Third Mainland traffic? [Reroute]" | Mobility Map Screen |
-| `WhereToInput` | `components/WhereToInput.tsx` | Dual-box origin/destination selector with connecting indicator | Mobility Destination Search |
-| `DestinationShortcuts` | `components/DestinationShortcuts.tsx` | Circular shortcut pills (Home, School, Work, Add) | Mobility Screen |
-| `QuickActionGrid` | `components/QuickActionGrid.tsx` | Dual cards: "Book a Ride" (Swift city mobility) & "Send Items" (Same-day delivery) | Mobility Screen |
-| `RideOptionCard` | `components/RideOptionCard.tsx` | Vehicle tiers in row layout (Economy, Comfort, Veyo EV, Bike) or card layout (Veyo Black) | Mobility & Search |
-| `PackageTrackerCard` | `components/PackageTrackerCard.tsx` | Dark shipment card with tracking ID, EN ROUTE badge, progress track, and ETA | Mobility Screen |
-| `FoodDiscoveryCard` | `components/FoodDiscoveryCard.tsx` | 2-column food cards with image, star rating, cuisine, price-level (`₦₦`), and prep time | Explore Screen |
-| `VendorStorefrontModal` | `components/VendorStorefrontModal.tsx` | Pizza Paradise storefront banner, logo, delivery metrics, menu grid, view cart bar | Vendor Storefront |
-| `FoodDetailModal` | `components/FoodDetailModal.tsx` | Margherita Pizza hero image, rating, protein radio options, extra toppings, instructions, stepper | Food Detail Modal |
-| `CartSummaryModal` | `components/CartSummaryModal.tsx` | Cart items list, delivery address, promo code, subtotal, checkout payment methods | Cart & Checkout |
-| `OrderSuccessModal` | `components/OrderSuccessModal.tsx` | Large checkmark dialog, Order ID, "Track Order" and "Back to Home" CTAs | Order Completed |
-| `OrderTrackingModal` | `components/OrderTrackingModal.tsx` | Delivery route map, 3:25 PM ETA, 4-step stepper, Jackub Kurner courier with Call & Chat | Order Tracking |
-| `AITailoredPreferences` | `components/AITailoredPreferences.tsx` | Fast pickup preference (AI prioritizes nearby drivers), Budget-first, Comfort-first | Profile Screen |
-| `WalletBalanceCard` | `components/WalletBalanceCard.tsx` | ₦84,200.50 balance card, SAVED pill, Top Up & Send CTAs, last transaction snippet | Wallet Hub |
-| `StudentBudgetCard` | `components/StudentBudgetCard.tsx` | Dark budget protection card, toggle, monthly limit, remaining bar (67%) | Wallet Hub |
-| `SpendingChart` | `components/SpendingChart.tsx` | Weekly interactive spending bar chart (Mon-Sun) with active highlight | Wallet Hub |
-| `SendMoneyModal` | `components/SendMoneyModal.tsx` | Recents avatars, bank selector, verified Chukwudi Eze recipient, ₦50,000 chips | Wallet Sub-flow |
-| `TopUpModal` | `components/TopUpModal.tsx` | Veyo Microfinance Bank details, account copy actions, share details CTA | Wallet Sub-flow |
-| `AnalyticsModal` | `components/AnalyticsModal.tsx` | 7-30 day filter, Total Earnings, Number of Trips, Driver Rating, Commission vs Net bar chart | Wallet Sub-flow |
-| `TransactionHistoryModal` | `components/TransactionHistoryModal.tsx` | History/Ongoing/Scheduled tabs, category filters, Today & Yesterday grouped transactions | Wallet Sub-flow |
-| `QuietModeModal` | `components/QuietModeModal.tsx` | How Quiet Mode works, 4 rules (playlist, avoid noise, +5m max, nods only), "Got it" CTA | Mobility Sub-flow |
-| `RideChatModal` | `components/RideChatModal.tsx` | Driver arriving banner (5 MIN countdown), chat bubbles with timestamps, input bar | Mobility Sub-flow |
-
----
-
-## 11. Design QA Checklist
-
-Before any UI change is considered complete, verify:
-
-- [ ] All touch targets are at least `44 × 44 pt`.
-- [ ] Tab screens use `paddingTop: insets.top + 65` and `paddingBottom: insets.bottom + 90`.
-- [ ] Cards use `borderRadius: 18`, 1px `#EEEEEE` border, and correct elevation/shadow.
-- [ ] Status badges use the correct semantic token set from §2.3.
-- [ ] Typography uses the correct Plus Jakarta Sans weight and scale row from §3.
-- [ ] Map surfaces render via the platform-split component, never a direct `react-native-maps` import in `app/`.
-- [ ] MapView props are valid (e.g., `showsPointsOfInterest={false}`, **not** `showsPointsOfInterests`).
-- [ ] Modals use `animationType="slide"` with `rgba(0,0,0,0.5)` backdrop.
-- [ ] `activeOpacity` is set on all touchables (`0.7`–`0.8`).
-- [ ] No `import { styled } from 'nativewind'`.
-- [ ] No `"output": "server"` in `app.json`.
-- [ ] Android eager bundle export passes locally.
-
----
-
-## 12. Role-Based Screen Architecture & Unified Systems
-
-The Veyo design system provides tailored ergonomics for three user archetypes while sharing a unified visual foundation:
-
-### 12.1 Driver Partner (`driver`)
-- **Profile & Operational Hub (`DriverProfileHub.tsx`)**:
-  - Live dispatch toggle (`● Receiving requests` / `○ Offline`).
-  - Driver credential card: Sarah Lee, `✔ Verified Driver` emerald badge (`#065F46`), `★ 4.78` rating.
-  - Registered vehicle card: `2023 Tesla Model 3`, `Red Luxury Sedan`, plate badge `TES1234`.
-  - Payout account strip: Wells Fargo (`•••• 4455`) with instant direct deposit indicator.
-  - Quad metrics: Total Rides (189), Total Orders (74), Acceptance Rate (94% with teal progress bar).
-  - Safety Performance: Acceptance (89%), Cancellation (4.1% in red `#EF4444`).
-  - Recent activity feed: Downtown Drop-off, Food Delivery, JFK Airport Run.
-- **Mobility Tab (Driver Dispatch & Radar)**:
-  - Online Shift HUD: Time online (`5h 12m`), Shift earnings (`$184.50`), Trips completed (`8`).
-  - Interactive Incoming Request Card with countdown timer (14s), upfront fare (`$24.50` with `+$3.00 Surge Boost`), rider details (`David K. ★ 4.9`), and [Decline] / [Accept] actions.
-  - Live in-transit controls: [Start Trip], [Complete Trip & Collect Fare], Rider chat/call shortcuts.
-- **Wallet Tab (Driver Earnings & Payouts)**:
-  - Available Driver Balance (`$482.30`).
-  - [Instant Cash Out to Wells Fargo] with 1-2 minute delivery.
-  - Weekly earnings breakdown (Base Fares `$612.00`, 100% Tips `$124.50`, Surge Boost `$212.00`).
-  - Driver payout history statements.
-
-### 12.2 Merchant / Vendor (`vendor_admin`)
-- **Storefront & Catalog Hub (`VendorDashboardHub.tsx`)**:
-  - Pizzeria header: Pizza Paradise / Brooklyn Bites, `✔ Verified Merchant` badge, `10:00 AM - 10:00 PM`.
-  - Operating status switch: `● Accepting Orders (Open)` vs `○ Store Paused (Closed)`.
-  - Merchant performance quad: Gross revenue (`$1,248.50`, `+14%`), 38 orders, avg prep time (`14 min`), store rating (`4.8 ★`).
-  - Kitchen Order Fulfillment Queue: Segmented tabs (`All`, `New`, `In Kitchen`, `Ready for Courier`) with lifecycle status transitions.
-  - Menu Catalog Management (Full CRUD):
-    - Add New Dish modal (Name, Category, Price, Prep Time, Description, Image URL, Veg/Vegan tags).
-    - Edit existing dish pricing and details.
-    - Delete dish with confirmation dialog.
-    - In-stock / Sold-out real-time inventory toggle.
-- **Wallet Tab (Merchant Settlements)**:
-  - Net settlement balance (`$1,061.22`).
-  - Wells Fargo Commercial automatic weekly deposits.
-  - Transparent 15% platform fee deduction breakdown (`-$187.28`).
-  - Annual 1099-K tax statements.
-
-### 12.3 What Is Unified Across Roles
-1. **Global Role Switcher (`RoleSwitcherPill.tsx`)**: Unified segmented pill (`[ 👤 Rider | 🚗 Driver | 🏪 Merchant ]`) enabling instantaneous state switching.
-2. **Unified Payout Banking (`Wells Fargo •••• 4455`)**: Consistent direct-deposit banking cards and routing across Driver, Merchant, and Rider.
-3. **Unified Communications (`RideChatModal.tsx`)**: Shared low-latency in-app chat with status banners and message history.
-4. **Unified Order & Route Tracking (`OrderTrackingModal.tsx`)**: Shared live courier/driver GPS polyline visualization.
-5. **Unified Navigation & Ergonomics**: Shared 70px floating animated tab bar with safe-area bottom clearance (`insets.bottom + 90`).
+- [x] All touch targets are at least $44 \times 44\text{ pt}$.
+- [x] All 5 tab screens use `paddingTop: insets.top + 70` and `paddingBottom: insets.bottom + 90`.
+- [x] Floating header does not overlap the top card on any screen.
+- [x] Primary `+` FAB sits cleanly at `bottom: 96, right: 18` without colliding with inline widgets.
+- [x] No rogue absolute positioned buttons hover over the screen (`Insights.tsx`).
+- [x] Options cards render bundled reliable assets and never turn completely blank (`Options.tsx`).
+- [x] Ride cards feature a clean route stepper with no stray bare arrow icons (`RideCard.tsx`).
+- [x] Neon DB multi-tier views (`vw_customer_tier`, `vw_driver_tier`, `vw_merchant_tier`, `vw_customer_rides`, `vw_merchant_orders`) are live and verified.
+- [x] TypeScript typechecking passes with zero errors (`tsc --noEmit`).
+- [x] Local Metro Android bundle export completes successfully.

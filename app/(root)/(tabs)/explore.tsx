@@ -196,9 +196,10 @@ export default function ExploreScreen() {
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={{
-          paddingTop: insets.top + 58,
-          paddingBottom: insets.bottom + 85,
-          paddingHorizontal: 12,
+          paddingTop: insets.top + 70,
+          paddingBottom: insets.bottom + 90,
+          paddingHorizontal: 16,
+          gap: 12,
         }}
         showsVerticalScrollIndicator={false}
       >

@@ -216,7 +216,7 @@ export default function MobilityScreen() {
         contentContainerStyle={[
           styles.scrollContent,
           {
-            paddingTop: insets.top + 65,
+            paddingTop: insets.top + 70,
             paddingBottom: insets.bottom + 90, // Avoid overlap with bottom floating tab bar
           },
         ]}
@@ -1026,7 +1026,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     paddingBottom: 40,
   },
   segmentedControl: {

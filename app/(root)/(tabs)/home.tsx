@@ -15,6 +15,7 @@ import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useUser } from '@clerk/expo';
 
 import { images } from '@/constants/utils';
+import { SPACING, RADIUS, LAYOUT } from '@/constants/designTokens';
 import Header from '@/components/Header';
 import AdCarousel from '@/components/AdCarousel';
 import ServiceGrid from '@/components/Options';
@@ -132,10 +133,10 @@ export default function HomeScreen() {
         style={styles.scroll}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingTop: insets.top + 58,
-          paddingBottom: insets.bottom + 85, // Tab bar clearance
-          paddingHorizontal: 12,
-          gap: 12,
+          paddingTop: insets.top + 70,
+          paddingBottom: insets.bottom + 90,
+          paddingHorizontal: SPACING.screen,
+          gap: SPACING.sectionGap,
         }}
       >
         {/* Role Switcher Pill */}
@@ -381,8 +382,8 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: 105,
-    right: 20,
+    bottom: 96,
+    right: 18,
     zIndex: 50,
     width: 54,
     height: 54,

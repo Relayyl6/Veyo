@@ -1,222 +1,183 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { 
   View, 
   Text, 
   Image, 
-  ScrollView, 
   TouchableOpacity, 
-  Animated, 
   Dimensions,
   StyleSheet,
   LayoutAnimation,
-  FlatList
+  FlatList,
+  Platform,
+  UIManager,
 } from 'react-native';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { RADIUS, SPACING } from '@/constants/designTokens';
 
-const { width, height } = Dimensions.get('window');
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 const aiPredictionsData = [
-  // ... your existing array stays exactly the same ...
   {
     id: '1',
     title: 'Shawarma order?',
     subtitle: 'Usually ordered at 8 PM',
     tag: 'AI PREDICTION',
-    image: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?q=80&w=1000&auto=format&fit=crop', 
+    image: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?q=80&w=600&auto=format&fit=crop', 
+    route: '/(root)/(tabs)/explore',
   },
   {
     id: '2',
     title: 'Late night pizza?',
     subtitle: 'Usually ordered at 11 PM',
     tag: 'AI PREDICTION',
-    image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=1000&auto=format&fit=crop', 
+    image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=600&auto=format&fit=crop', 
+    route: '/(root)/(tabs)/explore',
   },
   {
     id: '3',
     title: 'Morning coffee run?',
     subtitle: 'Usually ordered at 7:30 AM',
     tag: 'AI PREDICTION',
-    image: 'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=80&w=1000&auto=format&fit=crop', 
+    image: 'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=80&w=600&auto=format&fit=crop', 
+    route: '/(root)/(tabs)/explore',
   },
   {
     id: '4',
     title: 'Heading to the Gym?',
     subtitle: 'Usually booked at 6:00 PM',
     tag: 'SMART COMMUTE',
-    image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1000&auto=format&fit=crop', 
+    image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=600&auto=format&fit=crop', 
+    route: '/(utils)/book-ride',
   },
   {
     id: '5',
     title: 'Weekend Groceries?',
     subtitle: 'Based on your Saturday routine',
     tag: 'AI PREDICTION',
-    image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1000&auto=format&fit=crop', 
+    image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=600&auto=format&fit=crop', 
+    route: '/(root)/(tabs)/explore',
   },
-  {
-    id: '6',
-    title: 'Flight to Abuja?',
-    subtitle: 'Minimal airport traffic right now',
-    tag: 'TRAVEL ALERT',
-    image: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=1000&auto=format&fit=crop', 
-  },
-  {
-    id: '7',
-    title: 'Friday night out?',
-    subtitle: 'Victoria Island again?',
-    tag: 'SMART COMMUTE',
-    image: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?q=80&w=1000&auto=format&fit=crop', 
-  }
 ];
 
-const AIPredictionList = () => {
-  const [listData, setListData] = useState(aiPredictionsData);
+export const AIPredictionList = () => {
+  const router = useRouter();
 
-  // 2. Function that triggers when the user nears the end of the scroll
-  const handleLoadMore = () => {
-    // Append the original array to the current state, creating an endless loop
-    setListData((prevData) => [...prevData, ...aiPredictionsData]);
-  };
-
-  // 3. Extract your UI into a render function
-  const renderCard = ({ item }: { item: any }) => (
-    <View className="w-[230px] h-36 rounded-2xl overflow-hidden mr-3 relative bg-neutral-800">
+  const renderCard = ({ item }: { item: typeof aiPredictionsData[0] }) => (
+    <TouchableOpacity
+      activeOpacity={0.88}
+      onPress={() => router.push(item.route as any)}
+      style={styles.aiCard}
+    >
       {/* Background Image */}
       <Image 
         source={{ uri: item.image }} 
-        className="absolute w-full h-full"
+        style={styles.cardImage}
         resizeMode="cover"
       />
-      {/* Dark Gradient Overlay */}
-      <View className="absolute bottom-0 w-full h-[42%] bg-black/65 flex justify-end p-2.5">
-        
+      {/* Gradient Dark Overlay */}
+      <View style={styles.cardOverlay}>
         {/* Tag */}
-        <View className="bg-orange-600 self-start px-1.5 py-0.5 rounded mb-1">
-          <Text className="text-white text-[8.5px] font-bold tracking-wider">{item.tag}</Text>
+        <View style={styles.tagBadge}>
+          <Text style={styles.tagText}>{item.tag}</Text>
         </View>
 
-        <View className="flex-row items-end justify-between">
-          <View className="flex-1 mr-2">
-            {/* Title */}
-            <Text className="text-white text-[13px] font-bold leading-tight" numberOfLines={1}>{item.title}</Text>
-            {/* Subtitle */}
-            <Text className="text-gray-300 text-[9.5px] leading-tight" numberOfLines={1}>{item.subtitle}</Text>
+        <View style={styles.cardFooter}>
+          <View style={styles.cardTextCol}>
+            <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
+            <Text style={styles.cardSubtitle} numberOfLines={1}>{item.subtitle}</Text>
           </View>
 
-          {/* Cart Button */}
-          <TouchableOpacity className="bg-white/20 p-1.5 rounded-xl w-7 h-7 items-center justify-center border border-white/10">
-            <Ionicons name="cart" size={14} color="white" />
-          </TouchableOpacity>
+          {/* Action Button */}
+          <View style={styles.cartBtn}>
+            <Ionicons name="cart" size={13} color="#FFFFFF" />
+          </View>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
-    <View className="mb-2">
+    <View style={styles.listWrapper}>
       <FlatList 
-        data={listData}
+        data={aiPredictionsData}
         renderItem={renderCard}
-        // 4. IMPORTANT: Combine ID and Index for the key, because duplicating the array duplicates the IDs!
-        keyExtractor={(item, index) => `${item.id}-${index}`}
+        keyExtractor={(item) => item.id}
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingVertical: 4 }}
-        snapToInterval={242}
+        contentContainerStyle={{ paddingHorizontal: 2 }}
+        snapToInterval={216}
         decelerationRate="fast"
-        snapToAlignment="start"
-        disableIntervalMomentum={true}
-        // 5. Infinite Scroll Props
-        onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.5} // Triggers `handleLoadMore` when halfway through the last set of items
       />
-    </View>
-  );
-};
-
-const TrafficAlertCard = () => {
-  const [isCollapsed, setIsCollapsed] = useState(true);
-
-  const toggleCollapse = () => {
-    // Automatically smoothly animates the layout change
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setIsCollapsed(!isCollapsed);
-  };
-
-  // --- THE HOVERING PILL STATE ---
-  if (isCollapsed) {
-    return (
-      <TouchableOpacity 
-        onPress={toggleCollapse}
-        className="absolute bottom-16 right-5 z-50 bg-white rounded-full px-5 py-3 flex-row items-center shadow-lg shadow-neutral-300 border border-neutral-100"
-      >
-        <FontAwesome5 name="traffic-light" size={20} color="#dc2626" />
-        {/* <Text className="text-xs font-bold text-neutral-800 ml-2"></Text> */}
-      </TouchableOpacity>
-    );
-  }
-
-  // --- THE FULL CARD STATE ---
-  return (
-    <View className="bg-white rounded-3xl p-5 shadow-sm shadow-neutral-200 mb-4 border border-neutral-50 relative">
-      
-      {/* Collapse Button at the upper edge */}
-      <TouchableOpacity 
-        onPress={toggleCollapse} 
-        className="absolute top-4 right-4 z-10 w-6 h-6 items-center justify-center bg-neutral-100 rounded-full"
-      >
-        {/* Changed icon to chevron-down to indicate collapsing */}
-        <Ionicons name="chevron-down" size={14} color="#666" />
-      </TouchableOpacity>
-
-      <View className="gap-2">
-        {/* Icon Container */}
-        <View className="flex-row items-start pr-6">
-            <View className="bg-red-50 w-12 h-12 rounded-2xl items-center justify-center mr-4">
-              <FontAwesome5 name="traffic-light" size={20} color="#dc2626" />
-            </View>
-
-            <View className="flex-col items-start flex-wrap mb-1">
-                <Text className="text-lg font-bold text-neutral-800">High traffic to Yaba</Text>
-                <View className="bg-red-50 px-2 py-0.5 mt-0.5 rounded-full border border-red-100">
-                    <Text className="text-red-500 text-[10px] font-bold">CRITICAL</Text>
-                </View>
-            </View>
-        </View>
-
-        {/* Content */}
-        <View className="flex-1">
-          <Text className="text-neutral-500 text-xs leading-5 mb-4 pr-2 pl-2">
-            Congestion on Third Mainland Bridge. Leave now to arrive by 7:15 PM.
-          </Text>
-
-          {/* Action Button */}
-          <TouchableOpacity className="bg-indigo-50 py-3 rounded-xl items-center w-full">
-            <Text className="text-indigo-600 font-semibold text-sm">Reroute & Book Ride</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
     </View>
   );
 };
 
 export const WeatherCard = () => {
   return (
-    <TouchableOpacity activeOpacity={0.9} className="bg-[#f2f4ff] rounded-2xl p-2.5 flex-row items-center justify-between mb-2">
-      <View className="flex-row items-center">
-        {/* Weather Icon Circle */}
-        <View className="bg-[#e4eaf9] w-9 h-9 rounded-full items-center justify-center mr-2.5">
-          <Ionicons name="partly-sunny-outline" size={18} color="#3b82f6" />
+    <View style={styles.weatherCard}>
+      <View style={styles.weatherLeft}>
+        <View style={styles.weatherIconCircle}>
+          <Ionicons name="partly-sunny-outline" size={16} color="#0286FF" />
         </View>
-
-        {/* Text Details */}
         <View>
-          <Text className="text-neutral-800 text-xs font-semibold mb-0.5">Cloudy 29°C</Text>
-          <Text className="text-neutral-500 text-[10.5px]">Perfect for a walk</Text>
+          <Text style={styles.weatherTitle}>Cloudy 29°C</Text>
+          <Text style={styles.weatherSubtitle}>Perfect weather for travel</Text>
         </View>
       </View>
 
-      {/* Chevron */}
-      <Ionicons name="chevron-forward" size={14} color="#9ca3af" />
+      <Ionicons name="chevron-forward" size={14} color="#9CA3AF" />
+    </View>
+  );
+};
+
+export const TrafficDigestCard = () => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const router = useRouter();
+
+  const toggle = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setIsExpanded(!isExpanded);
+  };
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.9}
+      onPress={toggle}
+      style={styles.trafficBanner}
+    >
+      <View style={styles.trafficHeaderRow}>
+        <View style={styles.trafficIconBox}>
+          <FontAwesome5 name="traffic-light" size={14} color="#DC2626" />
+        </View>
+
+        <View style={styles.trafficHeaderTextCol}>
+          <Text style={styles.trafficTitle}>Traffic Alert: Third Mainland Bridge</Text>
+          <Text style={styles.trafficSub}>Congestion reported • Heavy delay expected</Text>
+        </View>
+
+        <Ionicons
+          name={isExpanded ? 'chevron-up' : 'chevron-down'}
+          size={14}
+          color="#6B7280"
+        />
+      </View>
+
+      {isExpanded && (
+        <View style={styles.trafficExpandedBody}>
+          <Text style={styles.trafficDesc}>
+            Average delay +18 mins towards Lagos Island. Alternative route via Ikorodu Rd saves 12 minutes.
+          </Text>
+          <TouchableOpacity
+            style={styles.rerouteBtn}
+            onPress={() => router.push('/(utils)/book-ride')}
+          >
+            <Text style={styles.rerouteBtnText}>Reroute & Book Ride</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </TouchableOpacity>
   );
 };
@@ -226,10 +187,187 @@ export const WeatherCard = () => {
 // ==========================================
 export default function VeyoInsightsScreen() {
   return (
-    <View className="mb-1">
+    <View style={styles.container}>
       <AIPredictionList />
       <WeatherCard />
-      <TrafficAlertCard />
+      <TrafficDigestCard />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    marginVertical: 4,
+    gap: 8,
+  },
+  listWrapper: {
+    marginBottom: 2,
+  },
+  aiCard: {
+    width: 206,
+    height: 114,
+    borderRadius: RADIUS.cardCompact,
+    overflow: 'hidden',
+    marginRight: 10,
+    position: 'relative',
+    backgroundColor: '#1E293B',
+  },
+  cardImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+  },
+  cardOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '56%',
+    backgroundColor: 'rgba(11, 21, 40, 0.72)',
+    justifyContent: 'flex-end',
+    padding: 8,
+  },
+  tagBadge: {
+    backgroundColor: '#EA580C',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
+    borderRadius: 4,
+    marginBottom: 4,
+  },
+  tagText: {
+    color: '#FFFFFF',
+    fontSize: 8,
+    fontFamily: 'JakartaBold',
+    letterSpacing: 0.5,
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  cardTextCol: {
+    flex: 1,
+    marginRight: 6,
+  },
+  cardTitle: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontFamily: 'JakartaBold',
+    lineHeight: 14,
+  },
+  cardSubtitle: {
+    color: '#CBD5E1',
+    fontSize: 9,
+    fontFamily: 'JakartaMedium',
+    marginTop: 1,
+  },
+  cartBtn: {
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  weatherCard: {
+    backgroundColor: '#F0F7FF',
+    borderRadius: RADIUS.cardCompact,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#E0F2FE',
+  },
+  weatherLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  weatherIconCircle: {
+    backgroundColor: '#DBEAFE',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  weatherTitle: {
+    fontSize: 11,
+    fontFamily: 'JakartaBold',
+    color: '#0B1528',
+  },
+  weatherSubtitle: {
+    fontSize: 9.5,
+    fontFamily: 'JakartaMedium',
+    color: '#64748B',
+  },
+  trafficBanner: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: RADIUS.cardCompact,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  trafficHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  trafficIconBox: {
+    backgroundColor: '#FEF2F2',
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  trafficHeaderTextCol: {
+    flex: 1,
+    marginRight: 6,
+  },
+  trafficTitle: {
+    fontSize: 11.5,
+    fontFamily: 'JakartaBold',
+    color: '#991B1B',
+  },
+  trafficSub: {
+    fontSize: 9.5,
+    fontFamily: 'JakartaMedium',
+    color: '#6B7280',
+    marginTop: 1,
+  },
+  trafficExpandedBody: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#FEE2E2',
+  },
+  trafficDesc: {
+    fontSize: 10.5,
+    fontFamily: 'JakartaMedium',
+    color: '#4B5563',
+    lineHeight: 15,
+    marginBottom: 8,
+  },
+  rerouteBtn: {
+    backgroundColor: '#0286FF',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  rerouteBtnText: {
+    color: '#FFFFFF',
+    fontFamily: 'JakartaBold',
+    fontSize: 11,
+  },
+});
