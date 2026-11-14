@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, Image, FlatList, TouchableOpacity, Dimensions, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, Image, FlatList, TouchableOpacity, Dimensions, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { RADIUS, SPACING } from '@/constants/designTokens';
@@ -8,25 +8,60 @@ import { dbContent, AdvertRecord } from '@/lib/db';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - (SPACING.screen * 2);
 
+const DEFAULT_ADVERTS: AdvertRecord[] = [
+  {
+    id: 'adv-001',
+    title: '60% Off Meals',
+    subtitle: 'Weekend special deals from local chefs',
+    cta_text: 'Order Food',
+    route: '/(root)/(tabs)/explore',
+    image_url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=600&auto=format&fit=crop',
+    gradient_start: '#1E1B4B',
+    gradient_end: '#0F172A',
+    cta_bg: '#F97316',
+    display_order: 1,
+  },
+  {
+    id: 'adv-002',
+    title: 'First Ride Free',
+    subtitle: 'Comfort rides with top rated drivers',
+    cta_text: 'Book Ride',
+    route: '/(utils)/book-ride',
+    image_url: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?q=80&w=600&auto=format&fit=crop',
+    gradient_start: '#0B1528',
+    gradient_end: '#1E3A8A',
+    cta_bg: '#0286FF',
+    display_order: 2,
+  },
+  {
+    id: 'adv-003',
+    title: 'Midnight Cravings?',
+    subtitle: 'Hot pizza & shawarma delivered to your door',
+    cta_text: 'Order Now',
+    route: '/(root)/(tabs)/explore',
+    image_url: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=600&auto=format&fit=crop',
+    gradient_start: '#31111D',
+    gradient_end: '#1A0B10',
+    cta_bg: '#10B981',
+    display_order: 3,
+  },
+];
+
 const AdCarousel = () => {
   const router = useRouter();
-  const [adverts, setAdverts] = useState<AdvertRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [adverts, setAdverts] = useState<AdvertRecord[]>(DEFAULT_ADVERTS);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
     async function loadAdvertsFromDb() {
       try {
-        setLoading(true);
         const data = await dbContent.getAdverts();
-        if (isMounted) {
+        if (isMounted && data && data.length > 0) {
           setAdverts(data);
         }
       } catch (err) {
         console.error('Failed to load adverts from database:', err);
-      } finally {
-        if (isMounted) setLoading(false);
       }
     }
 
@@ -43,18 +78,6 @@ const AdCarousel = () => {
   });
 
   const viewConfigRef = useRef({ viewAreaCoveragePercentThreshold: 50 });
-
-  if (loading && adverts.length === 0) {
-    return (
-      <View style={[styles.card, { width: CARD_WIDTH, marginVertical: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#1E293B' }]}>
-        <ActivityIndicator size="small" color="#0286FF" />
-      </View>
-    );
-  }
-
-  if (adverts.length === 0) {
-    return null;
-  }
 
   return (
     <View style={styles.container}>
@@ -129,10 +152,10 @@ export default AdCarousel;
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 12,
+    marginVertical: 2,
   },
   card: {
-    height: 116,
+    height: 118,
     borderRadius: RADIUS.card,
     overflow: 'hidden',
     marginRight: 10,
@@ -190,7 +213,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 6,
     gap: 5,
   },
   dot: {

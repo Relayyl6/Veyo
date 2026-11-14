@@ -6,7 +6,6 @@ import {
   Animated,
   Dimensions,
   StyleSheet,
-  ActivityIndicator,
 } from 'react-native';
 import { Ionicons, FontAwesome5, Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -33,12 +32,123 @@ interface GridItem {
   iconType?: 'ion' | 'fa5' | 'feather' | null;
   iconColor?: string | null;
   iconBg?: string | null;
+  bgColor?: string;
   localImage?: any;
-  bgClass: string;
   route: string;
   imageOrder?: 'before' | 'after';
   imageClass?: object;
 }
+
+const DEFAULT_FUNCTIONAL_GRID: GridItem[] = [
+  {
+    id: 'srv-func-1',
+    type: 'square',
+    title: 'New Trip',
+    iconName: 'location',
+    iconType: 'ion',
+    iconColor: '#EA4335',
+    iconBg: '#FEE2E2',
+    bgColor: '#FFFFFF',
+    route: '/(utils)/book-ride',
+  },
+  {
+    id: 'srv-func-2',
+    type: 'rectangle',
+    title: 'Swift Delivery',
+    subtitle: 'Takes minutes\nto your door',
+    iconName: 'motorcycle',
+    iconType: 'fa5',
+    iconColor: '#B45309',
+    iconBg: '#FDE68A',
+    bgColor: '#FEF3C7',
+    route: '/(utils)/send-items',
+    imageOrder: 'after',
+  },
+  {
+    id: 'srv-func-3',
+    type: 'rectangle',
+    title: 'Send Packages',
+    subtitle: 'Same-day on-demand\nlogistics',
+    iconName: 'package',
+    iconType: 'feather',
+    iconColor: '#047857',
+    iconBg: '#BBF7D0',
+    bgColor: '#DCFCE7',
+    route: '/(utils)/send-items',
+    imageOrder: 'before',
+  },
+  {
+    id: 'srv-func-4',
+    type: 'square',
+    title: 'Work / Office',
+    iconName: 'briefcase',
+    iconType: 'ion',
+    iconColor: '#0286FF',
+    iconBg: '#EBF4FF',
+    bgColor: '#FFFFFF',
+    route: '/(utils)/book-ride',
+  },
+];
+
+const DEFAULT_LEISURE_GRID: GridItem[] = [
+  {
+    id: 'srv-leis-1',
+    type: 'rectangle',
+    title: 'Roadtrips',
+    subtitle: 'Rent SUVs\n& explore cities',
+    iconName: 'car-sport',
+    iconType: 'ion',
+    iconColor: '#0286FF',
+    iconBg: '#BAE6FD',
+    bgColor: '#E0F2FE',
+    route: '/(utils)/book-ride',
+    imageOrder: 'after',
+    localImage: images.signUpCar,
+    imageClass: { position: 'absolute', bottom: -6, right: -8, width: 80, height: 58 },
+  },
+  {
+    id: 'srv-leis-2',
+    type: 'square',
+    title: 'Dine In',
+    iconName: 'restaurant',
+    iconType: 'ion',
+    iconColor: '#D97706',
+    iconBg: '#FEF3C7',
+    bgColor: '#FFFFFF',
+    route: '/(root)/(tabs)/explore',
+  },
+  {
+    id: 'srv-leis-3',
+    type: 'square',
+    title: 'Grocery',
+    iconName: 'basket',
+    iconType: 'ion',
+    iconColor: '#047857',
+    iconBg: '#D1FAE5',
+    bgColor: '#FFFFFF',
+    route: '/(root)/(tabs)/explore',
+  },
+  {
+    id: 'srv-leis-4',
+    type: 'rectangle',
+    title: 'Nightlife',
+    subtitle: 'Discover events\naround you',
+    iconName: 'beer',
+    iconType: 'ion',
+    iconColor: '#7C3AED',
+    iconBg: '#E9D5FF',
+    bgColor: '#F3E8FF',
+    route: '/(root)/(tabs)/explore',
+    imageOrder: 'before',
+    localImage: images.drinks,
+    imageClass: { position: 'absolute', bottom: -6, left: -4, width: 72, height: 72 },
+  },
+];
+
+const DEFAULT_STATES = [
+  { id: 'functional', grid: DEFAULT_FUNCTIONAL_GRID },
+  { id: 'leisure', grid: DEFAULT_LEISURE_GRID },
+];
 
 const MORPH_INTERVAL_MS = 10000;
 
@@ -75,12 +185,15 @@ const AnimatedCard = ({ item, targetWidth, morphDelay }: AnimatedCardProps) => {
       ]}
     >
       <PressableHybrid
-        className={`flex-1 ${item.bgClass} justify-between p-2.5 overflow-hidden relative`}
+        style={[
+          styles.cardInner,
+          { backgroundColor: item.bgColor || '#FFFFFF' },
+        ]}
         onPress={() => router.push(item.route as any)}
       >
         {isSquare ? (
-          // Square Layout
-          <View className="flex-1 items-center justify-center">
+          /* Square Layout */
+          <View style={styles.squareContent}>
             <View
               style={[
                 styles.squareIconBox,
@@ -96,15 +209,16 @@ const AnimatedCard = ({ item, targetWidth, morphDelay }: AnimatedCardProps) => {
               )}
             </View>
             <Text
-              className="mt-1 text-[11px] font-JakartaBold text-neutral-800 text-center leading-tight"
+              style={styles.squareTitle}
               numberOfLines={1}
             >
               {item.title}
             </Text>
           </View>
         ) : (
-          // Rectangle Layout
-          <View className="flex-1 flex-row items-center justify-between">
+          /* Rectangle Layout */
+          <View style={styles.rectContent}>
+            {/* Leading element if imageOrder === 'before' */}
             {item.imageOrder === 'before' && (
               item.localImage ? (
                 <Image
@@ -130,31 +244,38 @@ const AnimatedCard = ({ item, targetWidth, morphDelay }: AnimatedCardProps) => {
               )
             )}
 
+            {/* Middle text column */}
             <View
-              className={`flex-1 z-10 justify-center ${
-                item.imageOrder === 'before' ? 'items-end pl-14' : 'items-start pr-14'
-              }`}
+              style={[
+                styles.rectTextCol,
+                item.imageOrder === 'before'
+                  ? { alignItems: 'flex-end', paddingLeft: 46 }
+                  : { alignItems: 'flex-start', paddingRight: 46 },
+              ]}
             >
               <Text
-                className={`text-[13px] font-JakartaBold text-neutral-900 leading-tight ${
-                  item.imageOrder === 'before' ? 'text-right' : 'text-left'
-                }`}
+                style={[
+                  styles.rectTitle,
+                  item.imageOrder === 'before' ? { textAlign: 'right' } : { textAlign: 'left' },
+                ]}
                 numberOfLines={1}
               >
                 {item.title}
               </Text>
-              {item.subtitle && (
+              {item.subtitle ? (
                 <Text
-                  className={`text-[9.5px] font-JakartaMedium text-neutral-600 mt-0.5 leading-snug ${
-                    item.imageOrder === 'before' ? 'text-right' : 'text-left'
-                  }`}
+                  style={[
+                    styles.rectSubtitle,
+                    item.imageOrder === 'before' ? { textAlign: 'right' } : { textAlign: 'left' },
+                  ]}
                   numberOfLines={2}
                 >
                   {item.subtitle}
                 </Text>
-              )}
+              ) : null}
             </View>
 
+            {/* Trailing element if imageOrder === 'after' */}
             {item.imageOrder === 'after' && (
               item.localImage ? (
                 <Image
@@ -169,11 +290,25 @@ const AnimatedCard = ({ item, targetWidth, morphDelay }: AnimatedCardProps) => {
                     { backgroundColor: item.iconBg || '#FEF3C7' },
                   ]}
                 >
-                  <FontAwesome5
-                    name={(item.iconName as any) || 'motorcycle'}
-                    size={18}
-                    color={item.iconColor || '#B45309'}
-                  />
+                  {item.iconType === 'fa5' ? (
+                    <FontAwesome5
+                      name={(item.iconName as any) || 'motorcycle'}
+                      size={17}
+                      color={item.iconColor || '#B45309'}
+                    />
+                  ) : item.iconType === 'ion' ? (
+                    <Ionicons
+                      name={(item.iconName as any) || 'car-sport'}
+                      size={18}
+                      color={item.iconColor || '#0286FF'}
+                    />
+                  ) : (
+                    <Feather
+                      name={(item.iconName as any) || 'package'}
+                      size={17}
+                      color={item.iconColor || '#0286FF'}
+                    />
+                  )}
                 </View>
               )
             )}
@@ -185,35 +320,28 @@ const AnimatedCard = ({ item, targetWidth, morphDelay }: AnimatedCardProps) => {
 };
 
 const ServiceGrid = () => {
-  const [dbGrids, setDbGrids] = useState<{ id: string; grid: GridItem[] }[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [dbGrids, setDbGrids] = useState<{ id: string; grid: GridItem[] }[]>(DEFAULT_STATES);
   const [stateIndex, setStateIndex] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
     async function fetchServicesFromDb() {
       try {
-        setLoading(true);
         const rows: ServiceOptionRecord[] = await dbContent.getServiceOptions();
         if (!isMounted || !rows || rows.length === 0) return;
 
-        // Group rows by state_id ('functional' and 'leisure')
         const functionalRows = rows.filter((r) => r.state_id === 'functional');
         const leisureRows = rows.filter((r) => r.state_id === 'leisure');
 
         const mapToGridItem = (r: ServiceOptionRecord): GridItem => {
-          let bgClass = 'bg-white';
-          if (r.bg_color) {
-            bgClass = `bg-[${r.bg_color}]`;
-          }
           let localImg = undefined;
           let imgClass = undefined;
           if (r.id === 'srv-leis-1') {
             localImg = images.signUpCar;
-            imgClass = { position: 'absolute', bottom: -6, right: -10, width: 82, height: 60 };
+            imgClass = { position: 'absolute', bottom: -6, right: -8, width: 80, height: 58 };
           } else if (r.id === 'srv-leis-4') {
             localImg = images.drinks;
-            imgClass = { position: 'absolute', bottom: -8, left: -4, width: 75, height: 75 };
+            imgClass = { position: 'absolute', bottom: -6, left: -4, width: 72, height: 72 };
           }
 
           return {
@@ -225,7 +353,7 @@ const ServiceGrid = () => {
             iconType: r.icon_type,
             iconColor: r.icon_color,
             iconBg: r.icon_bg,
-            bgClass,
+            bgColor: r.bg_color || '#FFFFFF',
             route: r.route,
             imageOrder: r.image_order || 'after',
             localImage: localImg,
@@ -238,13 +366,11 @@ const ServiceGrid = () => {
           { id: 'leisure', grid: leisureRows.map(mapToGridItem) },
         ].filter((s) => s.grid.length >= 4);
 
-        if (states.length > 0) {
+        if (states.length > 0 && isMounted) {
           setDbGrids(states);
         }
       } catch (err) {
         console.error('Failed to load service options from DB:', err);
-      } finally {
-        if (isMounted) setLoading(false);
       }
     }
 
@@ -265,18 +391,6 @@ const ServiceGrid = () => {
     const interval = setInterval(startTransition, MORPH_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [startTransition, dbGrids.length]);
-
-  if (loading && dbGrids.length === 0) {
-    return (
-      <View style={[styles.gridContainer, { height: 174, justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="small" color="#0286FF" />
-      </View>
-    );
-  }
-
-  if (dbGrids.length === 0) {
-    return null;
-  }
 
   const currentGrid = dbGrids[stateIndex]?.grid || dbGrids[0]?.grid;
   if (!currentGrid || currentGrid.length < 4) return null;
@@ -319,38 +433,81 @@ export default ServiceGrid;
 
 const styles = StyleSheet.create({
   gridContainer: {
-    marginVertical: 8,
+    marginVertical: 4,
     gap: GAP,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: GAP,
-    height: 82,
+    height: 86,
   },
   cardOuter: {
     height: '100%',
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#EEEEEE',
+    borderColor: '#E5E7EB',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1.5 },
     shadowOpacity: 0.04,
     shadowRadius: 3,
     elevation: 2,
   },
-  squareIconBox: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+  cardInner: {
+    flex: 1,
+    padding: 10,
+    justifyContent: 'center',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  squareContent: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rectIconBox: {
+  squareIconBox: {
     width: 36,
     height: 36,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  squareTitle: {
+    marginTop: 4,
+    fontSize: 11,
+    fontFamily: 'JakartaBold',
+    color: '#111827',
+    textAlign: 'center',
+  },
+  rectContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  rectIconBox: {
+    width: 38,
+    height: 38,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  rectTextCol: {
+    flex: 1,
+    zIndex: 10,
+    justifyContent: 'center',
+  },
+  rectTitle: {
+    fontSize: 13,
+    fontFamily: 'JakartaBold',
+    color: '#0B1528',
+    lineHeight: 16,
+  },
+  rectSubtitle: {
+    fontSize: 10,
+    fontFamily: 'JakartaMedium',
+    color: '#4B5563',
+    marginTop: 2,
+    lineHeight: 13,
   },
 });

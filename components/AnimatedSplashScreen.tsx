@@ -16,7 +16,9 @@ import Svg, {
 } from 'react-native-svg';
 import * as SplashScreen from 'expo-splash-screen';
 
-SplashScreen.preventAutoHideAsync();
+try {
+  SplashScreen.preventAutoHideAsync().catch(() => {});
+} catch (e) {}
 
 const { width: SW, height: SH } = Dimensions.get('window');
 const CX = SW / 2;
@@ -164,7 +166,7 @@ export default function AnimatedSplashScreen({ onComplete }: { onComplete: () =>
             Animated.timing(containerOpacity, {
               toValue: 0,
               duration: 350,
-              easing: Easing.out(Easing.ease),
+              
               useNativeDriver: true,
             }).start(() => {
               onComplete();

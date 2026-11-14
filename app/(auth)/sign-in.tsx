@@ -180,7 +180,7 @@ const SignIn = () => {
 
             {/* Back button */}
             <Pressable
-              onPress={() => router.back()}
+              onPress={() => router.canGoBack() ? router.back() : router.replace('/(auth)/welcome')}
               className="absolute top-12 left-5 w-9 h-9 rounded-full bg-white/25 items-center justify-center active:bg-white/40"
               hitSlop={10}
             >

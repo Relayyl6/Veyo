@@ -21,24 +21,50 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
+const DEFAULT_PREDICTIONS: AiPredictionRecord[] = [
+  {
+    id: 'pred-001',
+    title: 'Shawarma order?',
+    subtitle: 'Usually ordered at 8 PM',
+    tag: 'AI PREDICTION',
+    image_url: 'https://images.unsplash.com/photo-1529006557810-274b9b2fc783?q=80&w=600&auto=format&fit=crop',
+    route: '/(root)/(tabs)/explore',
+    display_order: 1,
+  },
+  {
+    id: 'pred-002',
+    title: 'Late night pizza?',
+    subtitle: 'Usually ordered at 11 PM',
+    tag: 'AI PREDICTION',
+    image_url: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=600&auto=format&fit=crop',
+    route: '/(root)/(tabs)/explore',
+    display_order: 2,
+  },
+  {
+    id: 'pred-003',
+    title: 'Morning coffee run?',
+    subtitle: 'Usually ordered at 7:30 AM',
+    tag: 'AI PREDICTION',
+    image_url: 'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=80&w=600&auto=format&fit=crop',
+    route: '/(root)/(tabs)/explore',
+    display_order: 3,
+  },
+];
+
 export const AIPredictionList = () => {
   const router = useRouter();
-  const [predictions, setPredictions] = useState<AiPredictionRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [predictions, setPredictions] = useState<AiPredictionRecord[]>(DEFAULT_PREDICTIONS);
 
   useEffect(() => {
     let isMounted = true;
     async function loadPredictions() {
       try {
-        setLoading(true);
         const data = await dbContent.getAiPredictions();
-        if (isMounted) {
+        if (isMounted && data && data.length > 0) {
           setPredictions(data);
         }
       } catch (err) {
         console.error('Failed to load AI predictions from database:', err);
-      } finally {
-        if (isMounted) setLoading(false);
       }
     }
 
@@ -81,14 +107,6 @@ export const AIPredictionList = () => {
       </View>
     </TouchableOpacity>
   );
-
-  if (loading && predictions.length === 0) {
-    return (
-      <View style={[styles.aiCard, { width: 206, height: 114, alignItems: 'center', justifyContent: 'center' }]}>
-        <ActivityIndicator size="small" color="#0286FF" />
-      </View>
-    );
-  }
 
   if (predictions.length === 0) {
     return null;

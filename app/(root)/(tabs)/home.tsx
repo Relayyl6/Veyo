@@ -127,9 +127,9 @@ export default function HomeScreen() {
           left: 0,
           right: 0,
           zIndex: 10,
-          paddingTop: insets.top,
-          paddingBottom: 10,
-          backgroundColor: 'transparent',
+          paddingTop: insets.top + 4,
+          paddingBottom: 6,
+          backgroundColor: '#F6F8FA',
         }}
       >
         <Header
