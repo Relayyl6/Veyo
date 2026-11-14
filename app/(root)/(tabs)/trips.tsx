@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -29,6 +29,7 @@ import { rides as mockRidesData } from '@/constants/data';
 import { getEnrichedRide } from '@/lib/dataResolvers';
 import { images } from '@/constants/utils';
 import { Ride } from '@/types/data';
+import { dbContent } from '@/lib/db';
 
 // Mobility Reusable Components
 import TrafficAlertBanner from '@/components/TrafficAlertBanner';
@@ -141,9 +142,24 @@ export default function MobilityScreen() {
   const [scheduleDate, setScheduleDate] = useState('Tomorrow, 07:00 AM');
   const [scheduleDestination, setScheduleDestination] = useState('International Airport');
 
-  const pastRidesList = useMemo(() => {
-    return (mockRidesData.rides || []).map((r) => getEnrichedRide(r.id) || r);
+  const [liveDbRides, setLiveDbRides] = useState<any[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    dbContent.getRides().then((res) => {
+      if (isMounted && res && res.length > 0) {
+        setLiveDbRides(res);
+      }
+    });
+    return () => { isMounted = false; };
   }, []);
+
+  const pastRidesList = useMemo(() => {
+    if (liveDbRides.length > 0) {
+      return liveDbRides.map((r) => getEnrichedRide(r.id) || r);
+    }
+    return (mockRidesData.rides || []).map((r) => getEnrichedRide(r.id) || r);
+  }, [liveDbRides]);
 
   const handleRebookRide = (ride: any) => {
     if (ride.destination_latitude && ride.destination_longitude) {

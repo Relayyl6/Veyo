@@ -1,48 +1,40 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, Image, FlatList, TouchableOpacity, Dimensions, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, Image, FlatList, TouchableOpacity, Dimensions, StyleSheet, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { RADIUS, SPACING } from '@/constants/designTokens';
+import { dbContent, AdvertRecord } from '@/lib/db';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - (SPACING.screen * 2);
 
-const advertData = [
-  {
-    id: '1',
-    title: '60% Off Meals',
-    subtitle: 'Weekend special deals from local chefs',
-    ctaText: 'Order Food',
-    route: '/(root)/(tabs)/explore',
-    image: { uri: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=400&auto=format&fit=crop' },
-    gradient: ['#1E1B4B', '#0F172A'] as [string, string],
-    ctaBg: '#F97316',
-  },
-  {
-    id: '2',
-    title: 'First Ride Free',
-    subtitle: 'Comfort rides with top rated drivers',
-    ctaText: 'Book Ride',
-    route: '/(utils)/book-ride',
-    image: { uri: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?q=80&w=400&auto=format&fit=crop' },
-    gradient: ['#0B1528', '#1E3A8A'] as [string, string],
-    ctaBg: '#0286FF',
-  },
-  {
-    id: '3',
-    title: 'Midnight Cravings?',
-    subtitle: 'Hot pizza & shawarma delivered to your door',
-    ctaText: 'Order Now',
-    route: '/(root)/(tabs)/explore',
-    image: { uri: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=400&auto=format&fit=crop' },
-    gradient: ['#31111D', '#1A0B10'] as [string, string],
-    ctaBg: '#10B981',
-  },
-];
-
 const AdCarousel = () => {
   const router = useRouter();
+  const [adverts, setAdverts] = useState<AdvertRecord[]>([]);
+  const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadAdvertsFromDb() {
+      try {
+        setLoading(true);
+        const data = await dbContent.getAdverts();
+        if (isMounted) {
+          setAdverts(data);
+        }
+      } catch (err) {
+        console.error('Failed to load adverts from database:', err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+
+    loadAdvertsFromDb();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const onViewRef = useRef(({ viewableItems }: { viewableItems: any[] }) => {
     if (viewableItems.length > 0) {
@@ -52,10 +44,22 @@ const AdCarousel = () => {
 
   const viewConfigRef = useRef({ viewAreaCoveragePercentThreshold: 50 });
 
+  if (loading && adverts.length === 0) {
+    return (
+      <View style={[styles.card, { width: CARD_WIDTH, marginVertical: 4, alignItems: 'center', justifyContent: 'center', backgroundColor: '#1E293B' }]}>
+        <ActivityIndicator size="small" color="#0286FF" />
+      </View>
+    );
+  }
+
+  if (adverts.length === 0) {
+    return null;
+  }
+
   return (
     <View style={styles.container}>
       <FlatList
-        data={advertData}
+        data={adverts}
         keyExtractor={(item) => item.id}
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -64,54 +68,59 @@ const AdCarousel = () => {
         decelerationRate="fast"
         onViewableItemsChanged={onViewRef.current}
         viewabilityConfig={viewConfigRef.current}
-        renderItem={({ item }) => (
-          <View style={[styles.card, { width: CARD_WIDTH }]}>
-            <LinearGradient
-              colors={item.gradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.gradient}
-            >
-              {/* Left Content */}
-              <View style={styles.textColumn}>
-                <Text style={styles.title} numberOfLines={1}>
-                  {item.title}
-                </Text>
-                <Text style={styles.subtitle} numberOfLines={2}>
-                  {item.subtitle}
-                </Text>
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  onPress={() => router.push(item.route as any)}
-                  style={[styles.ctaBtn, { backgroundColor: item.ctaBg }]}
-                >
-                  <Text style={styles.ctaText}>{item.ctaText}</Text>
-                </TouchableOpacity>
-              </View>
+        renderItem={({ item }) => {
+          const gradientColors = [item.gradient_start || '#0B1528', item.gradient_end || '#1E3A8A'] as [string, string];
+          return (
+            <View style={[styles.card, { width: CARD_WIDTH }]}>
+              <LinearGradient
+                colors={gradientColors}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.gradient}
+              >
+                {/* Left Content */}
+                <View style={styles.textColumn}>
+                  <Text style={styles.title} numberOfLines={1}>
+                    {item.title}
+                  </Text>
+                  <Text style={styles.subtitle} numberOfLines={2}>
+                    {item.subtitle}
+                  </Text>
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    onPress={() => router.push(item.route as any)}
+                    style={[styles.ctaBtn, { backgroundColor: item.cta_bg || '#0286FF' }]}
+                  >
+                    <Text style={styles.ctaText}>{item.cta_text}</Text>
+                  </TouchableOpacity>
+                </View>
 
-              {/* Right Hero Image */}
-              <Image
-                source={item.image}
-                style={styles.heroImage}
-                resizeMode="cover"
-              />
-            </LinearGradient>
-          </View>
-        )}
+                {/* Right Hero Image */}
+                <Image
+                  source={{ uri: item.image_url }}
+                  style={styles.heroImage}
+                  resizeMode="cover"
+                />
+              </LinearGradient>
+            </View>
+          );
+        }}
       />
 
       {/* Pagination Dots */}
-      <View style={styles.paginationDots}>
-        {advertData.map((_, idx) => (
-          <View
-            key={idx}
-            style={[
-              styles.dot,
-              idx === currentIndex ? styles.dotActive : styles.dotInactive,
-            ]}
-          />
-        ))}
-      </View>
+      {adverts.length > 1 && (
+        <View style={styles.paginationDots}>
+          {adverts.map((_, idx) => (
+            <View
+              key={idx}
+              style={[
+                styles.dot,
+                idx === currentIndex ? styles.dotActive : styles.dotInactive,
+              ]}
+            />
+          ))}
+        </View>
+      )}
     </View>
   );
 };

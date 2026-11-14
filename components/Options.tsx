@@ -6,19 +6,21 @@ import {
   Animated,
   Dimensions,
   StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons, FontAwesome5, Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { images } from '@/constants/utils';
 import { PressableHybrid } from './CustomPressable';
 import { RADIUS, SPACING } from '@/constants/designTokens';
+import { dbContent, ServiceOptionRecord } from '@/lib/db';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_PADDING = SPACING.screen * 2; // 32px (16 on each side)
 const GAP = 8;
 const TOTAL = SCREEN_WIDTH - GRID_PADDING - GAP;
 
-// Width ratios: 33% square, 67% rectangle (accounting for gap)
+// Width ratios: 32% square, 68% rectangle (accounting for gap)
 const SQ_W = TOTAL * 0.32;
 const REC_W = TOTAL * 0.68;
 
@@ -26,134 +28,17 @@ interface GridItem {
   id: string;
   type: 'square' | 'rectangle';
   title: string;
-  subtitle?: string;
-  iconName?: string;
-  iconType?: 'ion' | 'fa5' | 'feather';
-  iconColor?: string;
-  iconBg?: string;
+  subtitle?: string | null;
+  iconName?: string | null;
+  iconType?: 'ion' | 'fa5' | 'feather' | null;
+  iconColor?: string | null;
+  iconBg?: string | null;
   localImage?: any;
   bgClass: string;
   route: string;
   imageOrder?: 'before' | 'after';
   imageClass?: object;
 }
-
-const layoutStates: { id: string; grid: GridItem[] }[] = [
-  {
-    id: 'functional',
-    grid: [
-      {
-        id: 'item-1',
-        type: 'square',
-        title: 'New Trip',
-        iconName: 'location',
-        iconType: 'ion',
-        iconColor: '#EA4335',
-        iconBg: '#FEE2E2',
-        bgClass: 'bg-white',
-        route: '/(utils)/book-ride',
-      },
-      {
-        id: 'item-2',
-        type: 'rectangle',
-        title: 'Swift Delivery',
-        subtitle: 'Takes minutes\nto your door',
-        iconName: 'motorcycle',
-        iconType: 'fa5',
-        iconColor: '#B45309',
-        iconBg: '#FDE68A',
-        bgClass: 'bg-[#FEF3C7]',
-        route: '/(utils)/send-items',
-        imageOrder: 'after',
-      },
-      {
-        id: 'item-3',
-        type: 'rectangle',
-        title: 'Send Packages',
-        subtitle: 'Same-day on-demand\nlogistics',
-        iconName: 'package',
-        iconType: 'feather',
-        iconColor: '#047857',
-        iconBg: '#BBF7D0',
-        bgClass: 'bg-[#DCFCE7]',
-        route: '/(utils)/send-items',
-        imageOrder: 'before',
-      },
-      {
-        id: 'item-4',
-        type: 'square',
-        title: 'Work / Office',
-        iconName: 'briefcase',
-        iconType: 'ion',
-        iconColor: '#0286FF',
-        iconBg: '#EBF4FF',
-        bgClass: 'bg-white',
-        route: '/(utils)/book-ride',
-      },
-    ],
-  },
-  {
-    id: 'leisure',
-    grid: [
-      {
-        id: 'item-1',
-        type: 'rectangle',
-        title: 'Roadtrips',
-        subtitle: 'Rent SUVs\n& explore cities',
-        localImage: images.signUpCar,
-        bgClass: 'bg-[#E0F2FE]',
-        route: '/(utils)/book-ride',
-        imageOrder: 'after',
-        imageClass: {
-          position: 'absolute',
-          bottom: -6,
-          right: -10,
-          width: 82,
-          height: 60,
-        },
-      },
-      {
-        id: 'item-2',
-        type: 'square',
-        title: 'Dine In',
-        iconName: 'restaurant',
-        iconType: 'ion',
-        iconColor: '#D97706',
-        iconBg: '#FEF3C7',
-        bgClass: 'bg-white',
-        route: '/(root)/(tabs)/explore',
-      },
-      {
-        id: 'item-3',
-        type: 'square',
-        title: 'Grocery',
-        iconName: 'basket',
-        iconType: 'ion',
-        iconColor: '#047857',
-        iconBg: '#D1FAE5',
-        bgClass: 'bg-white',
-        route: '/(root)/(tabs)/explore',
-      },
-      {
-        id: 'item-4',
-        type: 'rectangle',
-        title: 'Nightlife',
-        subtitle: 'Discover events\naround you',
-        localImage: images.drinks,
-        bgClass: 'bg-[#F3E8FF]',
-        route: '/(root)/(tabs)/explore',
-        imageOrder: 'before',
-        imageClass: {
-          position: 'absolute',
-          bottom: -8,
-          left: -4,
-          width: 75,
-          height: 75,
-        },
-      },
-    ],
-  },
-];
 
 const MORPH_INTERVAL_MS = 10000;
 
@@ -166,7 +51,6 @@ interface AnimatedCardProps {
 const AnimatedCard = ({ item, targetWidth, morphDelay }: AnimatedCardProps) => {
   const router = useRouter();
   const animWidth = useRef(new Animated.Value(targetWidth)).current;
-  const contentFade = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     Animated.spring(animWidth, {
@@ -204,11 +88,11 @@ const AnimatedCard = ({ item, targetWidth, morphDelay }: AnimatedCardProps) => {
               ]}
             >
               {item.iconType === 'fa5' ? (
-                <FontAwesome5 name={item.iconName as any} size={15} color={item.iconColor} />
+                <FontAwesome5 name={item.iconName as any} size={15} color={item.iconColor || '#333'} />
               ) : item.iconType === 'feather' ? (
-                <Feather name={item.iconName as any} size={16} color={item.iconColor} />
+                <Feather name={item.iconName as any} size={16} color={item.iconColor || '#333'} />
               ) : (
-                <Ionicons name={item.iconName as any} size={18} color={item.iconColor} />
+                <Ionicons name={(item.iconName as any) || 'ellipse'} size={18} color={item.iconColor || '#333'} />
               )}
             </View>
             <Text
@@ -235,7 +119,13 @@ const AnimatedCard = ({ item, targetWidth, morphDelay }: AnimatedCardProps) => {
                     { backgroundColor: item.iconBg || '#E0E7FF' },
                   ]}
                 >
-                  <Feather name="package" size={18} color={item.iconColor || '#0286FF'} />
+                  {item.iconType === 'fa5' ? (
+                    <FontAwesome5 name={item.iconName as any} size={16} color={item.iconColor || '#0286FF'} />
+                  ) : item.iconType === 'ion' ? (
+                    <Ionicons name={item.iconName as any} size={18} color={item.iconColor || '#0286FF'} />
+                  ) : (
+                    <Feather name={(item.iconName as any) || 'package'} size={18} color={item.iconColor || '#0286FF'} />
+                  )}
                 </View>
               )
             )}
@@ -295,18 +185,102 @@ const AnimatedCard = ({ item, targetWidth, morphDelay }: AnimatedCardProps) => {
 };
 
 const ServiceGrid = () => {
+  const [dbGrids, setDbGrids] = useState<{ id: string; grid: GridItem[] }[]>([]);
+  const [loading, setLoading] = useState(true);
   const [stateIndex, setStateIndex] = useState(0);
 
-  const startTransition = useCallback(() => {
-    setStateIndex((prev) => (prev + 1) % layoutStates.length);
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchServicesFromDb() {
+      try {
+        setLoading(true);
+        const rows: ServiceOptionRecord[] = await dbContent.getServiceOptions();
+        if (!isMounted || !rows || rows.length === 0) return;
+
+        // Group rows by state_id ('functional' and 'leisure')
+        const functionalRows = rows.filter((r) => r.state_id === 'functional');
+        const leisureRows = rows.filter((r) => r.state_id === 'leisure');
+
+        const mapToGridItem = (r: ServiceOptionRecord): GridItem => {
+          let bgClass = 'bg-white';
+          if (r.bg_color) {
+            bgClass = `bg-[${r.bg_color}]`;
+          }
+          let localImg = undefined;
+          let imgClass = undefined;
+          if (r.id === 'srv-leis-1') {
+            localImg = images.signUpCar;
+            imgClass = { position: 'absolute', bottom: -6, right: -10, width: 82, height: 60 };
+          } else if (r.id === 'srv-leis-4') {
+            localImg = images.drinks;
+            imgClass = { position: 'absolute', bottom: -8, left: -4, width: 75, height: 75 };
+          }
+
+          return {
+            id: r.id,
+            type: r.item_type,
+            title: r.title,
+            subtitle: r.subtitle,
+            iconName: r.icon_name,
+            iconType: r.icon_type,
+            iconColor: r.icon_color,
+            iconBg: r.icon_bg,
+            bgClass,
+            route: r.route,
+            imageOrder: r.image_order || 'after',
+            localImage: localImg,
+            imageClass: imgClass,
+          };
+        };
+
+        const states = [
+          { id: 'functional', grid: functionalRows.map(mapToGridItem) },
+          { id: 'leisure', grid: leisureRows.map(mapToGridItem) },
+        ].filter((s) => s.grid.length >= 4);
+
+        if (states.length > 0) {
+          setDbGrids(states);
+        }
+      } catch (err) {
+        console.error('Failed to load service options from DB:', err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+
+    fetchServicesFromDb();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
+  const startTransition = useCallback(() => {
+    if (dbGrids.length > 1) {
+      setStateIndex((prev) => (prev + 1) % dbGrids.length);
+    }
+  }, [dbGrids.length]);
+
   useEffect(() => {
+    if (dbGrids.length <= 1) return;
     const interval = setInterval(startTransition, MORPH_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [startTransition]);
+  }, [startTransition, dbGrids.length]);
 
-  const currentGrid = layoutStates[stateIndex].grid;
+  if (loading && dbGrids.length === 0) {
+    return (
+      <View style={[styles.gridContainer, { height: 168, justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="small" color="#0286FF" />
+      </View>
+    );
+  }
+
+  if (dbGrids.length === 0) {
+    return null;
+  }
+
+  const currentGrid = dbGrids[stateIndex]?.grid || dbGrids[0]?.grid;
+  if (!currentGrid || currentGrid.length < 4) return null;
+
   const targetWidths = currentGrid.map((item) =>
     item.type === 'square' ? SQ_W : REC_W
   );

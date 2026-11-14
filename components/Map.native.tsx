@@ -16,6 +16,7 @@ import { useDriverStore, useLocationStore } from '@/store/store';
 import { calculateRegion, generateMarkersFromData, MapMarker, DEFAULT_REGION } from '@/lib/map';
 import { icons } from '@/constants/utils';
 import { driver_profiles } from '@/constants/data';
+import { dbContent } from '@/lib/db';
 
 export interface MapProps {
   height?: number;

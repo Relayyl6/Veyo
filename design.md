@@ -200,7 +200,7 @@ const menuItems = await dbTiers.merchant.getMenuItems(vendorId);
 4. **`vw_customer_rides`**: Multi-table join between `rides`, `driver_profiles`, and `users` providing enriched ride records with coordinates, timestamps, and ratings.
 5. **`vw_merchant_orders`**: Multi-table join between `orders`, `vendors`, and customer records detailing lifecycle order progress, items, and delivery addresses.
 
-### 6.3 Relational Tables (13 Seeded Tables)
+### 6.3 Relational Tables (16 Seeded Tables)
 
 | Table | Primary Key | Key Foreign Keys | Key Constraints |
 | :--- | :--- | :--- | :--- |
@@ -217,6 +217,18 @@ const menuItems = await dbTiers.merchant.getMenuItems(vendorId);
 | `reviews` | `id (UUID)` | `user_id -> users(id)` | Rating 1–5, feedback text |
 | `ride_locations` | `id (UUID)` | `ride_id -> rides(id)` | GPS polyline points |
 | `user_activities` | `id (UUID)` | `user_id -> users(id)` | Activity type, timestamp |
+| `adverts` | `id (VARCHAR)` | — | `title`, `route`, `image_url`, `gradient_start`, `gradient_end`, `cta_bg`, `is_active` |
+| `ai_predictions` | `id (VARCHAR)` | — | `title`, `subtitle`, `tag`, `image_url`, `route`, `display_order`, `is_active` |
+| `service_options` | `id (VARCHAR)` | — | `state_id`, `item_type`, `title`, `icon_name`, `icon_type`, `route`, `is_active` |
+
+### 6.4 Dynamic Database-Driven Content Rule (Zero Hardcoded Arrays)
+
+**Core Mandate**: Never declare static mockup content arrays (e.g. `const advertData = [...]`, `const aiPredictionsData = [...]`) inside visual components. All content feeds must be populated dynamically from Neon DB:
+- **`adverts` table** $\to$ queried by `dbContent.getAdverts()` & `GET /api/adverts` for `AdCarousel.tsx`.
+- **`ai_predictions` table** $\to$ queried by `dbContent.getAiPredictions()` & `GET /api/insights` for `Insights.tsx`.
+- **`service_options` table** $\to$ queried by `dbContent.getServiceOptions()` & `GET /api/services` for `Options.tsx`.
+- **`vw_customer_rides` view** $\to$ queried by `dbContent.getRides()` for `RideCardDeck.tsx` and `trips.tsx`.
+- **`driver_profiles` table** $\to$ queried by `dbContent.getOnlineDrivers()` for `Map.native.tsx`.
 
 ---
 

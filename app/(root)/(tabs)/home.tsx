@@ -16,6 +16,7 @@ import { useUser } from '@clerk/expo';
 
 import { images } from '@/constants/utils';
 import { SPACING, RADIUS, LAYOUT } from '@/constants/designTokens';
+import { dbContent } from '@/lib/db';
 import Header from '@/components/Header';
 import AdCarousel from '@/components/AdCarousel';
 import ServiceGrid from '@/components/Options';
@@ -46,6 +47,17 @@ export default function HomeScreen() {
 
   const [hasPermissions, setHasPermissions] = useState(false);
   const [trackingModalVisible, setTrackingModalVisible] = useState(false);
+  const [liveRides, setLiveRides] = useState<any[]>(rides.rides);
+
+  useEffect(() => {
+    let isMounted = true;
+    dbContent.getRides().then((res) => {
+      if (isMounted && res && res.length > 0) {
+        setLiveRides(res);
+      }
+    });
+    return () => { isMounted = false; };
+  }, []);
 
   useEffect(() => {
     const requestLocation = async () => {
@@ -232,7 +244,7 @@ export default function HomeScreen() {
         <ServiceGrid />
 
         {/* Nearby Ride Card Deck */}
-        <RideCardDeck rides={rides.rides} />
+        <RideCardDeck rides={liveRides} />
 
         {/* Live En-route Package Tracker Card */}
         <View style={styles.sectionHeaderRow}>

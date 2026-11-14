@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -10,62 +10,45 @@ import {
   FlatList,
   Platform,
   UIManager,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { RADIUS, SPACING } from '@/constants/designTokens';
+import { dbContent, AiPredictionRecord } from '@/lib/db';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const aiPredictionsData = [
-  {
-    id: '1',
-    title: 'Shawarma order?',
-    subtitle: 'Usually ordered at 8 PM',
-    tag: 'AI PREDICTION',
-    image: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?q=80&w=600&auto=format&fit=crop', 
-    route: '/(root)/(tabs)/explore',
-  },
-  {
-    id: '2',
-    title: 'Late night pizza?',
-    subtitle: 'Usually ordered at 11 PM',
-    tag: 'AI PREDICTION',
-    image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=600&auto=format&fit=crop', 
-    route: '/(root)/(tabs)/explore',
-  },
-  {
-    id: '3',
-    title: 'Morning coffee run?',
-    subtitle: 'Usually ordered at 7:30 AM',
-    tag: 'AI PREDICTION',
-    image: 'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=80&w=600&auto=format&fit=crop', 
-    route: '/(root)/(tabs)/explore',
-  },
-  {
-    id: '4',
-    title: 'Heading to the Gym?',
-    subtitle: 'Usually booked at 6:00 PM',
-    tag: 'SMART COMMUTE',
-    image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=600&auto=format&fit=crop', 
-    route: '/(utils)/book-ride',
-  },
-  {
-    id: '5',
-    title: 'Weekend Groceries?',
-    subtitle: 'Based on your Saturday routine',
-    tag: 'AI PREDICTION',
-    image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=600&auto=format&fit=crop', 
-    route: '/(root)/(tabs)/explore',
-  },
-];
-
 export const AIPredictionList = () => {
   const router = useRouter();
+  const [predictions, setPredictions] = useState<AiPredictionRecord[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const renderCard = ({ item }: { item: typeof aiPredictionsData[0] }) => (
+  useEffect(() => {
+    let isMounted = true;
+    async function loadPredictions() {
+      try {
+        setLoading(true);
+        const data = await dbContent.getAiPredictions();
+        if (isMounted) {
+          setPredictions(data);
+        }
+      } catch (err) {
+        console.error('Failed to load AI predictions from database:', err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+
+    loadPredictions();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const renderCard = ({ item }: { item: AiPredictionRecord }) => (
     <TouchableOpacity
       activeOpacity={0.88}
       onPress={() => router.push(item.route as any)}
@@ -73,7 +56,7 @@ export const AIPredictionList = () => {
     >
       {/* Background Image */}
       <Image 
-        source={{ uri: item.image }} 
+        source={{ uri: item.image_url }} 
         style={styles.cardImage}
         resizeMode="cover"
       />
@@ -99,10 +82,22 @@ export const AIPredictionList = () => {
     </TouchableOpacity>
   );
 
+  if (loading && predictions.length === 0) {
+    return (
+      <View style={[styles.aiCard, { width: 206, height: 114, alignItems: 'center', justifyContent: 'center' }]}>
+        <ActivityIndicator size="small" color="#0286FF" />
+      </View>
+    );
+  }
+
+  if (predictions.length === 0) {
+    return null;
+  }
+
   return (
     <View style={styles.listWrapper}>
       <FlatList 
-        data={aiPredictionsData}
+        data={predictions}
         renderItem={renderCard}
         keyExtractor={(item) => item.id}
         horizontal
